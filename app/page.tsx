@@ -23,18 +23,10 @@ export default function Home() {
 
           {/* Nav */}
           <nav className="ml-auto hidden items-center gap-6 text-sm text-slate-600 md:flex">
-            <a className="hover:text-slate-900" href="#rentals">
-              Rentals
-            </a>
-            <a className="hover:text-slate-900" href="#amenities">
-              Amenities
-            </a>
-            <a className="hover:text-slate-900" href="#guide">
-              Guide
-            </a>
-            <a className="hover:text-slate-900" href="#contact">
-              Contact
-            </a>
+            <a className="hover:text-slate-900" href="#rentals">Rentals</a>
+            <a className="hover:text-slate-900" href="#amenities">Amenities</a>
+            <a className="hover:text-slate-900" href="#guide">Guide</a>
+            <a className="hover:text-slate-900" href="#contact">Contact</a>
           </nav>
 
           {/* Right */}
@@ -50,10 +42,9 @@ export default function Home() {
         </div>
       </header>
 
-      {/* Hero */}
+      {/* Hero (VIDEO ONLY) */}
       <section className="relative">
-        {/* HERO FRAME */}
-        <div className="relative h-[78vh] min-h-[520px] w-full overflow-hidden">
+        <div className="relative h-[70vh] min-h-[520px] w-full overflow-hidden">
           <video
             className="absolute inset-0 h-full w-full object-cover"
             src="/media/hero.mp4"
@@ -63,55 +54,56 @@ export default function Home() {
             playsInline
             preload="metadata"
           />
-
-          {/* overlay (light) */}
-          <div className="absolute inset-0 bg-black/15" />
+          {/* overlay */}
+          <div className="absolute inset-0 bg-black/20" />
 
           {/* HERO TEXT */}
           <div className="absolute inset-0">
             <div className="mx-auto max-w-6xl px-4">
-              {/* Push text a bit down on mobile so it breathes */}
-              <div className="pt-16 sm:pt-20 md:pt-24">
+              <div className="pt-20 md:pt-24">
                 <h1 className="max-w-xl text-4xl font-semibold leading-tight text-white md:text-6xl">
                   Luxury stays at Turtle Bay
                 </h1>
-                <p className="mt-3 max-w-lg text-sm text-white/90 md:text-base">
+                <p className="mt-4 max-w-lg text-sm text-white/90 md:text-base">
                   Beachfront access, resort amenities, and premium villas — designed for direct booking.
                 </p>
               </div>
             </div>
           </div>
+        </div>
+      </section>
 
-          {/* BOOKING BAR (SLIM + LOWER so it won't cover subtitles) */}
-          <div
-            id="availability"
-            className="absolute left-1/2 bottom-6 w-[min(100%,980px)] -translate-x-1/2 px-4 md:bottom-10"
-          >
-            <div className="rounded-md border border-slate-200 bg-white/70 shadow-lg backdrop-blur">
-              {/* Desktop: 1 row | Mobile: 2 columns like reference */}
-              <div className="grid gap-2 p-2 md:gap-0 md:p-0 md:grid-cols-[1.1fr_1.1fr_1.1fr_1fr_1fr_150px]">
+      {/* BOOKING BAR (NOW BELOW VIDEO / BEFORE RENTALS) */}
+      <section id="availability" className="bg-white">
+        <div className="mx-auto max-w-6xl px-4">
+          {/* This creates the "white space" strip area under the video */}
+          <div className="py-6 md:py-7">
+            {/* Slim bar */}
+            <div className="mx-auto w-full max-w-[980px] overflow-hidden rounded-md border border-slate-200 bg-white/95 shadow-sm backdrop-blur">
+              {/* Desktop: one row */}
+              <div className="hidden md:grid md:grid-cols-[1.1fr_1.1fr_1.1fr_1fr_1fr_140px]">
                 {/* Arrival */}
-                <div className="rounded-md bg-white/80 px-2 py-1 md:rounded-none md:bg-transparent md:px-3 md:py-2 md:border-r md:border-slate-200">
-                  <div className="text-[11px] font-medium text-slate-600 md:hidden">Arrival</div>
+                <div className="border-r border-slate-200 px-3 py-2">
+                  <div className="text-[11px] font-medium text-slate-600">Arrival</div>
                   <input
                     type="date"
-                    className="h-9 w-full bg-transparent text-sm outline-none"
+                    className="mt-1 h-8 w-full bg-transparent text-sm outline-none"
                   />
                 </div>
 
                 {/* Departure */}
-                <div className="rounded-md bg-white/80 px-2 py-1 md:rounded-none md:bg-transparent md:px-3 md:py-2 md:border-r md:border-slate-200">
-                  <div className="text-[11px] font-medium text-slate-600 md:hidden">Departure</div>
+                <div className="border-r border-slate-200 px-3 py-2">
+                  <div className="text-[11px] font-medium text-slate-600">Departure</div>
                   <input
                     type="date"
-                    className="h-9 w-full bg-transparent text-sm outline-none"
+                    className="mt-1 h-8 w-full bg-transparent text-sm outline-none"
                   />
                 </div>
 
                 {/* Flexible Stay */}
-                <div className="rounded-md bg-white/80 px-2 py-1 md:rounded-none md:bg-transparent md:px-3 md:py-2 md:border-r md:border-slate-200">
-                  <div className="text-[11px] font-medium text-slate-600 md:hidden">Flexible Stay</div>
-                  <select className="h-9 w-full bg-transparent text-sm outline-none">
+                <div className="border-r border-slate-200 px-3 py-2">
+                  <div className="text-[11px] font-medium text-slate-600">Flexible Stay</div>
+                  <select className="mt-1 h-8 w-full bg-transparent text-sm outline-none">
                     <option value="">Flexible Stay</option>
                     <option value="1">1 day</option>
                     <option value="2">2 days</option>
@@ -122,40 +114,84 @@ export default function Home() {
                 </div>
 
                 {/* Adults */}
-                <div className="rounded-md bg-white/80 px-2 py-1 md:rounded-none md:bg-transparent md:px-3 md:py-2 md:border-r md:border-slate-200">
-                  <div className="text-[11px] font-medium text-slate-600 md:hidden">Adults</div>
-                  <select className="h-9 w-full bg-transparent text-sm outline-none">
+                <div className="border-r border-slate-200 px-3 py-2">
+                  <div className="text-[11px] font-medium text-slate-600">Adults</div>
+                  <select className="mt-1 h-8 w-full bg-transparent text-sm outline-none">
                     {Array.from({ length: 10 }).map((_, i) => (
-                      <option key={i} value={i + 1}>
-                        {i + 1}
-                      </option>
+                      <option key={i} value={i + 1}>{i + 1}</option>
                     ))}
                   </select>
                 </div>
 
                 {/* Children */}
-                <div className="rounded-md bg-white/80 px-2 py-1 md:rounded-none md:bg-transparent md:px-3 md:py-2 md:border-r md:border-slate-200">
-                  <div className="text-[11px] font-medium text-slate-600 md:hidden">Children</div>
-                  <select className="h-9 w-full bg-transparent text-sm outline-none">
+                <div className="border-r border-slate-200 px-3 py-2">
+                  <div className="text-[11px] font-medium text-slate-600">Children</div>
+                  <select className="mt-1 h-8 w-full bg-transparent text-sm outline-none">
                     {Array.from({ length: 10 }).map((_, i) => (
-                      <option key={i} value={i}>
-                        {i}
-                      </option>
+                      <option key={i} value={i}>{i}</option>
                     ))}
                   </select>
                 </div>
 
                 {/* Search */}
-                <button className="col-span-2 h-11 rounded-md bg-teal-600 text-sm font-medium text-white hover:bg-teal-700 md:col-span-1 md:h-full md:rounded-none">
+                <button className="h-full bg-teal-600 text-sm font-medium text-white hover:bg-teal-700">
                   Search
                 </button>
               </div>
 
-              {/* tiny note (optional) */}
-              <div className="px-3 pb-2 pt-1 text-[11px] text-slate-600/80">
-                Next: we’ll wire this to your Hostaway booking engine link/embed.
+              {/* Mobile: 2 columns grid + full-width button (not baga, clean) */}
+              <div className="grid gap-3 p-3 md:hidden">
+                <div className="grid grid-cols-2 gap-3">
+                  <div className="rounded-md border border-slate-200 bg-white px-3 py-2">
+                    <div className="text-[11px] font-medium text-slate-600">Arrival</div>
+                    <input type="date" className="mt-1 h-8 w-full bg-transparent text-sm outline-none" />
+                  </div>
+
+                  <div className="rounded-md border border-slate-200 bg-white px-3 py-2">
+                    <div className="text-[11px] font-medium text-slate-600">Departure</div>
+                    <input type="date" className="mt-1 h-8 w-full bg-transparent text-sm outline-none" />
+                  </div>
+
+                  <div className="rounded-md border border-slate-200 bg-white px-3 py-2">
+                    <div className="text-[11px] font-medium text-slate-600">Flexible Stay</div>
+                    <select className="mt-1 h-8 w-full bg-transparent text-sm outline-none">
+                      <option value="">Flexible Stay</option>
+                      <option value="1">1 day</option>
+                      <option value="2">2 days</option>
+                      <option value="3">3 days</option>
+                      <option value="4">4 days</option>
+                      <option value="5">5 days</option>
+                    </select>
+                  </div>
+
+                  <div className="rounded-md border border-slate-200 bg-white px-3 py-2">
+                    <div className="text-[11px] font-medium text-slate-600">Adults</div>
+                    <select className="mt-1 h-8 w-full bg-transparent text-sm outline-none">
+                      {Array.from({ length: 10 }).map((_, i) => (
+                        <option key={i} value={i + 1}>{i + 1}</option>
+                      ))}
+                    </select>
+                  </div>
+
+                  <div className="rounded-md border border-slate-200 bg-white px-3 py-2">
+                    <div className="text-[11px] font-medium text-slate-600">Children</div>
+                    <select className="mt-1 h-8 w-full bg-transparent text-sm outline-none">
+                      {Array.from({ length: 10 }).map((_, i) => (
+                        <option key={i} value={i}>{i}</option>
+                      ))}
+                    </select>
+                  </div>
+                </div>
+
+                <button className="h-10 rounded-md bg-teal-600 text-sm font-medium text-white hover:bg-teal-700">
+                  Search
+                </button>
               </div>
             </div>
+
+            <p className="mx-auto mt-2 max-w-[980px] text-[11px] text-slate-500">
+              Next: we’ll wire this to your Hostaway booking engine link/embed.
+            </p>
           </div>
         </div>
       </section>
