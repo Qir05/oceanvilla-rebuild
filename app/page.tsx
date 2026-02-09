@@ -23,18 +23,10 @@ export default function Home() {
 
           {/* Nav */}
           <nav className="ml-auto hidden items-center gap-6 text-sm text-slate-600 md:flex">
-            <a className="hover:text-slate-900" href="#rentals">
-              Rentals
-            </a>
-            <a className="hover:text-slate-900" href="#amenities">
-              Amenities
-            </a>
-            <a className="hover:text-slate-900" href="#guide">
-              Guide
-            </a>
-            <a className="hover:text-slate-900" href="#contact">
-              Contact
-            </a>
+            <a className="hover:text-slate-900" href="#rentals">Rentals</a>
+            <a className="hover:text-slate-900" href="#amenities">Amenities</a>
+            <a className="hover:text-slate-900" href="#guide">Guide</a>
+            <a className="hover:text-slate-900" href="#contact">Contact</a>
           </nav>
 
           {/* Right */}
@@ -52,7 +44,6 @@ export default function Home() {
 
       {/* Hero */}
       <section className="relative">
-        {/* HERO FRAME */}
         <div className="relative h-[78vh] min-h-[520px] w-full overflow-hidden">
           <video
             className="absolute inset-0 h-full w-full object-cover"
@@ -63,13 +54,12 @@ export default function Home() {
             playsInline
             preload="metadata"
           />
-          {/* overlay (light) */}
           <div className="absolute inset-0 bg-black/15" />
 
           {/* HERO TEXT */}
           <div className="absolute inset-0">
             <div className="mx-auto max-w-6xl px-4">
-              <div className="pt-16 md:pt-24">
+              <div className="pt-24 md:pt-28">
                 <h1 className="max-w-xl text-4xl font-semibold leading-tight text-white md:text-6xl">
                   Luxury stays at Turtle Bay
                 </h1>
@@ -80,29 +70,20 @@ export default function Home() {
             </div>
           </div>
 
-          {/* BOOKING BAR (desktop 1-row, laptop stable, mobile stacked compact) */}
+          {/* BOOKING BAR (desktop = 1 row, mobile = compact 2-col grid) */}
           <div
             id="availability"
-            className="
-              absolute left-1/2
-              bottom-5
-              w-[min(100%,980px)]
-              -translate-x-1/2
-              px-3
-              md:bottom-auto md:top-[58%] md:px-4
-            "
+            className="absolute left-1/2 top-[58%] w-[min(100%,980px)] -translate-x-1/2 px-4"
           >
-            <div className="rounded-md bg-white/90 shadow-lg backdrop-blur">
+            <div className="rounded-xl bg-white/85 shadow-lg backdrop-blur">
               <div
                 className="
-                  grid gap-0 overflow-hidden rounded-md
-                  grid-cols-1
-                  md:grid-cols-2
-                  lg:grid-cols-[1.1fr_1.1fr_1.1fr_1fr_1fr_160px]
+                  grid overflow-hidden rounded-xl border border-slate-200/70
+                  grid-cols-12
                 "
               >
                 {/* Arrival */}
-                <div className="border-b border-slate-200 p-3 md:border-r lg:border-b-0">
+                <div className="col-span-12 border-b border-slate-200/70 p-3 sm:col-span-6 sm:border-b sm:border-r">
                   <div className="text-[11px] font-medium text-slate-600">Arrival</div>
                   <input
                     type="date"
@@ -111,7 +92,7 @@ export default function Home() {
                 </div>
 
                 {/* Departure */}
-                <div className="border-b border-slate-200 p-3 md:border-r lg:border-b-0">
+                <div className="col-span-12 border-b border-slate-200/70 p-3 sm:col-span-6 sm:border-b">
                   <div className="text-[11px] font-medium text-slate-600">Departure</div>
                   <input
                     type="date"
@@ -120,7 +101,7 @@ export default function Home() {
                 </div>
 
                 {/* Flexible Stay */}
-                <div className="border-b border-slate-200 p-3 md:border-r lg:border-b-0">
+                <div className="col-span-12 border-b border-slate-200/70 p-3 sm:col-span-4 sm:border-b-0 sm:border-r">
                   <div className="text-[11px] font-medium text-slate-600">Flexible Stay</div>
                   <select className="mt-1 h-10 w-full bg-transparent text-sm outline-none">
                     <option value="">Flexible Stay</option>
@@ -133,50 +114,35 @@ export default function Home() {
                 </div>
 
                 {/* Adults */}
-                <div className="border-b border-slate-200 p-3 md:border-r lg:border-b-0">
+                <div className="col-span-6 border-b border-slate-200/70 p-3 sm:col-span-3 sm:border-b-0 sm:border-r">
                   <div className="text-[11px] font-medium text-slate-600">Adults</div>
                   <select className="mt-1 h-10 w-full bg-transparent text-sm outline-none">
                     {Array.from({ length: 10 }).map((_, i) => (
-                      <option key={i} value={i + 1}>
-                        {i + 1}
-                      </option>
+                      <option key={i} value={i + 1}>{i + 1}</option>
                     ))}
                   </select>
                 </div>
 
                 {/* Children */}
-                <div className="border-b border-slate-200 p-3 md:border-r lg:border-b-0">
+                <div className="col-span-6 border-b border-slate-200/70 p-3 sm:col-span-3 sm:border-b-0 sm:border-r">
                   <div className="text-[11px] font-medium text-slate-600">Children</div>
                   <select className="mt-1 h-10 w-full bg-transparent text-sm outline-none">
                     {Array.from({ length: 10 }).map((_, i) => (
-                      <option key={i} value={i}>
-                        {i}
-                      </option>
+                      <option key={i} value={i}>{i}</option>
                     ))}
                   </select>
                 </div>
 
                 {/* Search */}
-                <button className="h-12 bg-teal-600 text-sm font-medium text-white hover:bg-teal-700 lg:h-full">
-                  Search
-                </button>
+                <div className="col-span-12 sm:col-span-2">
+                  <button className="h-12 w-full bg-teal-600 text-sm font-medium text-white hover:bg-teal-700 sm:h-full">
+                    Search
+                  </button>
+                </div>
               </div>
 
-              {/* tiny helper text like reference (optional) */}
-              <div className="px-3 pb-3 text-[11px] text-slate-500">
+              <div className="px-3 py-2 text-[11px] text-slate-500">
                 Next: we’ll wire this to your Hostaway booking engine link/embed.
-              </div>
-            </div>
-          </div>
-
-          {/* QUOTE LAYER — lower + safe on laptop */}
-          <div className="pointer-events-none absolute inset-x-0 bottom-2 hidden md:block">
-            <div className="mx-auto max-w-6xl px-4">
-              <div className="text-center text-4xl font-semibold italic text-white/85 drop-shadow-[0_2px_10px_rgba(0,0,0,0.55)]">
-                “Immaculate, wonderful location, very well built and up to date interior, just gorgeous inside and out.”
-              </div>
-              <div className="mt-2 text-center text-lg text-white/70 drop-shadow-[0_2px_10px_rgba(0,0,0,0.55)]">
-                Alexandr, Busan, Korea
               </div>
             </div>
           </div>
