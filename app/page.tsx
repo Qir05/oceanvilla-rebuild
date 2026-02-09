@@ -41,7 +41,7 @@ export default function Home() {
 
       {/* Hero */}
       <section className="relative">
-        <div className="relative h-[78vh] min-h-[520px] w-full overflow-hidden">
+        <div className="relative h-[78vh] min-h-[560px] w-full overflow-hidden">
           <video
             className="absolute inset-0 h-full w-full object-cover"
             src="/media/hero.mp4"
@@ -53,64 +53,100 @@ export default function Home() {
           />
 
           {/* overlay */}
-          <div className="absolute inset-0 bg-black/20" />
+          <div className="absolute inset-0 bg-black/18" />
 
-          {/* HERO TEXT (isaka gamay) */}
+          {/* HERO TEXT (ISAKA para dili matabunan) */}
           <div className="absolute inset-0">
             <div className="mx-auto max-w-6xl px-4">
-              <div className="pt-16 sm:pt-20 md:pt-24">
+              {/* KEY: isaka sa taas */}
+              <div className="pt-14 md:pt-20">
                 <h1 className="max-w-xl text-4xl font-semibold leading-tight text-white md:text-6xl">
-                  Luxury stays at Turtle Bay
+                  Luxury stays at <br className="hidden md:block" />
+                  Turtle Bay
                 </h1>
-                <p className="mt-4 max-w-lg text-sm text-white/90 md:text-base">
+                <p className="mt-4 max-w-xl text-sm text-white/90 md:text-base">
                   Beachfront access, resort amenities, and premium villas — designed for direct booking.
                 </p>
               </div>
             </div>
           </div>
 
-          {/* BOOKING BAR (NIPIS + TRANSPARENT + RESPONSIVE SAME AS REFERENCE) */}
+          {/* BOOKING BAR (NIPIS + TRANSPARENT + CENTER) */}
           <div
             id="availability"
-            className="absolute left-1/2 top-[58%] w-[min(100%,980px)] -translate-x-1/2 px-4 md:top-[55%]"
+            className="absolute left-1/2 -translate-x-1/2 bottom-12 md:bottom-14 w-[min(100%,980px)] px-4"
           >
-            <div className="rounded-md bg-white/70 shadow-lg backdrop-blur-md ring-1 ring-black/10">
-              {/* Desktop: 1 row. Mobile: 2-col grid like reference */}
-              <div className="grid gap-2 p-2 md:gap-0 md:p-0
-                              grid-cols-2
-                              md:grid-cols-[1fr_1fr_1fr_1fr_1fr_140px]">
-
-                {/* Arrival */}
-                <div className="rounded-md bg-white/70 ring-1 ring-black/10 md:rounded-none md:bg-transparent md:ring-0 md:border-r md:border-slate-200">
-                  <div className="flex items-center gap-2 px-3 py-2">
-                    <input
-                      type="date"
-                      className="h-9 w-full bg-transparent text-sm outline-none"
-                      aria-label="Arrival"
-                    />
-                  </div>
+            <div className="rounded-md bg-white/55 backdrop-blur-md shadow-md ring-1 ring-white/30">
+              {/* Desktop row (thin) */}
+              <div className="hidden md:grid md:grid-cols-[1fr_1fr_1fr_0.9fr_0.9fr_140px]">
+                {/** Arrival */}
+                <div className="border-r border-white/35 px-3 py-2">
+                  <div className="text-[11px] font-medium text-slate-700">Arrival</div>
+                  <input type="date" className="mt-1 h-8 w-full bg-transparent text-sm outline-none" />
                 </div>
 
-                {/* Departure */}
-                <div className="rounded-md bg-white/70 ring-1 ring-black/10 md:rounded-none md:bg-transparent md:ring-0 md:border-r md:border-slate-200">
-                  <div className="flex items-center gap-2 px-3 py-2">
-                    <input
-                      type="date"
-                      className="h-9 w-full bg-transparent text-sm outline-none"
-                      aria-label="Departure"
-                    />
-                  </div>
+                {/** Departure */}
+                <div className="border-r border-white/35 px-3 py-2">
+                  <div className="text-[11px] font-medium text-slate-700">Departure</div>
+                  <input type="date" className="mt-1 h-8 w-full bg-transparent text-sm outline-none" />
                 </div>
 
-                {/* Flexible Stay */}
-                <div className="rounded-md bg-white/70 ring-1 ring-black/10 md:rounded-none md:bg-transparent md:ring-0 md:border-r md:border-slate-200">
-                  <div className="flex items-center px-3 py-2">
-                    <select
-                      className="h-9 w-full bg-transparent text-sm outline-none"
-                      aria-label="Flexible Stay"
-                      defaultValue=""
-                    >
-                      <option value="" disabled>Flexible Stay</option>
+                {/** Flexible Stay */}
+                <div className="border-r border-white/35 px-3 py-2">
+                  <div className="text-[11px] font-medium text-slate-700">Flexible Stay</div>
+                  <select className="mt-1 h-8 w-full bg-transparent text-sm outline-none">
+                    <option value="">Flexible Stay</option>
+                    <option value="1">1 day</option>
+                    <option value="2">2 days</option>
+                    <option value="3">3 days</option>
+                    <option value="4">4 days</option>
+                    <option value="5">5 days</option>
+                  </select>
+                </div>
+
+                {/** Adults */}
+                <div className="border-r border-white/35 px-3 py-2">
+                  <div className="text-[11px] font-medium text-slate-700">Adults</div>
+                  <select className="mt-1 h-8 w-full bg-transparent text-sm outline-none" defaultValue="1">
+                    {Array.from({ length: 10 }).map((_, i) => (
+                      <option key={i} value={i + 1}>{i + 1}</option>
+                    ))}
+                  </select>
+                </div>
+
+                {/** Children */}
+                <div className="border-r border-white/35 px-3 py-2">
+                  <div className="text-[11px] font-medium text-slate-700">Children</div>
+                  <select className="mt-1 h-8 w-full bg-transparent text-sm outline-none" defaultValue="0">
+                    {Array.from({ length: 10 }).map((_, i) => (
+                      <option key={i} value={i}>{i}</option>
+                    ))}
+                  </select>
+                </div>
+
+                {/** Search */}
+                <button className="h-full bg-teal-600 text-sm font-medium text-white hover:bg-teal-700">
+                  Search
+                </button>
+              </div>
+
+              {/* Mobile (2-col like reference) */}
+              <div className="md:hidden p-3">
+                <div className="grid grid-cols-2 gap-3">
+                  <div className="rounded-md bg-white/65 px-3 py-2">
+                    <div className="text-[11px] font-medium text-slate-700">Arrival</div>
+                    <input type="date" className="mt-1 h-9 w-full bg-transparent text-sm outline-none" />
+                  </div>
+
+                  <div className="rounded-md bg-white/65 px-3 py-2">
+                    <div className="text-[11px] font-medium text-slate-700">Departure</div>
+                    <input type="date" className="mt-1 h-9 w-full bg-transparent text-sm outline-none" />
+                  </div>
+
+                  <div className="rounded-md bg-white/65 px-3 py-2">
+                    <div className="text-[11px] font-medium text-slate-700">Flexible Stay</div>
+                    <select className="mt-1 h-9 w-full bg-transparent text-sm outline-none">
+                      <option value="">Flexible Stay</option>
                       <option value="1">1 day</option>
                       <option value="2">2 days</option>
                       <option value="3">3 days</option>
@@ -118,42 +154,29 @@ export default function Home() {
                       <option value="5">5 days</option>
                     </select>
                   </div>
-                </div>
 
-                {/* Adults */}
-                <div className="rounded-md bg-white/70 ring-1 ring-black/10 md:rounded-none md:bg-transparent md:ring-0 md:border-r md:border-slate-200">
-                  <div className="flex items-center px-3 py-2">
-                    <select className="h-9 w-full bg-transparent text-sm outline-none" aria-label="Adults" defaultValue="1">
+                  <div className="rounded-md bg-white/65 px-3 py-2">
+                    <div className="text-[11px] font-medium text-slate-700">Adults</div>
+                    <select className="mt-1 h-9 w-full bg-transparent text-sm outline-none" defaultValue="1">
                       {Array.from({ length: 10 }).map((_, i) => (
-                        <option key={i} value={i + 1}>
-                          Adults: {i + 1}
-                        </option>
+                        <option key={i} value={i + 1}>{i + 1}</option>
                       ))}
                     </select>
                   </div>
-                </div>
 
-                {/* Children (mobile full width like reference bottom-left) */}
-                <div className="col-span-2 rounded-md bg-white/70 ring-1 ring-black/10
-                                md:col-span-1 md:rounded-none md:bg-transparent md:ring-0 md:border-r md:border-slate-200">
-                  <div className="flex items-center px-3 py-2">
-                    <select className="h-9 w-full bg-transparent text-sm outline-none" aria-label="Children" defaultValue="0">
+                  <div className="col-span-2 rounded-md bg-white/65 px-3 py-2">
+                    <div className="text-[11px] font-medium text-slate-700">Children</div>
+                    <select className="mt-1 h-9 w-full bg-transparent text-sm outline-none" defaultValue="0">
                       {Array.from({ length: 10 }).map((_, i) => (
-                        <option key={i} value={i}>
-                          Children: {i}
-                        </option>
+                        <option key={i} value={i}>{i}</option>
                       ))}
                     </select>
                   </div>
-                </div>
 
-                {/* Search (mobile full width bar) */}
-                <button
-                  className="col-span-2 h-11 rounded-md bg-teal-600 text-sm font-medium text-white hover:bg-teal-700
-                             md:col-span-1 md:h-full md:rounded-none"
-                >
-                  Search
-                </button>
+                  <button className="col-span-2 h-11 rounded-md bg-teal-600 text-sm font-medium text-white hover:bg-teal-700">
+                    Search
+                  </button>
+                </div>
               </div>
             </div>
           </div>
