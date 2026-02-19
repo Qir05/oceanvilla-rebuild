@@ -92,8 +92,7 @@ function GlassCard({
   return (
     <div
       className={cx(
-        "rounded-3xl border border-white/10 bg-white/5 backdrop-blur-[16px]",
-        "shadow-[0_20px_60px_rgba(0,0,0,0.35)]",
+        "rounded-3xl border border-white/10 bg-white/5 backdrop-blur-[16px] shadow-[0_20px_60px_rgba(0,0,0,0.35)]",
         className
       )}
     >
@@ -116,7 +115,6 @@ function PrimaryButton({
         "shadow-[0_12px_35px_rgba(15,110,140,0.35)]",
         "transition-transform duration-200 hover:scale-[1.01] active:scale-[0.99]",
         "focus:outline-none focus:ring-2 focus:ring-[#64B6AC]/60 focus:ring-offset-0",
-        "disabled:opacity-70 disabled:cursor-not-allowed",
         className
       )}
     >
@@ -126,7 +124,7 @@ function PrimaryButton({
   );
 }
 
-function SecondaryLink({
+function SecondaryButton({
   children,
   className,
   ...props
@@ -252,7 +250,7 @@ export default function Home() {
   const today = useMemo(() => formatISO(new Date()), []);
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
 
-  // booking state (mock)
+  // Booking bar state (mocked flow for now)
   const [checkIn, setCheckIn] = useState<string>("");
   const [checkOut, setCheckOut] = useState<string>("");
   const [guests, setGuests] = useState<number>(2);
@@ -292,9 +290,9 @@ export default function Home() {
     }
 
     setLoading(true);
+
     try {
-      // later: Hostaway quote endpoint
-      await new Promise((r) => setTimeout(r, 550));
+      await new Promise((r) => setTimeout(r, 650));
 
       const qp = new URLSearchParams();
       qp.set("checkIn", checkIn);
@@ -304,7 +302,7 @@ export default function Home() {
       if (promo.trim()) qp.set("promo", promo.trim());
 
       window.location.href = `/rentals?${qp.toString()}`;
-    } catch {
+    } catch (e) {
       setError("Something went wrong. Please try again.");
     } finally {
       setLoading(false);
@@ -313,17 +311,18 @@ export default function Home() {
 
   return (
     <main className="min-h-screen bg-[#071421] text-white selection:bg-[#64B6AC]/25 selection:text-white">
-      {/* Subtle background depth (site-wide) */}
+      {/* Subtle background depth */}
       <div className="pointer-events-none fixed inset-0">
         <div className="absolute inset-0 bg-[radial-gradient(900px_500px_at_20%_10%,rgba(100,182,172,0.18),transparent_55%),radial-gradient(700px_450px_at_80%_20%,rgba(15,110,140,0.18),transparent_55%),radial-gradient(900px_650px_at_50%_90%,rgba(217,184,124,0.10),transparent_60%)]" />
         <div className="absolute inset-0 opacity-[0.08] [background-image:url('data:image/svg+xml,%3Csvg xmlns=%22http://www.w3.org/2000/svg%22 width=%22140%22 height=%22140%22 viewBox=%220 0 140 140%22%3E%3Cfilter id=%22n%22%3E%3CfeTurbulence type=%22fractalNoise%22 baseFrequency=%220.9%22 numOctaves=%222%22 stitchTiles=%22stitch%22/%3E%3C/filter%3E%3Crect width=%22140%22 height=%22140%22 filter=%22url(%23n)%22 opacity=%220.7%22/%3E%3C/svg%3E')]" />
       </div>
 
-      {/* HEADER (top-center look, premium) */}
-      <header className="sticky top-0 z-50 border-b border-white/10 bg-[#071421]/55 backdrop-blur-[14px]">
+      {/* HEADER */}
+      <header className="sticky top-0 z-50 border-b border-white/10 bg-[#071421]/70 backdrop-blur-[14px]">
         <div className="mx-auto flex h-16 max-w-6xl items-center gap-4 px-4">
           <Link href="/" className="flex items-center gap-3">
             <div className="relative h-9 w-9 overflow-hidden rounded-2xl bg-white/5 ring-1 ring-white/10">
+              {/* ✅ LOGO UPDATED */}
               <Image
                 src="/brand/TTB-Logo.png"
                 alt={BRAND.name}
@@ -340,6 +339,7 @@ export default function Home() {
             </div>
           </Link>
 
+          {/* Desktop nav */}
           <nav className="ml-auto hidden items-center gap-6 text-sm text-white/75 md:flex">
             <Link className="hover:text-white transition" href="/rentals">
               Rentals
@@ -358,6 +358,7 @@ export default function Home() {
             </Link>
           </nav>
 
+          {/* Desktop CTAs */}
           <div className="hidden items-center gap-3 md:flex">
             <a
               className="text-sm text-white/70 hover:text-white transition"
@@ -365,12 +366,13 @@ export default function Home() {
             >
               {BRAND.phone}
             </a>
-            <SecondaryLink href="/contact">Book a Call</SecondaryLink>
+            <SecondaryButton href="/contact">Book a Call</SecondaryButton>
             <a href="#availability">
               <PrimaryButton type="button">Check Availability</PrimaryButton>
             </a>
           </div>
 
+          {/* Mobile: CTA + hamburger */}
           <div className="ml-auto flex items-center gap-2 md:hidden">
             <a href="#availability">
               <PrimaryButton type="button" className="px-4 py-2">
@@ -388,8 +390,9 @@ export default function Home() {
           </div>
         </div>
 
+        {/* Mobile menu */}
         {mobileMenuOpen ? (
-          <div className="md:hidden border-t border-white/10 bg-[#071421]/70 backdrop-blur-[14px]">
+          <div className="md:hidden border-t border-white/10 bg-[#071421]/85 backdrop-blur-[14px]">
             <div className="mx-auto max-w-6xl px-4 py-4 grid gap-2 text-sm text-white/80">
               <Link
                 onClick={() => setMobileMenuOpen(false)}
@@ -428,9 +431,9 @@ export default function Home() {
               </Link>
 
               <div className="mt-2 flex gap-2">
-                <SecondaryLink className="flex-1" href="/contact">
+                <SecondaryButton className="flex-1" href="/contact">
                   Book a Call
-                </SecondaryLink>
+                </SecondaryButton>
                 <a className="flex-1" href={`tel:${BRAND.phone}`}>
                   <span className="inline-flex w-full items-center justify-center rounded-2xl px-5 py-3 text-sm font-semibold text-white/90 bg-white/5 ring-1 ring-white/10">
                     Call
@@ -442,12 +445,12 @@ export default function Home() {
         ) : null}
       </header>
 
-      {/* HERO VIDEO (full cover, center, like 3rd photo) */}
+      {/* HERO */}
       <section className="relative">
-        <div className="relative h-[80vh] min-h-[560px] w-full overflow-hidden">
-          {/* Video background */}
+        <div className="relative h-[78vh] min-h-[560px] overflow-hidden">
+          {/* ✅ HERO VIDEO INSERTED */}
           <video
-            className="absolute inset-0 h-full w-full object-cover object-center"
+            className="absolute inset-0 h-full w-full object-cover"
             src="/media/hero.mp4"
             autoPlay
             muted
@@ -456,23 +459,23 @@ export default function Home() {
             preload="metadata"
           />
 
-          {/* overlays to make text readable + premium depth */}
-          <div className="absolute inset-0 bg-gradient-to-b from-black/35 via-black/20 to-[#071421]" />
-          <div className="absolute inset-0 bg-[radial-gradient(900px_520px_at_20%_15%,rgba(100,182,172,0.18),transparent_55%)]" />
+          {/* Overlay gradients */}
+          <div className="absolute inset-0 bg-gradient-to-b from-black/40 via-black/25 to-[#071421]" />
+          <div className="absolute inset-0 bg-[radial-gradient(900px_500px_at_20%_20%,rgba(100,182,172,0.20),transparent_55%)]" />
 
-          {/* Hero content (center-left like premium hospitality) */}
+          {/* Content */}
           <div className="absolute inset-0">
-            <div className="mx-auto max-w-6xl px-4">
-              <div className="pt-20 md:pt-24">
+            <div className="mx-auto flex h-full max-w-6xl flex-col justify-end px-4 pb-10 md:pb-14">
+              <div className="max-w-2xl">
                 <div className="flex flex-wrap items-center gap-2">
                   <Pill>Direct booking</Pill>
                   <Pill>Resort-style comfort</Pill>
                   <Pill tone="gold">Best value online</Pill>
                 </div>
 
-                <h1 className="mt-4 max-w-2xl text-4xl font-semibold leading-[1.05] tracking-tight text-white md:text-6xl">
-                  A premium oceanfront
-                  <span className="text-white/85"> stay, built for calm.</span>
+                <h1 className="mt-4 text-4xl font-semibold leading-[1.05] tracking-tight text-white md:text-6xl">
+                  A premium oceanfront stay,
+                  <span className="text-white/85"> built for calm.</span>
                 </h1>
 
                 <p className="mt-4 max-w-xl text-sm leading-relaxed text-white/80 md:text-base">
@@ -484,10 +487,10 @@ export default function Home() {
                   <a href="#availability">
                     <PrimaryButton type="button">Check Availability</PrimaryButton>
                   </a>
-                  <SecondaryLink href="/rentals">View Rentals</SecondaryLink>
+                  <SecondaryButton href="/rentals">View Rentals</SecondaryButton>
                 </div>
 
-                <div className="mt-8 grid max-w-2xl grid-cols-2 gap-3 md:grid-cols-4">
+                <div className="mt-8 grid grid-cols-2 gap-3 md:grid-cols-4">
                   <Stat label="Response time" value="Fast (typ.)" />
                   <Stat label="Check-in" value="Flexible" />
                   <Stat label="Location" value="Oceanfront" />
@@ -510,7 +513,7 @@ export default function Home() {
                     Check availability
                   </div>
                   <div className="mt-1 text-xs text-white/60">
-                    Ready to connect to Hostaway once your API keys arrive.
+                    This is ready to connect to Hostaway once your API keys arrive.
                   </div>
                 </div>
                 <div className="flex items-center gap-2">
@@ -519,6 +522,7 @@ export default function Home() {
                 </div>
               </div>
 
+              {/* Fields */}
               <div className="mt-4 grid gap-3 md:grid-cols-12">
                 <div className="md:col-span-3">
                   <label className="block text-[11px] font-semibold text-white/65">
@@ -624,12 +628,17 @@ export default function Home() {
                       ) : (
                         <span className="inline-flex items-center gap-2 rounded-2xl bg-white/5 px-3 py-2 ring-1 ring-white/10">
                           <span className="h-1.5 w-1.5 rounded-full bg-[#64B6AC]" />
-                          Tip: Choose dates first — quote breakdown will appear when Hostaway is connected.
+                          Tip: Choose dates first — we’ll show quote breakdown next when Hostaway is connected.
                         </span>
                       )}
                     </div>
 
-                    <PrimaryButton type="button" onClick={onSearch} disabled={loading}>
+                    <PrimaryButton
+                      type="button"
+                      onClick={onSearch}
+                      disabled={loading}
+                      className={cx(loading && "opacity-80")}
+                    >
                       {loading ? "Searching…" : "Search"}
                     </PrimaryButton>
                   </div>
@@ -647,10 +656,10 @@ export default function Home() {
             <SectionTitle
               eyebrow="Featured stays"
               title="Select a space that fits your vibe."
-              desc="This section is using mock data for now — later we’ll feed it from Hostaway listings."
+              desc="Premium cards, fast images, and consistent layout — this is the same UI structure we’ll feed with Hostaway listings later."
             />
             <div className="hidden md:block">
-              <SecondaryLink href="/rentals">Browse all</SecondaryLink>
+              <SecondaryButton href="/rentals">Browse all</SecondaryButton>
             </div>
           </div>
 
@@ -661,17 +670,196 @@ export default function Home() {
           </div>
 
           <div className="mt-6 md:hidden">
-            <SecondaryLink className="w-full" href="/rentals">
+            <SecondaryButton className="w-full" href="/rentals">
               Browse all rentals
-            </SecondaryLink>
+            </SecondaryButton>
           </div>
         </div>
       </section>
 
-      {/* FOOTER */}
+      {/* EXPERIENCE / AMENITIES TEASER */}
       <section className="relative border-t border-white/10">
-        <div className="mx-auto max-w-6xl px-4 py-12">
-          <footer className="flex flex-col gap-4 text-xs text-white/55 md:flex-row md:items-center md:justify-between">
+        <div className="mx-auto max-w-6xl px-4 py-10 md:py-14">
+          <SectionTitle
+            eyebrow="Experience"
+            title="Resort comfort, without the crowd."
+            desc="Clean tiles, breathable spacing, and premium tone — not cluttered. This keeps the site feeling like a funded hospitality brand."
+          />
+
+          <div className="mt-8 grid gap-4 md:grid-cols-12">
+            <GlassCard className="p-5 md:col-span-4">
+              <div className="text-sm font-semibold">Beach access</div>
+              <p className="mt-2 text-sm text-white/70">
+                Steps to the shoreline with calm views and easy sunset walks.
+              </p>
+            </GlassCard>
+            <GlassCard className="p-5 md:col-span-4">
+              <div className="text-sm font-semibold">Pool + outdoor lounge</div>
+              <p className="mt-2 text-sm text-white/70">
+                Space to relax, reset, and enjoy a true coastal stay.
+              </p>
+            </GlassCard>
+            <GlassCard className="p-5 md:col-span-4">
+              <div className="text-sm font-semibold">Fast Wi-Fi + work ready</div>
+              <p className="mt-2 text-sm text-white/70">
+                Great for remote work, extended stays, and easy streaming.
+              </p>
+            </GlassCard>
+
+            <div className="md:col-span-12 grid gap-4 md:grid-cols-3">
+              <div className="rounded-3xl bg-gradient-to-b from-white/8 to-white/3 ring-1 ring-white/10 p-5">
+                <div className="text-sm font-semibold">Family-friendly</div>
+                <p className="mt-2 text-sm text-white/70">
+                  Comfortable layouts for groups with high-quality essentials.
+                </p>
+              </div>
+              <div className="rounded-3xl bg-gradient-to-b from-white/8 to-white/3 ring-1 ring-white/10 p-5">
+                <div className="text-sm font-semibold">Clean design</div>
+                <p className="mt-2 text-sm text-white/70">
+                  Hotel-level feel: calm tones, premium lighting, modern finishes.
+                </p>
+              </div>
+              <div className="rounded-3xl bg-gradient-to-b from-white/8 to-white/3 ring-1 ring-white/10 p-5">
+                <div className="text-sm font-semibold">Direct booking perks</div>
+                <p className="mt-2 text-sm text-white/70">
+                  Best pricing, faster support, and smoother communication.
+                </p>
+              </div>
+            </div>
+          </div>
+
+          <div className="mt-8">
+            <SecondaryButton href="/amenities">Explore amenities</SecondaryButton>
+          </div>
+        </div>
+      </section>
+
+      {/* LOCATION */}
+      <section className="relative border-t border-white/10">
+        <div className="mx-auto max-w-6xl px-4 py-10 md:py-14">
+          <div className="grid gap-8 md:grid-cols-12 md:items-start">
+            <div className="md:col-span-5">
+              <SectionTitle
+                eyebrow="Location"
+                title="Everything close. Still feels private."
+                desc="Add a clean map embed later, plus nearby highlights (beach spots, restaurants, experiences)."
+              />
+              <div className="mt-6 grid gap-3">
+                <div className="rounded-3xl bg-white/5 ring-1 ring-white/10 p-5">
+                  <div className="text-sm font-semibold">Nearby highlights</div>
+                  <p className="mt-2 text-sm text-white/70">
+                    Beaches, surf, scenic drives, local dining — curated like a premium guide.
+                  </p>
+                </div>
+                <div className="rounded-3xl bg-white/5 ring-1 ring-white/10 p-5">
+                  <div className="text-sm font-semibold">Simple arrivals</div>
+                  <p className="mt-2 text-sm text-white/70">
+                    Clear check-in instructions and fast communication.
+                  </p>
+                </div>
+              </div>
+            </div>
+
+            <div className="md:col-span-7">
+              <GlassCard className="overflow-hidden">
+                <div className="relative h-[320px] w-full">
+                  <Image
+                    src="/media/map-placeholder.jpg"
+                    alt="Map placeholder"
+                    fill
+                    className="object-cover opacity-90"
+                    sizes="(max-width: 768px) 100vw, 58vw"
+                  />
+                  <div className="absolute inset-0 bg-gradient-to-t from-black/55 via-black/10 to-transparent" />
+                  <div className="absolute left-5 top-5">
+                    <Pill>Map placeholder</Pill>
+                  </div>
+                  <div className="absolute bottom-5 left-5 right-5 rounded-3xl bg-white/8 backdrop-blur-[16px] ring-1 ring-white/10 p-4">
+                    <div className="text-sm font-semibold">Add interactive map embed</div>
+                    <div className="mt-1 text-xs text-white/70">
+                      We’ll swap this with Google Maps / Mapbox later.
+                    </div>
+                  </div>
+                </div>
+              </GlassCard>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      {/* TESTIMONIALS */}
+      <section className="relative border-t border-white/10">
+        <div className="mx-auto max-w-6xl px-4 py-10 md:py-14">
+          <SectionTitle
+            eyebrow="Social proof"
+            title="Guests remember the feeling."
+            desc="Short quotes + rating — keep it premium and minimal."
+          />
+
+          <div className="mt-8 grid gap-4 md:grid-cols-3">
+            {[
+              {
+                q: "The space felt like a high-end hotel, but calmer. Everything was thoughtfully done.",
+                a: "Verified guest",
+              },
+              {
+                q: "Fast responses, easy check-in, and the ocean view was unreal. We’ll be back.",
+                a: "Verified guest",
+              },
+              {
+                q: "Clean, modern, and perfect for our family trip. Booking direct was seamless.",
+                a: "Verified guest",
+              },
+            ].map((t, i) => (
+              <GlassCard key={i} className="p-6">
+                <div className="text-sm text-white/85">“{t.q}”</div>
+                <div className="mt-4 text-xs font-semibold text-white/60">
+                  {t.a}
+                </div>
+              </GlassCard>
+            ))}
+          </div>
+
+          <div className="mt-8">
+            <SecondaryButton href="/contact">Ask a question</SecondaryButton>
+          </div>
+        </div>
+      </section>
+
+      {/* FINAL CTA */}
+      <section className="relative border-t border-white/10">
+        <div className="mx-auto max-w-6xl px-4 py-12 md:py-16">
+          <div className="rounded-3xl bg-gradient-to-b from-white/10 to-white/4 ring-1 ring-white/10 p-8 md:p-10">
+            <div className="flex flex-col gap-6 md:flex-row md:items-center md:justify-between">
+              <div className="max-w-xl">
+                <div className="text-2xl font-semibold tracking-tight">
+                  Ready to plan your stay?
+                </div>
+                <p className="mt-2 text-sm text-white/70">
+                  Choose dates, confirm pricing, and reserve securely — once Hostaway is connected.
+                </p>
+              </div>
+              <div className="flex flex-wrap gap-3">
+                <a href="#availability">
+                  <PrimaryButton type="button">Check Availability</PrimaryButton>
+                </a>
+                <SecondaryButton href="/rentals">View Rentals</SecondaryButton>
+              </div>
+            </div>
+
+            <div className="mt-6 flex flex-wrap items-center gap-3 text-xs text-white/60">
+              <span className="inline-flex items-center gap-2">
+                <span className="h-1.5 w-1.5 rounded-full bg-[#64B6AC]" />
+                Server-side secure Hostaway routes
+              </span>
+              <span className="inline-flex items-center gap-2">
+                <span className="h-1.5 w-1.5 rounded-full bg-[#D9B87C]" />
+                Premium UI, fast + mobile-first
+              </span>
+            </div>
+          </div>
+
+          <footer className="mt-10 flex flex-col gap-4 border-t border-white/10 pt-6 text-xs text-white/55 md:flex-row md:items-center md:justify-between">
             <div className="flex flex-wrap gap-3">
               <Link className="hover:text-white/80 transition" href="/privacy-policy">
                 Privacy Policy
