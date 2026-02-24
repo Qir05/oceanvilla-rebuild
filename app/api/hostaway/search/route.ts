@@ -1,12 +1,59 @@
 import { NextResponse } from "next/server";
 
+type AnyObj = Record<string, any>;
+
+function pickResult(payload: any) {
+  // Hostaway responses can vary: {result: ...} or {data: ...} or raw
+  return payload?.result ?? payload?.data ?? payload;
+}
+
+function isDayUnavailable(day: AnyObj) {
+  // Flexible parsing across possible Hostaway shapes
+  const status = String(day?.status ?? day?.state ?? "").toLowerCase();
+
+  // explicit boolean flags
+  if (typeof day?.isAvailable === "boolean") return day.isAvailable === false;
+  if (typeof day?.available === "boolean") return day.available === false;
+
+  // common "status" strings (conservative)
+  const badStatuses = ["booked", "reserved", "blocked", "unavailable", "notavailable", "occupied"];
+  if (status && badStatuses.includes(status)) return true;
+
+  // if it has "isBooked" etc
+  if (day?.isBooked === true) return true;
+  if (day?.booked === true) return true;
+  if (day?.blocked === true) return true;
+
+  return false;
+}
+
+function extractDays(calendarPayload: any): AnyObj[] {
+  const d = pickResult(calendarPayload);
+
+  // possible shapes:
+  // - array of days
+  // - { days: [...] }
+  // - { calendar: [...] }
+  // - { result: { days: [...] } }
+  if (Array.isArray(d)) return d;
+  if (Array.isArray(d?.days)) return d.days;
+  if (Array.isArray(d?.calendar)) return d.calendar;
+  if (Array.isArray(d?.data)) return d.data;
+
+  return [];
+}
+
 export async function GET(req: Request) {
   try {
     const apiKey = process.env.HOSTAWAY_API_KEY;
     const ids = process.env.OCEANVILLAS_LISTING_IDS;
 
-    if (!apiKey) return NextResponse.json({ error: "Missing HOSTAWAY_API_KEY" }, { status: 500 });
-    if (!ids) return NextResponse.json({ error: "Missing OCEANVILLAS_LISTING_IDS" }, { status: 500 });
+    if (!apiKey) {
+      return NextResponse.json({ error: "Missing HOSTAWAY_API_KEY" }, { status: 500 });
+    }
+    if (!ids) {
+      return NextResponse.json({ error: "Missing OCEANVILLAS_LISTING_IDS" }, { status: 500 });
+    }
 
     const { searchParams } = new URL(req.url);
     const startDate = searchParams.get("startDate");
@@ -17,53 +64,78 @@ export async function GET(req: Request) {
       return NextResponse.json({ error: "Required: startDate, endDate" }, { status: 400 });
     }
 
-    const listingIds = ids.split(",").map(s => s.trim()).filter(Boolean);
+    const listingIds = ids
+      .split(",")
+      .map((s) => s.trim())
+      .filter(Boolean);
 
-    // 1) Get listing details (so results page can show name/photos/etc.)
-    const listingsRes = await fetch("https://api.hostaway.com/v1/listings", {
-      headers: { Authorization: `Bearer ${apiKey}`, "Content-Type": "application/json" },
+    // 1) Get listing details (name/photos/etc.)
+    // Add a large limit to reduce pagination issues (Hostaway may still paginate depending on account)
+    const listingsRes = await fetch("https://api.hostaway.com/v1/listings?limit=1000", {
+      headers: {
+        Authorization: `Bearer ${apiKey}`,
+        "Content-Type": "application/json",
+      },
       cache: "no-store",
     });
 
     const listingsJson = await listingsRes.json();
-    const allListings = listingsJson?.result || listingsJson?.data || listingsJson;
+    const allListings = pickResult(listingsJson);
+
     const listings = Array.isArray(allListings)
       ? allListings.filter((l: any) => listingIds.includes(String(l?.id)))
       : [];
 
-    // 2) For each listing, check availability for the date range
+    // 2) For each listing, check calendar for date range
     const checks = await Promise.all(
       listingIds.map(async (listingId) => {
-        const res = await fetch(
-          `https://api.hostaway.com/v1/availability?listingId=${encodeURIComponent(listingId)}&startDate=${encodeURIComponent(
-            startDate
-          )}&endDate=${encodeURIComponent(endDate)}`,
-          {
-            headers: { Authorization: `Bearer ${apiKey}`, "Content-Type": "application/json" },
-            cache: "no-store",
-          }
-        );
+        const url = `https://api.hostaway.com/v1/listings/${encodeURIComponent(
+          listingId
+        )}/calendar?startDate=${encodeURIComponent(startDate)}&endDate=${encodeURIComponent(endDate)}`;
 
-        const json = await res.json();
-        return { listingId, status: res.status, data: json };
+        const res = await fetch(url, {
+          headers: {
+            Authorization: `Bearer ${apiKey}`,
+            "Content-Type": "application/json",
+          },
+          cache: "no-store",
+        });
+
+        let json: any = null;
+        try {
+          json = await res.json();
+        } catch {
+          json = { error: "Non-JSON response from Hostaway" };
+        }
+
+        const days = extractDays(json);
+
+        // Conservative rule:
+        // - If any day in range is unavailable -> NOT available
+        // - If calendar returns no days but status is 200 -> treat as available (but flagged)
+        const anyUnavailable = days.some(isDayUnavailable);
+        const available = res.ok ? !anyUnavailable : false;
+
+        return {
+          listingId: String(listingId),
+          status: res.status,
+          available,
+          debug: {
+            url,
+            daysCount: days.length,
+            anyUnavailable,
+          },
+        };
       })
     );
 
-    // NOTE: Hostaway availability response shape can differ.
-    // We’ll treat “available” conservatively until we confirm exact fields.
     const availableListingIds = checks
-      .filter((c) => {
-        const d = c.data?.result || c.data?.data || c.data;
-        // If API returns explicit boolean:
-        if (typeof d?.isAvailable === "boolean") return d.isAvailable;
-        // If it returns a list of days with availability flags:
-        if (Array.isArray(d)) return d.every((day: any) => day?.available !== false);
-        // Fallback: if request succeeded, assume we’ll refine logic after first real response
-        return c.status === 200;
-      })
+      .filter((c) => c.available === true)
       .map((c) => String(c.listingId));
 
-    const availableListings = listings.filter((l: any) => availableListingIds.includes(String(l?.id)));
+    const availableListings = listings.filter((l: any) =>
+      availableListingIds.includes(String(l?.id))
+    );
 
     return NextResponse.json(
       {
@@ -71,7 +143,9 @@ export async function GET(req: Request) {
         query: { startDate, endDate, guests },
         availableCount: availableListings.length,
         availableListings,
-        debug: { checked: checks.map((c) => ({ listingId: c.listingId, status: c.status })) },
+        debug: {
+          checked: checks, // keep for now during dev; we can remove later
+        },
       },
       { status: 200 }
     );
