@@ -3,7 +3,13 @@ import { NextResponse } from "next/server";
 export async function GET(req: Request) {
   try {
     const apiKey = process.env.HOSTAWAY_API_KEY;
-    if (!apiKey) return NextResponse.json({ error: "Missing HOSTAWAY_API_KEY" }, { status: 500 });
+
+    if (!apiKey) {
+      return NextResponse.json(
+        { error: "Missing HOSTAWAY_API_KEY" },
+        { status: 500 }
+      );
+    }
 
     const { searchParams } = new URL(req.url);
     const listingId = searchParams.get("listingId");
@@ -18,7 +24,11 @@ export async function GET(req: Request) {
     }
 
     const res = await fetch(
-      `https://api.hostaway.com/v1/availability?listingId=${encodeURIComponent(listingId)}&startDate=${encodeURIComponent(startDate)}&endDate=${encodeURIComponent(endDate)}`,
+      `https://api.hostaway.com/v1/availability?listingId=${encodeURIComponent(
+        listingId
+      )}&startDate=${encodeURIComponent(startDate)}&endDate=${encodeURIComponent(
+        endDate
+      )}`,
       {
         headers: {
           Authorization: `Bearer ${apiKey}`,
@@ -29,8 +39,15 @@ export async function GET(req: Request) {
     );
 
     const data = await res.json();
-    return NextResponse.json({ success: true, status: res.status, data }, { status: 200 });
+
+    return NextResponse.json(
+      { success: true, status: res.status, data },
+      { status: 200 }
+    );
   } catch (err: any) {
-    return NextResponse.json({ error: err.message }, { status: 500 });
+    return NextResponse.json(
+      { error: err?.message || "Unknown error" },
+      { status: 500 }
+    );
   }
 }
