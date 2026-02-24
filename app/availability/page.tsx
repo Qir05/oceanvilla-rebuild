@@ -13,8 +13,8 @@ export default async function AvailabilityPage({
   const endDate = searchParams.endDate || "";
   const guests = searchParams.guests || "2";
 
-  // Build proper base URL (works in Vercel + local)
-  const h = headers();
+  // ✅ Next.js 16: headers() is async (returns Promise)
+  const h = await headers();
   const host = h.get("x-forwarded-host") || h.get("host");
   const proto = h.get("x-forwarded-proto") || "https";
 
@@ -25,9 +25,9 @@ export default async function AvailabilityPage({
   const res = await fetch(
     `${baseUrl}/api/hostaway/search?startDate=${encodeURIComponent(
       startDate
-    )}&endDate=${encodeURIComponent(
-      endDate
-    )}&guests=${encodeURIComponent(guests)}`,
+    )}&endDate=${encodeURIComponent(endDate)}&guests=${encodeURIComponent(
+      guests
+    )}`,
     { cache: "no-store" }
   );
 
@@ -36,9 +36,7 @@ export default async function AvailabilityPage({
 
   return (
     <div style={{ padding: 40 }}>
-      <h1 style={{ fontSize: 28, fontWeight: 700 }}>
-        Available Ocean Villas
-      </h1>
+      <h1 style={{ fontSize: 28, fontWeight: 700 }}>Available Ocean Villas</h1>
 
       <p style={{ marginTop: 10 }}>
         {startDate} → {endDate} • Guests: {guests}
