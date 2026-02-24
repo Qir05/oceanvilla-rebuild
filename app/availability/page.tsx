@@ -1,49 +1,73 @@
+import { headers } from "next/headers";
+
 export default async function AvailabilityPage({
   searchParams,
 }: {
-  searchParams: { startDate?: string; endDate?: string; guests?: string };
+  searchParams: {
+    startDate?: string;
+    endDate?: string;
+    guests?: string;
+  };
 }) {
   const startDate = searchParams.startDate || "";
   const endDate = searchParams.endDate || "";
   const guests = searchParams.guests || "2";
 
-  const url = `${process.env.NEXT_PUBLIC_SITE_URL || ""}/api/hostaway/search?startDate=${encodeURIComponent(
-    startDate
-  )}&endDate=${encodeURIComponent(endDate)}&guests=${encodeURIComponent(guests)}`;
+  // Build proper base URL (works in Vercel + local)
+  const h = headers();
+  const host = h.get("x-forwarded-host") || h.get("host");
+  const proto = h.get("x-forwarded-proto") || "https";
 
-  // If NEXT_PUBLIC_SITE_URL isn’t set, fallback to relative fetch in runtime:
+  const baseUrl =
+    process.env.NEXT_PUBLIC_SITE_URL?.replace(/\/$/, "") ||
+    `${proto}://${host}`;
+
   const res = await fetch(
-    `/api/hostaway/search?startDate=${encodeURIComponent(startDate)}&endDate=${encodeURIComponent(endDate)}&guests=${encodeURIComponent(
-      guests
-    )}`,
-    { cache: "no-store" as any }
+    `${baseUrl}/api/hostaway/search?startDate=${encodeURIComponent(
+      startDate
+    )}&endDate=${encodeURIComponent(
+      endDate
+    )}&guests=${encodeURIComponent(guests)}`,
+    { cache: "no-store" }
   );
 
   const data = await res.json();
   const listings = data?.availableListings || [];
 
   return (
-    <div style={{ padding: 24 }}>
-      <h1 style={{ fontSize: 28, fontWeight: 700 }}>Available Stays</h1>
-      <p style={{ marginTop: 8 }}>
+    <div style={{ padding: 40 }}>
+      <h1 style={{ fontSize: 28, fontWeight: 700 }}>
+        Available Ocean Villas
+      </h1>
+
+      <p style={{ marginTop: 10 }}>
         {startDate} → {endDate} • Guests: {guests}
       </p>
 
-      <div style={{ marginTop: 24, display: "grid", gap: 16 }}>
+      <div style={{ marginTop: 30, display: "grid", gap: 20 }}>
         {listings.length === 0 ? (
-          <div>No available listings found for this date range.</div>
+          <div>No villas available for selected dates.</div>
         ) : (
-          listings.map((l: any) => (
-            <div key={l.id} style={{ border: "1px solid #333", borderRadius: 12, padding: 16 }}>
-              <div style={{ fontSize: 18, fontWeight: 700 }}>{l.name || `Listing ${l.id}`}</div>
-              <div style={{ opacity: 0.8, marginTop: 6 }}>Listing ID: {l.id}</div>
+          listings.map((villa: any) => (
+            <div
+              key={villa.id}
+              style={{
+                border: "1px solid #333",
+                padding: 20,
+                borderRadius: 12,
+              }}
+            >
+              <h2 style={{ fontSize: 20, fontWeight: 600 }}>
+                {villa.name || `Villa ${villa.id}`}
+              </h2>
 
-              {/* Next step: “View details” + “Book now” */}
-              <div style={{ marginTop: 12 }}>
-                <a href={`/listing/${l.id}?startDate=${startDate}&endDate=${endDate}&guests=${guests}`}>
-                  View details
-                </a>
-              </div>
+              <p>ID: {villa.id}</p>
+
+              <a
+                href={`/listing/${villa.id}?startDate=${startDate}&endDate=${endDate}&guests=${guests}`}
+              >
+                View Details
+              </a>
             </div>
           ))
         )}
