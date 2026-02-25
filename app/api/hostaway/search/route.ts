@@ -83,9 +83,9 @@ export async function GET(req: Request) {
     // 2) Availability checks
     const checks = await Promise.all(
       listingIds.map(async (listingId) => {
-        const url = `https://api.hostaway.com/v1/availability?listingId=${encodeURIComponent(
-          listingId
-        )}&startDate=${encodeURIComponent(startDate)}&endDate=${encodeURIComponent(endDate)}`;
+        const url = `https://api.hostaway.com/v1/listings/${encodeURIComponent(
+  listingId
+)}/calendar?startDate=${encodeURIComponent(startDate)}&endDate=${encodeURIComponent(endDate)}`;
 
         const res = await fetch(url, {
           headers: {
