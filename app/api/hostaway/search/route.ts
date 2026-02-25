@@ -67,7 +67,14 @@ function isUnavailableDay(day: any) {
 
   // status strings
   const status = String(day.status ?? day.state ?? "").toLowerCase();
-  const bad = ["booked", "reserved", "blocked", "unavailable", "occupied", "notavailable"];
+  const bad = [
+    "booked",
+    "reserved",
+    "blocked",
+    "unavailable",
+    "occupied",
+    "notavailable",
+  ];
   if (status && bad.includes(status)) return true;
 
   return false;
@@ -140,17 +147,19 @@ export async function GET(req: Request) {
           : true;
 
         // If we can’t read days properly, be conservative => not available
-        const available = res.status === 200 && Array.isArray(days) && days.length > 0 && !anyUnavailable;
+        const available =
+          res.status === 200 &&
+          Array.isArray(days) &&
+          days.length > 0 &&
+          !anyUnavailable;
 
         return {
           listingId: String(listingId),
           status: res.status,
           available,
-          debug: {
-            url,
-            daysCount: Array.isArray(days) ? days.length : 0,
-            anyUnavailable,
-          },
+          url,
+          daysCount: Array.isArray(days) ? days.length : 0,
+          anyUnavailable,
         };
       })
     );
@@ -163,14 +172,45 @@ export async function GET(req: Request) {
       availableIds.includes(String(l?.id))
     );
 
+    // ✅ COMPACT RESPONSE (para dili daghan kaayo output)
+    const compactListings = availableListings.map((l: any) => {
+      const images = Array.isArray(l?.listingImages) ? l.listingImages : [];
+      const hero =
+        images.find((img: any) => img?.url) ||
+        images.find((img: any) => img?.airbnbUrl) ||
+        images[0];
+
+      return {
+        id: String(l?.id),
+        name: l?.name || l?.externalListingName || "Listing",
+        city: l?.city || null,
+        state: l?.state || null,
+        country: l?.country || null,
+        maxGuests: l?.personCapacity ?? l?.maxGuests ?? null,
+        bedrooms: l?.bedroomsNumber ?? null,
+        bathrooms: l?.bathroomsNumber ?? null,
+        thumbnailUrl: hero?.url || hero?.airbnbUrl || null,
+        priceNightly: l?.priceNightly ?? l?.baseRate ?? null,
+      };
+    });
+
     return NextResponse.json(
       {
         success: true,
         query: { startDate, endDate, guests },
         totalChecked: listingIds.length,
-        availableCount: availableListings.length,
-        availableListings,
-        debug: { checked: checks },
+        availableCount: compactListings.length,
+        availableListings: compactListings,
+        debug: {
+          checked: checks.map((c) => ({
+            listingId: c.listingId,
+            status: c.status,
+            url: c.url,
+            daysCount: c.daysCount,
+            anyUnavailable: c.anyUnavailable,
+            available: c.available,
+          })),
+        },
       },
       { status: 200 }
     );
