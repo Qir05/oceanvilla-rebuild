@@ -23,15 +23,15 @@ async function getHostawayAccessToken() {
   const json = await res.json().catch(() => ({}));
 
   const token =
-    (json as any)?.access_token ||
-    (json as any)?.accessToken ||
-    (json as any)?.token ||
-    (json as any)?.result?.access_token ||
-    (json as any)?.result?.accessToken ||
-    (json as any)?.result?.token ||
-    (json as any)?.data?.access_token ||
-    (json as any)?.data?.accessToken ||
-    (json as any)?.data?.token;
+    json?.access_token ||
+    json?.accessToken ||
+    json?.token ||
+    json?.result?.access_token ||
+    json?.result?.accessToken ||
+    json?.result?.token ||
+    json?.data?.access_token ||
+    json?.data?.accessToken ||
+    json?.data?.token;
 
   if (!res.ok || !token) {
     throw new Error(
@@ -42,6 +42,7 @@ async function getHostawayAccessToken() {
   return String(token);
 }
 
+// NOTE: Next.js 16 expects params as Promise in some setups
 export async function GET(
   _req: Request,
   context: { params: Promise<{ id: string }> }
@@ -52,7 +53,6 @@ export async function GET(
 
     const token = await getHostawayAccessToken();
 
-    // Simple + reliable: pull listings then find by id
     const res = await fetch("https://api.hostaway.com/v1/listings", {
       headers: {
         Authorization: `Bearer ${token}`,
@@ -62,7 +62,7 @@ export async function GET(
     });
 
     const json = await res.json().catch(() => ({}));
-    const all = (json as any)?.result || (json as any)?.data || json;
+    const all = json?.result || json?.data || json;
 
     const found = Array.isArray(all)
       ? all.find((l: any) => String(l?.id) === String(id))
