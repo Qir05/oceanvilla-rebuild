@@ -5,7 +5,7 @@ import { headers } from "next/headers";
 type SearchParams = { startDate?: string; endDate?: string; guests?: string };
 
 async function getBaseUrlFromHeaders() {
-  const h = await headers(); // Next.js 16: headers() may be async
+  const h = await headers();
   const proto = h.get("x-forwarded-proto") || "https";
   const host = h.get("x-forwarded-host") || h.get("host");
   return host ? `${proto}://${host}` : "http://localhost:3000";
@@ -15,32 +15,31 @@ export default async function ListingDetailsPage({
   params,
   searchParams,
 }: {
-  params: Promise<{ id: string }>;
+  params: { id: string };
   searchParams: SearchParams;
 }) {
-  const { id } = await params;
+  const id = params.id;
 
   const startDate = searchParams.startDate || "";
   const endDate = searchParams.endDate || "";
   const guests = searchParams.guests || "2";
 
   const baseUrl = await getBaseUrlFromHeaders();
-
-  const detailsApiUrl = `${baseUrl}/api/hostaway/listings/${encodeURIComponent(id)}`;
+  const apiUrl = `${baseUrl}/api/hostaway/listings/${encodeURIComponent(id)}`;
 
   let data: any = null;
   let error: any = null;
   let status = 200;
 
   try {
-    const res = await fetch(detailsApiUrl, { cache: "no-store" });
+    const res = await fetch(apiUrl, { cache: "no-store" });
     status = res.status;
 
     const text = await res.text();
     try {
       data = JSON.parse(text);
     } catch {
-      error = { error: "API returned non-JSON", status, body: text.slice(0, 400) };
+      error = { error: "API returned non-JSON", status, body: text.slice(0, 300) };
     }
 
     if (!res.ok && !error) error = data;
@@ -106,9 +105,6 @@ export default async function ListingDetailsPage({
       ) : !listing ? (
         <div style={{ marginTop: 18 }}>
           <div style={{ fontWeight: 900 }}>Listing not found.</div>
-          <div style={{ marginTop: 6, opacity: 0.8 }}>
-            Endpoint used: <code>/api/hostaway/listings/{id}</code>
-          </div>
         </div>
       ) : (
         <div style={{ marginTop: 18 }}>
@@ -173,7 +169,7 @@ export default async function ListingDetailsPage({
                     </a>
                   ) : (
                     <div style={{ opacity: 0.7 }}>
-                      Booking link not available yet (Hostaway returns null).
+                      Booking link not available yet.
                     </div>
                   )}
                 </div>
@@ -194,17 +190,12 @@ export default async function ListingDetailsPage({
               <div style={{ marginTop: 10, opacity: 0.9, lineHeight: 1.5 }}>
                 {listing?.description ? (
                   <div style={{ whiteSpace: "pre-wrap" }}>
-                    {String(listing.description)}
+                    {String(listing.description).slice(0, 1600)}
+                    {String(listing.description).length > 1600 ? "..." : ""}
                   </div>
                 ) : (
                   <div style={{ opacity: 0.7 }}>No description returned.</div>
                 )}
-              </div>
-
-              <div style={{ marginTop: 14, opacity: 0.8, fontSize: 13 }}>
-                Max Guests: <b>{listing.maxGuests ?? "—"}</b> • Bedrooms:{" "}
-                <b>{listing.bedrooms ?? "—"}</b> • Bathrooms:{" "}
-                <b>{listing.bathrooms ?? "—"}</b>
               </div>
             </div>
           </div>
@@ -215,6 +206,7 @@ export default async function ListingDetailsPage({
 }
 
 function buildBookingUrl(base: string, startDate: string, endDate: string, guests: string) {
+  if (!base) return "#";
   try {
     const u = new URL(base);
     if (startDate) u.searchParams.set("startDate", startDate);
