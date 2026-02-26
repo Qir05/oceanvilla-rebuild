@@ -15,61 +15,44 @@ export default async function ListingDetailsPage({
   params,
   searchParams,
 }: {
-  params: Promise<{ id: string }> | { id: string };
-  searchParams: Promise<SearchParams> | SearchParams;
+  params: { id: string };
+  searchParams: SearchParams;
 }) {
-  // ✅ Next 16 can pass these as Promise — handle both
-  const p = params && typeof (params as any).then === "function" ? await (params as any) : (params as any);
-  const sp =
-    searchParams && typeof (searchParams as any).then === "function"
-      ? await (searchParams as any)
-      : (searchParams as any);
+  const id = params.id;
 
-  const id = p?.id;
-
-  const startDate = sp?.startDate || "";
-  const endDate = sp?.endDate || "";
-  const guests = sp?.guests || "2";
+  const startDate = searchParams.startDate || "";
+  const endDate = searchParams.endDate || "";
+  const guests = searchParams.guests || "2";
 
   const baseUrl = await getBaseUrlFromHeaders();
-  const apiUrl = `${baseUrl}/api/hostaway/listings/${encodeURIComponent(String(id || ""))}`;
+  const apiUrl = `${baseUrl}/api/hostaway/listings/${encodeURIComponent(id)}`;
 
   let data: any = null;
   let error: any = null;
   let status = 200;
 
-  if (!id) {
-    status = 400;
-    error = { error: "Missing route param: id" };
-  } else {
+  try {
+    const res = await fetch(apiUrl, { cache: "no-store" });
+    status = res.status;
+
+    const text = await res.text();
     try {
-      const res = await fetch(apiUrl, { cache: "no-store" });
-      status = res.status;
-
-      const text = await res.text();
-      try {
-        data = JSON.parse(text);
-      } catch {
-        error = {
-          error: "API returned non-JSON",
-          status,
-          body: text.slice(0, 300),
-        };
-      }
-
-      if (!res.ok && !error) error = data;
-    } catch (e: any) {
-      error = { error: e?.message || "Fetch failed" };
+      data = JSON.parse(text);
+    } catch {
+      error = { error: "API returned non-JSON", status, body: text.slice(0, 300) };
     }
+
+    if (!res.ok && !error) error = data;
+  } catch (e: any) {
+    error = { error: e?.message || "Fetch failed" };
   }
 
   const listing = data?.listing || null;
 
-  const bookingBase = listing?.bookingEngineUrl || listing?.publicUrl || null;
-
-const bookingUrl = bookingBase
-  ? buildBookingUrl(bookingBase, startDate, endDate, guests)
-  : null;
+  const bookingUrl =
+    listing?.bookingEngineUrl
+      ? buildBookingUrl(listing.bookingEngineUrl, startDate, endDate, guests)
+      : null;
 
   return (
     <div style={{ padding: 28, maxWidth: 1100, margin: "0 auto" }}>
@@ -87,7 +70,7 @@ const bookingUrl = bookingBase
       </div>
 
       <h1 style={{ fontSize: 34, fontWeight: 900, letterSpacing: -0.5 }}>
-        {listing?.name || (id ? `Listing ${id}` : "Listing")}
+        {listing?.name || `Listing ${id}`}
       </h1>
 
       <div style={{ marginTop: 10, opacity: 0.85 }}>
@@ -186,7 +169,10 @@ const bookingUrl = bookingBase
                       Book now
                     </a>
                   ) : (
-                    <div style={{ opacity: 0.7 }}>Booking link not available yet.</div>
+                    <div style={{ opacity: 0.7 }}>
+                      Booking link not available yet — set{" "}
+                      <b>HOSTAWAY_BOOKING_ENGINE_BASE_URL</b> in Vercel env.
+                    </div>
                   )}
                 </div>
               </div>
