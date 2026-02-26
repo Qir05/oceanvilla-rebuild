@@ -4,8 +4,8 @@ import { headers } from "next/headers";
 
 type SearchParams = { startDate?: string; endDate?: string; guests?: string };
 
-function getBaseUrlFromHeaders() {
-  const h = headers();
+async function getBaseUrlFromHeaders() {
+  const h = await headers(); // <-- FIX: headers() is a Promise in your Next version
   const proto = h.get("x-forwarded-proto") || "https";
   const host = h.get("x-forwarded-host") || h.get("host");
   return host ? `${proto}://${host}` : "http://localhost:3000";
@@ -20,7 +20,7 @@ export default async function AvailabilityPage({
   const endDate = searchParams.endDate || "";
   const guests = searchParams.guests || "2";
 
-  const baseUrl = getBaseUrlFromHeaders();
+  const baseUrl = await getBaseUrlFromHeaders();
 
   const apiUrl = `${baseUrl}/api/hostaway/search?startDate=${encodeURIComponent(
     startDate
@@ -33,12 +33,17 @@ export default async function AvailabilityPage({
   try {
     const res = await fetch(apiUrl, { cache: "no-store" });
     status = res.status;
+
     const text = await res.text();
     try {
       data = JSON.parse(text);
     } catch {
-      error = { error: `API returned non-JSON (status ${status})`, body: text.slice(0, 200) };
+      error = {
+        error: `API returned non-JSON (status ${status})`,
+        body: text.slice(0, 300),
+      };
     }
+
     if (!res.ok && !error) error = data;
   } catch (e: any) {
     error = { error: e?.message || "Fetch failed" };
@@ -59,7 +64,10 @@ export default async function AvailabilityPage({
           </>
         ) : (
           <span style={{ color: "#b00" }}>
-            Add query params: <code>?startDate=YYYY-MM-DD&endDate=YYYY-MM-DD&guests=2</code>
+            Add query params:{" "}
+            <code>
+              ?startDate=YYYY-MM-DD&endDate=YYYY-MM-DD&guests=2
+            </code>
           </span>
         )}
       </div>
@@ -123,7 +131,11 @@ export default async function AvailabilityPage({
                       <img
                         src={thumb}
                         alt={l.name || `Listing ${l.id}`}
-                        style={{ width: "100%", height: "100%", objectFit: "cover" }}
+                        style={{
+                          width: "100%",
+                          height: "100%",
+                          objectFit: "cover",
+                        }}
                       />
                     ) : null}
                   </div>
@@ -134,16 +146,18 @@ export default async function AvailabilityPage({
                     </div>
 
                     <div style={{ marginTop: 6, opacity: 0.75, fontSize: 13 }}>
-                      {l.city ? `${l.city}${l.state ? `, ${l.state}` : ""}` : `Listing ID: ${l.id}`}
+                      {l.city
+                        ? `${l.city}${l.state ? `, ${l.state}` : ""}`
+                        : `Listing ID: ${l.id}`}
                     </div>
 
                     <div style={{ marginTop: 12, display: "flex", gap: 10 }}>
                       <Link
                         href={`/listing/${l.id}?startDate=${encodeURIComponent(
                           startDate
-                        )}&endDate=${encodeURIComponent(endDate)}&guests=${encodeURIComponent(
-                          guests
-                        )}`}
+                        )}&endDate=${encodeURIComponent(
+                          endDate
+                        )}&guests=${encodeURIComponent(guests)}`}
                         style={{
                           display: "inline-flex",
                           alignItems: "center",
@@ -162,7 +176,12 @@ export default async function AvailabilityPage({
 
                       {l.bookingEngineUrl ? (
                         <a
-                          href={buildBookingUrl(l.bookingEngineUrl, startDate, endDate, guests)}
+                          href={buildBookingUrl(
+                            l.bookingEngineUrl,
+                            startDate,
+                            endDate,
+                            guests
+                          )}
                           target="_blank"
                           rel="noreferrer"
                           style={{
@@ -192,15 +211,15 @@ export default async function AvailabilityPage({
   );
 }
 
-/**
- * Hostaway booking URL params can vary per account.
- * This is a safe best-effort passthrough.
- */
-function buildBookingUrl(base: string, startDate: string, endDate: string, guests: string) {
+function buildBookingUrl(
+  base: string,
+  startDate: string,
+  endDate: string,
+  guests: string
+) {
   if (!base) return "#";
   try {
     const u = new URL(base);
-    // common param guesses
     if (startDate) u.searchParams.set("startDate", startDate);
     if (endDate) u.searchParams.set("endDate", endDate);
     if (guests) {
