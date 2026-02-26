@@ -1,4 +1,4 @@
-import { NextResponse } from "next/server";
+import { NextRequest, NextResponse } from "next/server";
 
 async function getHostawayAccessToken() {
   const accountId = process.env.HOSTAWAY_ACCOUNT_ID;
@@ -22,15 +22,15 @@ async function getHostawayAccessToken() {
   const json = await res.json().catch(() => ({}));
 
   const token =
-    json?.access_token ||
-    json?.accessToken ||
-    json?.token ||
-    json?.result?.access_token ||
-    json?.result?.accessToken ||
-    json?.result?.token ||
-    json?.data?.access_token ||
-    json?.data?.accessToken ||
-    json?.data?.token;
+    (json as any)?.access_token ||
+    (json as any)?.accessToken ||
+    (json as any)?.token ||
+    (json as any)?.result?.access_token ||
+    (json as any)?.result?.accessToken ||
+    (json as any)?.result?.token ||
+    (json as any)?.data?.access_token ||
+    (json as any)?.data?.accessToken ||
+    (json as any)?.data?.token;
 
   if (!res.ok || !token) {
     throw new Error(
@@ -41,10 +41,16 @@ async function getHostawayAccessToken() {
   return String(token);
 }
 
-export async function GET(_req: Request, ctx: { params: { id: string } }) {
+export async function GET(
+  _req: NextRequest,
+  context: { params: Promise<{ id: string }> }
+) {
   try {
-    const id = ctx?.params?.id;
-    if (!id) return NextResponse.json({ error: "Missing id" }, { status: 400 });
+    const { id } = await context.params;
+
+    if (!id) {
+      return NextResponse.json({ error: "Missing id" }, { status: 400 });
+    }
 
     const token = await getHostawayAccessToken();
 
@@ -57,7 +63,7 @@ export async function GET(_req: Request, ctx: { params: { id: string } }) {
     });
 
     const json = await res.json().catch(() => ({}));
-    const all = json?.result || json?.data || json;
+    const all = (json as any)?.result || (json as any)?.data || json;
 
     const found = Array.isArray(all)
       ? all.find((l: any) => String(l?.id) === String(id))
@@ -87,8 +93,6 @@ export async function GET(_req: Request, ctx: { params: { id: string } }) {
           bedrooms: found?.bedroomsNumber ?? null,
           bathrooms: found?.bathroomsNumber ?? null,
           heroUrl: hero?.url || hero?.airbnbUrl || null,
-
-          // optional if exists in your payload
           bookingEngineUrl: found?.bookingEngineUrl || null,
         },
       },
