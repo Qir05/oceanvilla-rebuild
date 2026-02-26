@@ -1,4 +1,5 @@
-import { NextRequest, NextResponse } from "next/server";
+// app/api/hostaway/listings/[id]/route.ts
+import { NextResponse } from "next/server";
 
 async function getHostawayAccessToken() {
   const accountId = process.env.HOSTAWAY_ACCOUNT_ID;
@@ -42,18 +43,16 @@ async function getHostawayAccessToken() {
 }
 
 export async function GET(
-  _req: NextRequest,
+  _req: Request,
   context: { params: Promise<{ id: string }> }
 ) {
   try {
     const { id } = await context.params;
-
-    if (!id) {
-      return NextResponse.json({ error: "Missing id" }, { status: 400 });
-    }
+    if (!id) return NextResponse.json({ error: "Missing id" }, { status: 400 });
 
     const token = await getHostawayAccessToken();
 
+    // Simple + reliable: pull listings then find by id
     const res = await fetch("https://api.hostaway.com/v1/listings", {
       headers: {
         Authorization: `Bearer ${token}`,
@@ -70,10 +69,7 @@ export async function GET(
       : null;
 
     if (!found) {
-      return NextResponse.json(
-        { error: "Listing not found", id },
-        { status: 404 }
-      );
+      return NextResponse.json({ error: "Listing not found", id }, { status: 404 });
     }
 
     const images = Array.isArray(found?.listingImages) ? found.listingImages : [];
