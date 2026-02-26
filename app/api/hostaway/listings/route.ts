@@ -1,55 +1,103 @@
 import { NextResponse } from "next/server";
 
-export async function GET() {
+async function getHostawayAccessToken() {
+  const accountId = process.env.HOSTAWAY_ACCOUNT_ID;
+  const apiKey = process.env.HOSTAWAY_API_KEY;
+
+  if (!accountId) throw new Error("Missing HOSTAWAY_ACCOUNT_ID");
+  if (!apiKey) throw new Error("Missing HOSTAWAY_API_KEY");
+
+  const body = new URLSearchParams();
+  body.set("grant_type", "client_credentials");
+  body.set("client_id", accountId);
+  body.set("client_secret", apiKey);
+
+  const res = await fetch("https://api.hostaway.com/v1/accessTokens", {
+    method: "POST",
+    headers: { "Content-Type": "application/x-www-form-urlencoded" },
+    body,
+    cache: "no-store",
+  });
+
+  const json = await res.json();
+
+  const token =
+    json?.access_token ||
+    json?.accessToken ||
+    json?.token ||
+    json?.result?.access_token ||
+    json?.result?.accessToken ||
+    json?.result?.token ||
+    json?.data?.access_token ||
+    json?.data?.accessToken ||
+    json?.data?.token;
+
+  if (!res.ok || !token) {
+    throw new Error(
+      `Failed to get access token (${res.status}): ${JSON.stringify(json)}`
+    );
+  }
+
+  return String(token);
+}
+
+export async function GET(req: Request) {
   try {
-    const apiKey = process.env.HOSTAWAY_API_KEY;
-    const ids = process.env.OCEANVILLAS_LISTING_IDS;
+    const { searchParams } = new URL(req.url);
+    const id = searchParams.get("id");
 
-    // NEVER put real keys/ids in code. Keep them in Vercel env vars only.
-    if (!apiKey) {
-      return NextResponse.json(
-        { error: "Missing HOSTAWAY_API_KEY" },
-        { status: 500 }
-      );
+    if (!id) {
+      return NextResponse.json({ error: "Required: id" }, { status: 400 });
     }
 
-    if (!ids) {
-      return NextResponse.json(
-        { error: "Missing OCEANVILLAS_LISTING_IDS" },
-        { status: 500 }
-      );
-    }
-
-    // Supports "489089,489093,..." (comma-separated)
-    const listingIds = ids
-      .split(",")
-      .map((s) => s.trim())
-      .filter(Boolean);
+    const token = await getHostawayAccessToken();
 
     const res = await fetch("https://api.hostaway.com/v1/listings", {
       headers: {
-        Authorization: `Bearer ${apiKey}`,
+        Authorization: `Bearer ${token}`,
         "Content-Type": "application/json",
       },
       cache: "no-store",
     });
 
-    const data = await res.json();
+    const json = await res.json();
+    const all = json?.result || json?.data || json;
 
-    // Normalize possible response shapes
-    const all = data?.result || data?.data || data;
+    const found = Array.isArray(all)
+      ? all.find((l: any) => String(l?.id) === String(id))
+      : null;
 
-    const filtered = Array.isArray(all)
-      ? all.filter((l: any) => listingIds.includes(String(l?.id)))
-      : all;
+    if (!found) {
+      return NextResponse.json({ error: "Listing not found", id }, { status: 404 });
+    }
+
+    // compact
+    const images = Array.isArray(found?.listingImages) ? found.listingImages : [];
+    const hero = images.find((img: any) => img?.url) || images[0];
 
     return NextResponse.json(
-      { success: true, listingIds, data: filtered },
+      {
+        success: true,
+        listing: {
+          id: String(found?.id),
+          name: found?.name || found?.externalListingName || `Listing ${id}`,
+          description: found?.description || null,
+          city: found?.city || null,
+          state: found?.state || null,
+          country: found?.country || null,
+          maxGuests: found?.personCapacity ?? found?.maxGuests ?? null,
+          bedrooms: found?.bedroomsNumber ?? null,
+          bathrooms: found?.bathroomsNumber ?? null,
+          heroUrl: hero?.url || hero?.airbnbUrl || null,
+          // keep if exists on your payload
+          bookingEngineUrl: found?.bookingEngineUrl || null,
+        },
+      },
       { status: 200 }
     );
   } catch (err: any) {
     return NextResponse.json(
-      { error: err?.message || "Unknown error" },
+      { success: false, error: err?.message || "Unknown error" },
       { status: 500 }
     );
   }
