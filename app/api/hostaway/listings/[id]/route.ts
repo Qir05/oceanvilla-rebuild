@@ -1,5 +1,6 @@
-// app/api/hostaway/listing/route.ts
+// app/api/hostaway/listings/[id]/route.ts
 import { NextResponse } from "next/server";
+import type { NextRequest } from "next/server";
 
 async function getHostawayAccessToken() {
   const accountId = process.env.HOSTAWAY_ACCOUNT_ID;
@@ -42,12 +43,13 @@ async function getHostawayAccessToken() {
   return String(token);
 }
 
-export async function GET(req: Request) {
+export async function GET(
+  _req: NextRequest,
+  context: { params: Promise<{ id: string }> }
+) {
   try {
-    const { searchParams } = new URL(req.url);
-    const id = searchParams.get("id");
-
-    if (!id) return NextResponse.json({ error: "Required: id" }, { status: 400 });
+    const { id } = await context.params;
+    if (!id) return NextResponse.json({ error: "Missing id" }, { status: 400 });
 
     const token = await getHostawayAccessToken();
 
