@@ -1,3 +1,4 @@
+// app/api/hostaway/listing/route.ts
 import { NextResponse } from "next/server";
 
 async function getHostawayAccessToken() {
@@ -19,7 +20,7 @@ async function getHostawayAccessToken() {
     cache: "no-store",
   });
 
-  const json = await res.json();
+  const json = await res.json().catch(() => ({}));
 
   const token =
     json?.access_token ||
@@ -52,6 +53,7 @@ export async function GET(req: Request) {
 
     const token = await getHostawayAccessToken();
 
+    // Pull all listings then pick the one (simple + reliable)
     const res = await fetch("https://api.hostaway.com/v1/listings", {
       headers: {
         Authorization: `Bearer ${token}`,
@@ -60,7 +62,7 @@ export async function GET(req: Request) {
       cache: "no-store",
     });
 
-    const json = await res.json();
+    const json = await res.json().catch(() => ({}));
     const all = json?.result || json?.data || json;
 
     const found = Array.isArray(all)
@@ -68,10 +70,12 @@ export async function GET(req: Request) {
       : null;
 
     if (!found) {
-      return NextResponse.json({ error: "Listing not found", id }, { status: 404 });
+      return NextResponse.json(
+        { error: "Listing not found", id },
+        { status: 404 }
+      );
     }
 
-    // compact
     const images = Array.isArray(found?.listingImages) ? found.listingImages : [];
     const hero = images.find((img: any) => img?.url) || images[0];
 
@@ -89,7 +93,6 @@ export async function GET(req: Request) {
           bedrooms: found?.bedroomsNumber ?? null,
           bathrooms: found?.bathroomsNumber ?? null,
           heroUrl: hero?.url || hero?.airbnbUrl || null,
-          // keep if exists on your payload
           bookingEngineUrl: found?.bookingEngineUrl || null,
         },
       },
