@@ -5,7 +5,7 @@ import { headers } from "next/headers";
 type SearchParams = { startDate?: string; endDate?: string; guests?: string };
 
 async function getBaseUrlFromHeaders() {
-  const h = await headers();
+  const h = await headers(); // Next.js 16: headers() may be async
   const proto = h.get("x-forwarded-proto") || "https";
   const host = h.get("x-forwarded-host") || h.get("host");
   return host ? `${proto}://${host}` : "http://localhost:3000";
@@ -15,10 +15,10 @@ export default async function ListingDetailsPage({
   params,
   searchParams,
 }: {
-  params: { id: string };
+  params: Promise<{ id: string }>;
   searchParams: SearchParams;
 }) {
-  const id = params.id;
+  const { id } = await params;
 
   const startDate = searchParams.startDate || "";
   const endDate = searchParams.endDate || "";
@@ -26,26 +26,21 @@ export default async function ListingDetailsPage({
 
   const baseUrl = await getBaseUrlFromHeaders();
 
-  // ✅ canonical listing endpoint
-  const listingApiUrl = `${baseUrl}/api/hostaway/listings/${encodeURIComponent(id)}`;
+  const detailsApiUrl = `${baseUrl}/api/hostaway/listings/${encodeURIComponent(id)}`;
 
   let data: any = null;
   let error: any = null;
   let status = 200;
 
   try {
-    const res = await fetch(listingApiUrl, { cache: "no-store" });
+    const res = await fetch(detailsApiUrl, { cache: "no-store" });
     status = res.status;
 
     const text = await res.text();
     try {
       data = JSON.parse(text);
     } catch {
-      error = {
-        error: "API returned non-JSON",
-        status,
-        body: text.slice(0, 400),
-      };
+      error = { error: "API returned non-JSON", status, body: text.slice(0, 400) };
     }
 
     if (!res.ok && !error) error = data;
@@ -55,10 +50,9 @@ export default async function ListingDetailsPage({
 
   const listing = data?.listing || null;
 
-  const bookingUrl =
-    listing?.bookingEngineUrl
-      ? buildBookingUrl(listing.bookingEngineUrl, startDate, endDate, guests)
-      : (listing?.heroUrl || null); // fallback: open hostaway listing page
+  const bookingUrl = listing?.bookingEngineUrl
+    ? buildBookingUrl(listing.bookingEngineUrl, startDate, endDate, guests)
+    : null;
 
   return (
     <div style={{ padding: 28, maxWidth: 1100, margin: "0 auto" }}>
@@ -86,8 +80,7 @@ export default async function ListingDetailsPage({
           </>
         ) : (
           <span style={{ color: "#b00" }}>
-            Missing dates. Add:
-            <code>?startDate=YYYY-MM-DD&endDate=YYYY-MM-DD&guests=2</code>
+            Missing dates (booking still works but dates won’t prefill).
           </span>
         )}
       </div>
@@ -113,6 +106,9 @@ export default async function ListingDetailsPage({
       ) : !listing ? (
         <div style={{ marginTop: 18 }}>
           <div style={{ fontWeight: 900 }}>Listing not found.</div>
+          <div style={{ marginTop: 6, opacity: 0.8 }}>
+            Endpoint used: <code>/api/hostaway/listings/{id}</code>
+          </div>
         </div>
       ) : (
         <div style={{ marginTop: 18 }}>
@@ -173,10 +169,12 @@ export default async function ListingDetailsPage({
                         background: "#111",
                       }}
                     >
-                      {listing?.bookingEngineUrl ? "Book now" : "Open listing"}
+                      Book now
                     </a>
                   ) : (
-                    <div style={{ opacity: 0.7 }}>Booking link not available yet.</div>
+                    <div style={{ opacity: 0.7 }}>
+                      Booking link not available yet (Hostaway returns null).
+                    </div>
                   )}
                 </div>
               </div>
@@ -196,18 +194,17 @@ export default async function ListingDetailsPage({
               <div style={{ marginTop: 10, opacity: 0.9, lineHeight: 1.5 }}>
                 {listing?.description ? (
                   <div style={{ whiteSpace: "pre-wrap" }}>
-                    {String(listing.description).slice(0, 2000)}
-                    {String(listing.description).length > 2000 ? "..." : ""}
+                    {String(listing.description)}
                   </div>
                 ) : (
-                  <div style={{ opacity: 0.7 }}>No description returned yet.</div>
+                  <div style={{ opacity: 0.7 }}>No description returned.</div>
                 )}
               </div>
 
               <div style={{ marginTop: 14, opacity: 0.8, fontSize: 13 }}>
-                Bedrooms: <b>{listing?.bedrooms ?? "-"}</b> • Bathrooms:{" "}
-                <b>{listing?.bathrooms ?? "-"}</b> • Max Guests:{" "}
-                <b>{listing?.maxGuests ?? "-"}</b>
+                Max Guests: <b>{listing.maxGuests ?? "—"}</b> • Bedrooms:{" "}
+                <b>{listing.bedrooms ?? "—"}</b> • Bathrooms:{" "}
+                <b>{listing.bathrooms ?? "—"}</b>
               </div>
             </div>
           </div>
@@ -218,7 +215,6 @@ export default async function ListingDetailsPage({
 }
 
 function buildBookingUrl(base: string, startDate: string, endDate: string, guests: string) {
-  if (!base) return "#";
   try {
     const u = new URL(base);
     if (startDate) u.searchParams.set("startDate", startDate);
