@@ -69,11 +69,21 @@ export async function GET(
       : null;
 
     if (!found) {
-      return NextResponse.json({ error: "Listing not found", id }, { status: 404 });
+      return NextResponse.json(
+        { error: "Listing not found", id },
+        { status: 404 }
+      );
     }
 
     const images = Array.isArray(found?.listingImages) ? found.listingImages : [];
     const hero = images.find((img: any) => img?.url) || images[0];
+
+    // ✅ publicUrl fallback (usually hostaway-platform link)
+    const publicUrl = hero?.url || hero?.airbnbUrl || null;
+
+    // ✅ if Hostaway ever returns booking engine fields, use them first
+    const bookingEngineUrl =
+      found?.bookingEngineUrl || found?.bookingEnginePublicUrl || null;
 
     return NextResponse.json(
       {
@@ -88,8 +98,12 @@ export async function GET(
           maxGuests: found?.personCapacity ?? found?.maxGuests ?? null,
           bedrooms: found?.bedroomsNumber ?? null,
           bathrooms: found?.bathroomsNumber ?? null,
-          heroUrl: hero?.url || hero?.airbnbUrl || null,
-          bookingEngineUrl: found?.bookingEngineUrl || null,
+
+          // ✅ keep these separate
+          heroUrl: publicUrl,
+          publicUrl,
+
+          bookingEngineUrl,
         },
       },
       { status: 200 }
