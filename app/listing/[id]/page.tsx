@@ -65,9 +65,11 @@ export default async function ListingDetailsPage({
 
   const listing = data?.listing || null;
 
-  const bookingUrl = listing?.bookingEngineUrl
-    ? buildBookingUrl(listing.bookingEngineUrl, startDate, endDate, guests)
-    : null;
+  const bookingBase = listing?.bookingEngineUrl || listing?.publicUrl || null;
+
+const bookingUrl = bookingBase
+  ? buildBookingUrl(bookingBase, startDate, endDate, guests)
+  : null;
 
   return (
     <div style={{ padding: 28, maxWidth: 1100, margin: "0 auto" }}>
