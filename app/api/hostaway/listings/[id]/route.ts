@@ -2,6 +2,14 @@
 import { NextResponse } from "next/server";
 import type { NextRequest } from "next/server";
 
+function buildBookingEngineUrl(listingId: string) {
+  const base = process.env.HOSTAWAY_BOOKING_ENGINE_BASE_URL;
+  if (!base) return null;
+  const clean = base.replace(/\/$/, "");
+  // Common pattern sa Hostaway booking engine:
+  return `${clean}/listing/${encodeURIComponent(listingId)}`;
+}
+
 async function getHostawayAccessToken() {
   const accountId = process.env.HOSTAWAY_ACCOUNT_ID;
   const apiKey = process.env.HOSTAWAY_API_KEY;
@@ -53,6 +61,7 @@ export async function GET(
 
     const token = await getHostawayAccessToken();
 
+    // simple + reliable: fetch all then find one
     const res = await fetch("https://api.hostaway.com/v1/listings", {
       headers: {
         Authorization: `Bearer ${token}`,
@@ -78,12 +87,11 @@ export async function GET(
     const images = Array.isArray(found?.listingImages) ? found.listingImages : [];
     const hero = images.find((img: any) => img?.url) || images[0];
 
-    // ✅ publicUrl fallback (usually hostaway-platform link)
-    const publicUrl = hero?.url || hero?.airbnbUrl || null;
-
-    // ✅ if Hostaway ever returns booking engine fields, use them first
+    // IMPORTANT: ayaw i-fallback ang booking url to image url
     const bookingEngineUrl =
-      found?.bookingEngineUrl || found?.bookingEnginePublicUrl || null;
+      found?.bookingEngineUrl ||
+      found?.bookingEnginePublicUrl ||
+      buildBookingEngineUrl(String(id));
 
     return NextResponse.json(
       {
@@ -98,12 +106,13 @@ export async function GET(
           maxGuests: found?.personCapacity ?? found?.maxGuests ?? null,
           bedrooms: found?.bedroomsNumber ?? null,
           bathrooms: found?.bathroomsNumber ?? null,
+          heroUrl: hero?.url || hero?.airbnbUrl || null,
 
-          // ✅ keep these separate
-          heroUrl: publicUrl,
-          publicUrl,
-
-          bookingEngineUrl,
+          // mao ni gamiton sa "Book now"
+          bookingEngineUrl: bookingEngineUrl || null,
+        },
+        debug: {
+          hasBookingEngineBase: Boolean(process.env.HOSTAWAY_BOOKING_ENGINE_BASE_URL),
         },
       },
       { status: 200 }
