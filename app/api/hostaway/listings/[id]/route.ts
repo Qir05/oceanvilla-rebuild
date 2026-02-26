@@ -1,4 +1,4 @@
-// app/api/hostaway/listings/[id]/route.ts
+// app/api/hostaway/listing/route.ts
 import { NextResponse } from "next/server";
 
 async function getHostawayAccessToken() {
@@ -42,14 +42,12 @@ async function getHostawayAccessToken() {
   return String(token);
 }
 
-// NOTE: Next.js 16 expects params as Promise in some setups
-export async function GET(
-  _req: Request,
-  context: { params: Promise<{ id: string }> }
-) {
+export async function GET(req: Request) {
   try {
-    const { id } = await context.params;
-    if (!id) return NextResponse.json({ error: "Missing id" }, { status: 400 });
+    const { searchParams } = new URL(req.url);
+    const id = searchParams.get("id");
+
+    if (!id) return NextResponse.json({ error: "Required: id" }, { status: 400 });
 
     const token = await getHostawayAccessToken();
 
