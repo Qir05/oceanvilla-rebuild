@@ -15,36 +15,52 @@ export default async function ListingDetailsPage({
   params,
   searchParams,
 }: {
-  params: { id: string };
-  searchParams: SearchParams;
+  params: Promise<{ id: string }> | { id: string };
+  searchParams: Promise<SearchParams> | SearchParams;
 }) {
-  const id = params.id;
+  // ✅ Next 16 can pass these as Promise — handle both
+  const p = params && typeof (params as any).then === "function" ? await (params as any) : (params as any);
+  const sp =
+    searchParams && typeof (searchParams as any).then === "function"
+      ? await (searchParams as any)
+      : (searchParams as any);
 
-  const startDate = searchParams.startDate || "";
-  const endDate = searchParams.endDate || "";
-  const guests = searchParams.guests || "2";
+  const id = p?.id;
+
+  const startDate = sp?.startDate || "";
+  const endDate = sp?.endDate || "";
+  const guests = sp?.guests || "2";
 
   const baseUrl = await getBaseUrlFromHeaders();
-  const apiUrl = `${baseUrl}/api/hostaway/listings/${encodeURIComponent(id)}`;
+  const apiUrl = `${baseUrl}/api/hostaway/listings/${encodeURIComponent(String(id || ""))}`;
 
   let data: any = null;
   let error: any = null;
   let status = 200;
 
-  try {
-    const res = await fetch(apiUrl, { cache: "no-store" });
-    status = res.status;
-
-    const text = await res.text();
+  if (!id) {
+    status = 400;
+    error = { error: "Missing route param: id" };
+  } else {
     try {
-      data = JSON.parse(text);
-    } catch {
-      error = { error: "API returned non-JSON", status, body: text.slice(0, 300) };
-    }
+      const res = await fetch(apiUrl, { cache: "no-store" });
+      status = res.status;
 
-    if (!res.ok && !error) error = data;
-  } catch (e: any) {
-    error = { error: e?.message || "Fetch failed" };
+      const text = await res.text();
+      try {
+        data = JSON.parse(text);
+      } catch {
+        error = {
+          error: "API returned non-JSON",
+          status,
+          body: text.slice(0, 300),
+        };
+      }
+
+      if (!res.ok && !error) error = data;
+    } catch (e: any) {
+      error = { error: e?.message || "Fetch failed" };
+    }
   }
 
   const listing = data?.listing || null;
@@ -69,7 +85,7 @@ export default async function ListingDetailsPage({
       </div>
 
       <h1 style={{ fontSize: 34, fontWeight: 900, letterSpacing: -0.5 }}>
-        {listing?.name || `Listing ${id}`}
+        {listing?.name || (id ? `Listing ${id}` : "Listing")}
       </h1>
 
       <div style={{ marginTop: 10, opacity: 0.85 }}>
@@ -168,9 +184,7 @@ export default async function ListingDetailsPage({
                       Book now
                     </a>
                   ) : (
-                    <div style={{ opacity: 0.7 }}>
-                      Booking link not available yet.
-                    </div>
+                    <div style={{ opacity: 0.7 }}>Booking link not available yet.</div>
                   )}
                 </div>
               </div>
