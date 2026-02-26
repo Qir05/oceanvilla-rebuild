@@ -1,9 +1,10 @@
 import Link from "next/link";
 import { headers } from "next/headers";
 
-type SearchParams = { startDate?: string; endDate?: string; guests?: string };
+type SP = { startDate?: string; endDate?: string; guests?: string };
+type Params = { id: string };
 
-async function getBaseUrl() {
+async function getBaseUrlFromHeaders() {
   const h = await headers();
   const proto = h.get("x-forwarded-proto") || "https";
   const host = h.get("x-forwarded-host") || h.get("host");
@@ -11,7 +12,7 @@ async function getBaseUrl() {
 }
 
 function buildBookingUrl(base: string, startDate: string, endDate: string, guests: string) {
-  if (!base) return "#";
+  if (!base) return "";
   try {
     const u = new URL(base);
     if (startDate) u.searchParams.set("startDate", startDate);
@@ -30,26 +31,28 @@ export default async function ListingDetailsPage({
   params,
   searchParams,
 }: {
-  params: { id: string };
-  searchParams: SearchParams;
+  params: Params | Promise<Params>;
+  searchParams: SP | Promise<SP>;
 }) {
-  const id = params.id;
+  const p = await Promise.resolve(params);
+  const sp = await Promise.resolve(searchParams);
 
-  const startDate = searchParams.startDate || "";
-  const endDate = searchParams.endDate || "";
-  const guests = searchParams.guests || "2";
+  const id = p.id;
 
-  const baseUrl = await getBaseUrl();
+  const startDate = sp.startDate || "";
+  const endDate = sp.endDate || "";
+  const guests = sp.guests || "2";
 
-  // ✅ NEW endpoint that matches /api/hostaway/listing/:id
-  const detailsUrl = `${baseUrl}/api/hostaway/listing/${encodeURIComponent(id)}`;
+  const baseUrl = await getBaseUrlFromHeaders();
+
+  const apiUrl = `${baseUrl}/api/hostaway/listing?id=${encodeURIComponent(id)}`;
 
   let data: any = null;
   let error: any = null;
   let status = 200;
 
   try {
-    const res = await fetch(detailsUrl, { cache: "no-store" });
+    const res = await fetch(apiUrl, { cache: "no-store" });
     status = res.status;
 
     const text = await res.text();
@@ -65,19 +68,18 @@ export default async function ListingDetailsPage({
   }
 
   const listing = data?.listing || null;
-
   const bookingUrl = listing?.bookingEngineUrl
     ? buildBookingUrl(listing.bookingEngineUrl, startDate, endDate, guests)
-    : null;
+    : "";
 
   return (
     <div style={{ padding: 28, maxWidth: 1100, margin: "0 auto" }}>
       <div style={{ marginBottom: 14 }}>
         <Link
-          href={`/availability?startDate=${encodeURIComponent(startDate)}&endDate=${encodeURIComponent(
-            endDate
-          )}&guests=${encodeURIComponent(guests)}`}
-          style={{ textDecoration: "none", fontWeight: 700 }}
+          href={`/availability?startDate=${encodeURIComponent(
+            startDate
+          )}&endDate=${encodeURIComponent(endDate)}&guests=${encodeURIComponent(guests)}`}
+          style={{ textDecoration: "none", fontWeight: 900 }}
         >
           ← Back to availability
         </Link>
@@ -94,7 +96,7 @@ export default async function ListingDetailsPage({
           </>
         ) : (
           <span style={{ color: "#b00", fontWeight: 700 }}>
-            Missing dates (booking still works but dates won’t prefill).
+            Missing dates (booking can still work, but dates won’t prefill).
           </span>
         )}
       </div>
@@ -140,7 +142,7 @@ export default async function ListingDetailsPage({
                 boxShadow: "0 8px 24px rgba(0,0,0,0.06)",
               }}
             >
-              <div style={{ height: 300, background: "#f4f4f4" }}>
+              <div style={{ height: 280, background: "#f4f4f4" }}>
                 {/* eslint-disable-next-line @next/next/no-img-element */}
                 {listing?.heroUrl ? (
                   <img
@@ -159,7 +161,7 @@ export default async function ListingDetailsPage({
                 </div>
 
                 <div style={{ marginTop: 10, opacity: 0.8, fontSize: 13 }}>
-                  ID: <b>{listing.id}</b>
+                  Listing ID: <b>{listing.id}</b>
                 </div>
 
                 <div style={{ marginTop: 14, display: "flex", gap: 10 }}>
@@ -184,7 +186,7 @@ export default async function ListingDetailsPage({
                     </a>
                   ) : (
                     <div style={{ opacity: 0.7 }}>
-                      Booking link not available yet (bookingEngineUrl missing).
+                      Booking link not available yet (need Hostaway bookingEngineUrl).
                     </div>
                   )}
                 </div>
@@ -205,18 +207,17 @@ export default async function ListingDetailsPage({
               <div style={{ marginTop: 10, opacity: 0.9, lineHeight: 1.5 }}>
                 {listing?.description ? (
                   <div style={{ whiteSpace: "pre-wrap" }}>
-                    {String(listing.description).slice(0, 1400)}
-                    {String(listing.description).length > 1400 ? "..." : ""}
+                    {String(listing.description).slice(0, 1500)}
+                    {String(listing.description).length > 1500 ? "..." : ""}
                   </div>
                 ) : (
-                  <div style={{ opacity: 0.7 }}>No description returned yet.</div>
+                  <div style={{ opacity: 0.7 }}>No description returned.</div>
                 )}
               </div>
 
-              <div style={{ marginTop: 14, display: "grid", gap: 6, fontSize: 13, opacity: 0.85 }}>
-                <div>Max guests: <b>{listing?.maxGuests ?? "—"}</b></div>
-                <div>Bedrooms: <b>{listing?.bedrooms ?? "—"}</b></div>
-                <div>Bathrooms: <b>{listing?.bathrooms ?? "—"}</b></div>
+              <div style={{ marginTop: 14, opacity: 0.8, fontSize: 13 }}>
+                Guests max: <b>{listing?.maxGuests ?? "—"}</b> • Beds:{" "}
+                <b>{listing?.bedrooms ?? "—"}</b> • Baths: <b>{listing?.bathrooms ?? "—"}</b>
               </div>
             </div>
           </div>
