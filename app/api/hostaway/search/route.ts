@@ -1,3 +1,4 @@
+// app/api/hostaway/search/route.ts
 import { NextResponse } from "next/server";
 
 async function getHostawayAccessToken() {
@@ -19,7 +20,7 @@ async function getHostawayAccessToken() {
     cache: "no-store",
   });
 
-  const json = await res.json();
+  const json = await res.json().catch(() => ({}));
 
   const token =
     json?.access_token ||
@@ -52,12 +53,18 @@ function pickCalendarDays(payload: any): any[] {
   return [];
 }
 
+function isoToTime(iso: string) {
+  // iso expected: YYYY-MM-DD
+  const t = Date.parse(`${iso}T00:00:00Z`);
+  return Number.isFinite(t) ? t : NaN;
+}
+
 // STRICT MODE:
-// If ANY day looks blocked/booked/unavailable -> NOT available
+// If ANY relevant day looks blocked/booked/unavailable -> NOT available
 function isUnavailableDay(day: any) {
   if (!day) return false;
 
-  // explicit booleans
+  // booleans
   if (typeof day.available === "boolean") return day.available === false;
   if (typeof day.isAvailable === "boolean") return day.isAvailable === false;
   if (typeof day.isBooked === "boolean") return day.isBooked === true;
@@ -65,19 +72,44 @@ function isUnavailableDay(day: any) {
   if (typeof day.blocked === "boolean") return day.blocked === true;
   if (typeof day.isBlocked === "boolean") return day.isBlocked === true;
 
-  // status strings
-  const status = String(day.status ?? day.state ?? "").toLowerCase();
-  const bad = [
+  // numbers (common in some calendars): 1/0
+  if (typeof day.available === "number") return day.available === 0;
+  if (typeof day.isAvailable === "number") return day.isAvailable === 0;
+  if (typeof day.booked === "number") return day.booked === 1;
+  if (typeof day.blocked === "number") return day.blocked === 1;
+
+  // strings
+  const status = String(day.status ?? day.state ?? day.availability ?? "").toLowerCase();
+  const bad = new Set([
     "booked",
     "reserved",
     "blocked",
     "unavailable",
     "occupied",
     "notavailable",
-  ];
-  if (status && bad.includes(status)) return true;
+    "closed",
+    "hold",
+  ]);
+  if (status && bad.has(status)) return true;
 
   return false;
+}
+
+function dayIso(day: any): string | null {
+  // different keys across payloads
+  const v =
+    day?.date ||
+    day?.day ||
+    day?.calendarDate ||
+    day?.startDate ||
+    day?.localDate ||
+    null;
+
+  if (!v) return null;
+  const s = String(v).slice(0, 10); // keep YYYY-MM-DD
+  // quick guard
+  if (!/^\d{4}-\d{2}-\d{2}$/.test(s)) return null;
+  return s;
 }
 
 export async function GET(req: Request) {
@@ -85,7 +117,7 @@ export async function GET(req: Request) {
     const ids = process.env.OCEANVILLAS_LISTING_IDS;
     if (!ids) {
       return NextResponse.json(
-        { error: "Missing OCEANVILLAS_LISTING_IDS" },
+        { success: false, error: "Missing OCEANVILLAS_LISTING_IDS" },
         { status: 500 }
       );
     }
@@ -93,16 +125,30 @@ export async function GET(req: Request) {
     const { searchParams } = new URL(req.url);
     const startDate = searchParams.get("startDate");
     const endDate = searchParams.get("endDate");
-    const guests = searchParams.get("guests"); // optional
+    const guests = searchParams.get("guests"); // optional (UI only for now)
 
     if (!startDate || !endDate) {
       return NextResponse.json(
-        { error: "Required: startDate, endDate" },
+        { success: false, error: "Required: startDate, endDate" },
         { status: 400 }
       );
     }
 
-    const listingIds = ids.split(",").map((s) => s.trim()).filter(Boolean);
+    const startT = isoToTime(startDate);
+    const endT = isoToTime(endDate);
+
+    if (!Number.isFinite(startT) || !Number.isFinite(endT) || endT <= startT) {
+      return NextResponse.json(
+        { success: false, error: "Invalid date range" },
+        { status: 400 }
+      );
+    }
+
+    const listingIds = ids
+      .split(",")
+      .map((s) => s.trim())
+      .filter(Boolean);
+
     const accessToken = await getHostawayAccessToken();
 
     const authHeaders = {
@@ -110,15 +156,14 @@ export async function GET(req: Request) {
       "Content-Type": "application/json",
     };
 
-    // 1) Pull listing details so UI can show names
-    const listingsRes = await fetch("https://api.hostaway.com/v1/listings", {
-      headers: authHeaders,
-      cache: "no-store",
-    });
+    // 1) Pull listing details (increase limit/perPage to avoid missing listings)
+    const listingsRes = await fetch(
+      "https://api.hostaway.com/v1/listings?limit=1000&perPage=1000",
+      { headers: authHeaders, cache: "no-store" }
+    );
 
-    const listingsJson = await listingsRes.json();
-    const allListings =
-      listingsJson?.result || listingsJson?.data || listingsJson;
+    const listingsJson = await listingsRes.json().catch(() => ({}));
+    const allListings = listingsJson?.result || listingsJson?.data || listingsJson;
 
     const listings = Array.isArray(allListings)
       ? allListings.filter((l: any) => listingIds.includes(String(l?.id)))
@@ -127,52 +172,51 @@ export async function GET(req: Request) {
     // 2) Calendar checks per listing
     const checks = await Promise.all(
       listingIds.map(async (listingId) => {
-        const url = `https://api.hostaway.com/v1/listings/${encodeURIComponent(
-          listingId
-        )}/calendar?startDate=${encodeURIComponent(
-          startDate
-        )}&endDate=${encodeURIComponent(endDate)}`;
+        const url =
+          `https://api.hostaway.com/v1/listings/${encodeURIComponent(listingId)}/calendar` +
+          `?startDate=${encodeURIComponent(startDate)}` +
+          `&endDate=${encodeURIComponent(endDate)}`;
 
-        const res = await fetch(url, {
-          headers: authHeaders,
-          cache: "no-store",
-        });
-
+        const res = await fetch(url, { headers: authHeaders, cache: "no-store" });
         const json = await res.json().catch(() => null);
-        const days = pickCalendarDays(json);
+        const daysRaw = pickCalendarDays(json);
 
-        // STRICT: if ANY day is unavailable => listing not available
-        const anyUnavailable = Array.isArray(days)
-          ? days.some(isUnavailableDay)
-          : true;
+        // ✅ Only evaluate "stay nights": startDate <= day < endDate
+        const relevantDays = Array.isArray(daysRaw)
+          ? daysRaw.filter((d: any) => {
+              const iso = dayIso(d);
+              if (!iso) return false;
+              const t = isoToTime(iso);
+              return Number.isFinite(t) && t >= startT && t < endT; // ignore checkout day
+            })
+          : [];
 
-        // If we can’t read days properly, be conservative => not available
+        // STRICT: if ANY relevant day is unavailable => listing not available
+        const anyUnavailable = relevantDays.some(isUnavailableDay);
+
+        // conservative: if we couldn't read relevant days, mark unavailable
         const available =
-          res.status === 200 &&
-          Array.isArray(days) &&
-          days.length > 0 &&
-          !anyUnavailable;
+          res.ok && relevantDays.length > 0 && !anyUnavailable;
 
         return {
           listingId: String(listingId),
           status: res.status,
           available,
           url,
-          daysCount: Array.isArray(days) ? days.length : 0,
+          daysCount: Array.isArray(daysRaw) ? daysRaw.length : 0,
+          relevantCount: relevantDays.length,
           anyUnavailable,
         };
       })
     );
 
-    const availableIds = checks
-      .filter((c) => c.available)
-      .map((c) => String(c.listingId));
+    const availableIds = checks.filter((c) => c.available).map((c) => c.listingId);
 
     const availableListings = listings.filter((l: any) =>
       availableIds.includes(String(l?.id))
     );
 
-    // ✅ COMPACT RESPONSE (para dili daghan kaayo output)
+    // Compact response for UI
     const compactListings = availableListings.map((l: any) => {
       const images = Array.isArray(l?.listingImages) ? l.listingImages : [];
       const hero =
@@ -198,18 +242,12 @@ export async function GET(req: Request) {
       {
         success: true,
         query: { startDate, endDate, guests },
-        totalChecked: listingIds.length,
+        totalConfigured: listingIds.length,
+        totalFoundListings: listings.length,
         availableCount: compactListings.length,
         availableListings: compactListings,
         debug: {
-          checked: checks.map((c) => ({
-            listingId: c.listingId,
-            status: c.status,
-            url: c.url,
-            daysCount: c.daysCount,
-            anyUnavailable: c.anyUnavailable,
-            available: c.available,
-          })),
+          checked: checks,
         },
       },
       { status: 200 }
