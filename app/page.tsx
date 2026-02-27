@@ -2,62 +2,31 @@
 
 import Image from "next/image";
 import Link from "next/link";
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 
 type FeaturedRental = {
   id: string;
   name: string;
-  tagline: string;
-  sleeps: number;
-  beds: number;
-  baths: number;
-  highlight: string;
-  image: string;
-  fromPrice?: string;
+  tagline?: string | null;
+  sleeps?: number | null;
+  beds?: number | null;
+  baths?: number | null;
+  highlight?: string | null;
+  image?: string | null;
+  fromPrice?: string | null;
 };
 
 const BRAND = {
-  name: "Sundance Shores",
-  sub: "Oceanfront • Resort-Style Stay",
+  name: "Ocean Villa at Turtle Bay",
+  sub: "Direct booking • Resort-Style Stay",
   phone: "(808) XXX-XXXX",
+  logo: "/brand/TTB-Logo.png",
 };
 
-const FEATURED: FeaturedRental[] = [
-  {
-    id: "coastline-suite",
-    name: "Coastline Suite",
-    tagline: "Ocean views • Breezy modern interiors",
-    sleeps: 6,
-    beds: 3,
-    baths: 2,
-    highlight: "Beach access",
-    image: "/media/rentals/1.jpg",
-    fromPrice: "$399",
-  },
-  {
-    id: "sunset-villa",
-    name: "Sunset Villa",
-    tagline: "Golden-hour balcony • Family friendly",
-    sleeps: 8,
-    beds: 4,
-    baths: 3,
-    highlight: "Private lanai",
-    image: "/media/rentals/2.jpg",
-    fromPrice: "$520",
-  },
-  {
-    id: "reef-house",
-    name: "Reef House",
-    tagline: "Steps to the water • Premium amenities",
-    sleeps: 10,
-    beds: 5,
-    baths: 4,
-    highlight: "Pool + fast Wi-Fi",
-    image: "/media/rentals/3.jpg",
-    fromPrice: "$690",
-  },
-];
+// ✅ Your configured Hostaway listing IDs (from ENV screenshot)
+const HOSTAWAY_LISTING_IDS = ["489089", "489093", "489095", "489097", "489092", "489094"];
 
+// Small helper
 function cx(...classes: Array<string | false | undefined | null>) {
   return classes.filter(Boolean).join(" ");
 }
@@ -82,9 +51,6 @@ function isAfter(aISO: string, bISO: string) {
   return new Date(aISO).getTime() > new Date(bISO).getTime();
 }
 
-/**
- * ✅ LIGHT GLASS (still premium)
- */
 function GlassCard({
   className,
   children,
@@ -95,8 +61,7 @@ function GlassCard({
   return (
     <div
       className={cx(
-        "rounded-3xl border border-black/10 bg-white/60 backdrop-blur-[16px]",
-        "shadow-[0_18px_55px_rgba(15,23,42,0.12)]",
+        "rounded-3xl border border-black/10 bg-white/55 backdrop-blur-[14px] shadow-[0_18px_55px_rgba(2,20,40,0.12)]",
         className
       )}
     >
@@ -116,9 +81,9 @@ function PrimaryButton({
       className={cx(
         "relative inline-flex items-center justify-center rounded-2xl px-5 py-3 text-sm font-semibold text-white",
         "bg-gradient-to-b from-[#0F6E8C] to-[#0A4C61]",
-        "shadow-[0_12px_35px_rgba(15,110,140,0.25)]",
+        "shadow-[0_14px_35px_rgba(15,110,140,0.28)]",
         "transition-transform duration-200 hover:scale-[1.01] active:scale-[0.99]",
-        "focus:outline-none focus:ring-2 focus:ring-[#64B6AC]/60 focus:ring-offset-0",
+        "focus:outline-none focus:ring-2 focus:ring-[#0F6E8C]/35 focus:ring-offset-0",
         className
       )}
     >
@@ -138,7 +103,7 @@ function SecondaryButton({
       {...props}
       className={cx(
         "inline-flex items-center justify-center rounded-2xl px-5 py-3 text-sm font-semibold",
-        "text-slate-800 ring-1 ring-black/10 bg-white/50 backdrop-blur",
+        "text-slate-900/80 ring-1 ring-black/10 bg-white/55 backdrop-blur",
         "transition-transform duration-200 hover:scale-[1.01] active:scale-[0.99] hover:bg-white/70",
         className
       )}
@@ -160,8 +125,8 @@ function Pill({
       className={cx(
         "inline-flex items-center gap-2 rounded-full px-3 py-1 text-[11px] font-semibold",
         tone === "gold"
-          ? "bg-[#D9B87C]/20 text-[#8A6A2B] ring-1 ring-[#D9B87C]/35"
-          : "bg-black/5 text-slate-700 ring-1 ring-black/10"
+          ? "bg-[#D9B87C]/22 text-[#7A5A22] ring-1 ring-[#D9B87C]/35"
+          : "bg-black/5 text-slate-800/70 ring-1 ring-black/10"
       )}
     >
       {children}
@@ -172,8 +137,8 @@ function Pill({
 function Stat({ label, value }: { label: string; value: string }) {
   return (
     <div className="rounded-2xl bg-white/60 ring-1 ring-black/10 px-4 py-3">
-      <div className="text-[11px] font-medium text-slate-600">{label}</div>
-      <div className="mt-1 text-sm font-semibold text-slate-900">{value}</div>
+      <div className="text-[11px] font-medium text-slate-700/70">{label}</div>
+      <div className="mt-1 text-sm font-semibold text-slate-900/90">{value}</div>
     </div>
   );
 }
@@ -182,24 +147,29 @@ function SectionTitle({
   eyebrow,
   title,
   desc,
+  right,
 }: {
   eyebrow?: string;
   title: string;
   desc?: string;
+  right?: React.ReactNode;
 }) {
   return (
-    <div className="max-w-2xl">
-      {eyebrow ? (
-        <div className="text-xs font-semibold tracking-wide text-[#0F6E8C]">
-          {eyebrow}
-        </div>
-      ) : null}
-      <h2 className="mt-2 text-2xl font-semibold tracking-tight text-slate-900 md:text-3xl">
-        {title}
-      </h2>
-      {desc ? (
-        <p className="mt-3 text-sm leading-relaxed text-slate-600">{desc}</p>
-      ) : null}
+    <div className="flex items-end justify-between gap-6">
+      <div className="max-w-2xl">
+        {eyebrow ? (
+          <div className="text-xs font-semibold tracking-wide text-[#0F6E8C]">
+            {eyebrow}
+          </div>
+        ) : null}
+        <h2 className="mt-2 text-2xl font-semibold tracking-tight text-slate-900 md:text-3xl">
+          {title}
+        </h2>
+        {desc ? (
+          <p className="mt-3 text-sm leading-relaxed text-slate-700/80">{desc}</p>
+        ) : null}
+      </div>
+      {right ? <div className="hidden md:block">{right}</div> : null}
     </div>
   );
 }
@@ -207,17 +177,21 @@ function SectionTitle({
 function RentalCard({ r }: { r: FeaturedRental }) {
   return (
     <div className="group overflow-hidden rounded-3xl ring-1 ring-black/10 bg-white/55 backdrop-blur-[14px] transition-transform duration-200 hover:scale-[1.01]">
-      <div className="relative aspect-[16/10] overflow-hidden">
-        <Image
-          src={r.image}
-          alt={r.name}
-          fill
-          className="object-cover transition-transform duration-500 group-hover:scale-[1.04]"
-          sizes="(max-width: 768px) 100vw, 33vw"
-        />
-        <div className="absolute inset-0 bg-gradient-to-t from-black/55 via-black/5 to-transparent" />
+      <div className="relative aspect-[16/10] overflow-hidden bg-slate-100">
+        {r.image ? (
+          <Image
+            src={r.image}
+            alt={r.name}
+            fill
+            className="object-cover transition-transform duration-500 group-hover:scale-[1.04]"
+            sizes="(max-width: 768px) 100vw, 33vw"
+          />
+        ) : (
+          <div className="absolute inset-0 bg-gradient-to-b from-slate-100 to-slate-200" />
+        )}
+        <div className="absolute inset-0 bg-gradient-to-t from-black/35 via-black/5 to-transparent" />
         <div className="absolute left-4 top-4">
-          <Pill>{r.highlight}</Pill>
+          <Pill>{r.highlight || "Featured"}</Pill>
         </div>
         {r.fromPrice ? (
           <div className="absolute right-4 top-4">
@@ -230,22 +204,23 @@ function RentalCard({ r }: { r: FeaturedRental }) {
         <div className="flex items-start justify-between gap-3">
           <div>
             <div className="text-base font-semibold text-slate-900">{r.name}</div>
-            <div className="mt-1 text-xs text-slate-600">{r.tagline}</div>
+            <div className="mt-1 text-xs text-slate-700/70">
+              {r.tagline || "Ocean views • Premium stay"}
+            </div>
           </div>
 
-          {/* ✅ no 404: keep this as anchor jump for now */}
-          <a
-            href="#availability"
-            className="shrink-0 rounded-2xl px-3 py-2 text-xs font-semibold text-slate-800 bg-white/55 ring-1 ring-black/10 hover:bg-white/75 transition"
+          <Link
+            href={`/listing/${encodeURIComponent(r.id)}`}
+            className="shrink-0 rounded-2xl px-3 py-2 text-xs font-semibold text-slate-900/80 bg-white/60 ring-1 ring-black/10 hover:bg-white/75 transition"
           >
-            Check
-          </a>
+            View
+          </Link>
         </div>
 
         <div className="mt-4 grid grid-cols-3 gap-2">
-          <Stat label="Sleeps" value={`${r.sleeps}`} />
-          <Stat label="Beds" value={`${r.beds}`} />
-          <Stat label="Baths" value={`${r.baths}`} />
+          <Stat label="Sleeps" value={`${r.sleeps ?? "—"}`} />
+          <Stat label="Beds" value={`${r.beds ?? "—"}`} />
+          <Stat label="Baths" value={`${r.baths ?? "—"}`} />
         </div>
       </div>
     </div>
@@ -256,23 +231,64 @@ export default function Home() {
   const today = useMemo(() => formatISO(new Date()), []);
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
 
+  // Booking bar state
   const [checkIn, setCheckIn] = useState<string>("");
   const [checkOut, setCheckOut] = useState<string>("");
   const [guests, setGuests] = useState<number>(2);
-  const [propertyId, setPropertyId] = useState<string>("");
   const [promo, setPromo] = useState<string>("");
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string>("");
 
-  const propertyOptions = useMemo(
-    () => [
-      { id: "", label: "Any property" },
-      { id: "coastline-suite", label: "Coastline Suite" },
-      { id: "sunset-villa", label: "Sunset Villa" },
-      { id: "reef-house", label: "Reef House" },
-    ],
-    []
-  );
+  // ✅ Featured pulled from Hostaway via your existing API route: /api/hostaway/listings?id=
+  const [featured, setFeatured] = useState<FeaturedRental[]>([]);
+  const [featuredLoading, setFeaturedLoading] = useState(false);
+
+  useEffect(() => {
+    let cancelled = false;
+
+    async function loadFeatured() {
+      setFeaturedLoading(true);
+      try {
+        const results = await Promise.all(
+          HOSTAWAY_LISTING_IDS.slice(0, 6).map(async (id) => {
+            const res = await fetch(`/api/hostaway/listings?id=${encodeURIComponent(id)}`, {
+              cache: "no-store",
+            });
+            const json = await res.json().catch(() => null);
+            const l = json?.listing;
+
+            // If your /api/hostaway/listings?id= route returns {success:true, listing:{...}}
+            if (!l) return null;
+
+            const img = l.heroUrl || l.thumbnailUrl || null;
+
+            return {
+              id: String(l.id),
+              name: l.name || `Listing ${id}`,
+              tagline: l.city ? `${l.city}${l.state ? `, ${l.state}` : ""}` : "Turtle Bay • Oahu",
+              sleeps: l.maxGuests ?? null,
+              beds: l.bedrooms ?? null,
+              baths: l.bathrooms ?? null,
+              highlight: "Direct booking",
+              image: img,
+              fromPrice: null,
+            } as FeaturedRental;
+          })
+        );
+
+        if (!cancelled) setFeatured(results.filter(Boolean) as FeaturedRental[]);
+      } catch {
+        if (!cancelled) setFeatured([]);
+      } finally {
+        if (!cancelled) setFeaturedLoading(false);
+      }
+    }
+
+    loadFeatured();
+    return () => {
+      cancelled = true;
+    };
+  }, []);
 
   async function onSearch() {
     setError("");
@@ -297,16 +313,13 @@ export default function Home() {
     setLoading(true);
 
     try {
-      // keep the slight delay for UX
-      await new Promise((r) => setTimeout(r, 450));
-
-      // ✅ route to your working availability page (server-side)
+      // ✅ go to your working availability page
       window.location.href = `/availability?startDate=${encodeURIComponent(
         checkIn
-      )}&endDate=${encodeURIComponent(checkOut)}&guests=${encodeURIComponent(
-        String(guests)
-      )}`;
-    } catch (e) {
+      )}&endDate=${encodeURIComponent(checkOut)}&guests=${encodeURIComponent(String(guests))}${
+        promo.trim() ? `&promo=${encodeURIComponent(promo.trim())}` : ""
+      }`;
+    } catch {
       setError("Something went wrong. Please try again.");
     } finally {
       setLoading(false);
@@ -315,20 +328,20 @@ export default function Home() {
 
   return (
     <main className="min-h-screen text-slate-900 selection:bg-[#0F6E8C]/15 selection:text-slate-900">
-      {/* ✅ LIGHT BACKGROUND (not too dark) */}
-      <div className="pointer-events-none fixed inset-0 -z-10">
-        <div className="absolute inset-0 bg-[radial-gradient(900px_600px_at_20%_10%,rgba(15,110,140,0.16),transparent_55%),radial-gradient(700px_520px_at_80%_20%,rgba(100,182,172,0.18),transparent_55%),radial-gradient(900px_650px_at_50%_90%,rgba(217,184,124,0.12),transparent_60%)]" />
-        <div className="absolute inset-0 bg-gradient-to-b from-[#F6F8FB] via-[#F3F7FA] to-[#EDF4F8]" />
-        <div className="absolute inset-0 opacity-[0.08] [background-image:url('data:image/svg+xml,%3Csvg xmlns=%22http://www.w3.org/2000/svg%22 width=%22160%22 height=%22160%22 viewBox=%220 0 160 160%22%3E%3Cfilter id=%22n%22%3E%3CfeTurbulence type=%22fractalNoise%22 baseFrequency=%220.9%22 numOctaves=%222%22 stitchTiles=%22stitch%22/%3E%3C/filter%3E%3Crect width=%22160%22 height=%22160%22 filter=%22url(%23n)%22 opacity=%220.55%22/%3E%3C/svg%3E')]" />
+      {/* ✅ LIGHT, SHORTER BACKGROUND (not super dark, still premium) */}
+      <div className="pointer-events-none fixed inset-0">
+        <div className="absolute inset-0 bg-[radial-gradient(900px_520px_at_15%_10%,rgba(15,110,140,0.14),transparent_60%),radial-gradient(820px_520px_at_80%_5%,rgba(100,182,172,0.18),transparent_55%),radial-gradient(900px_650px_at_50%_80%,rgba(217,184,124,0.10),transparent_60%)]" />
+        <div className="absolute inset-0 bg-gradient-to-b from-[#F7FAFC] via-[#F4F8FB] to-[#EEF5FA]" />
+        <div className="absolute inset-0 opacity-[0.06] [background-image:url('data:image/svg+xml,%3Csvg xmlns=%22http://www.w3.org/2000/svg%22 width=%22140%22 height=%22140%22 viewBox=%220 0 140 140%22%3E%3Cfilter id=%22n%22%3E%3CfeTurbulence type=%22fractalNoise%22 baseFrequency=%220.9%22 numOctaves=%222%22 stitchTiles=%22stitch%22/%3E%3C/filter%3E%3Crect width=%22140%22 height=%22140%22 filter=%22url(%23n)%22 opacity=%220.7%22/%3E%3C/svg%3E')]" />
       </div>
 
-      {/* HEADER */}
+      {/* HEADER (no 404 links — just anchors) */}
       <header className="sticky top-0 z-50 border-b border-black/10 bg-white/65 backdrop-blur-[14px]">
         <div className="mx-auto flex h-16 max-w-6xl items-center gap-4 px-4">
-          <Link href="/" className="flex items-center gap-3">
-            <div className="relative h-9 w-9 overflow-hidden rounded-2xl bg-white/70 ring-1 ring-black/10">
+          <a href="#top" className="flex items-center gap-3">
+            <div className="relative h-10 w-10 overflow-hidden rounded-2xl bg-white/70 ring-1 ring-black/10">
               <Image
-                src="/brand/TTB-Logo.png"
+                src={BRAND.logo}
                 alt={BRAND.name}
                 fill
                 className="object-contain p-1"
@@ -336,31 +349,30 @@ export default function Home() {
               />
             </div>
             <div className="leading-tight">
-              <div className="text-sm font-semibold tracking-tight text-slate-900">
-                {BRAND.name}
-              </div>
-              <div className="text-[11px] text-slate-600">{BRAND.sub}</div>
+              <div className="text-sm font-semibold tracking-tight">{BRAND.name}</div>
+              <div className="text-[11px] text-slate-700/70">{BRAND.sub}</div>
             </div>
-          </Link>
+          </a>
 
-          {/* ✅ No more 404: anchors only */}
-          <nav className="ml-auto hidden items-center gap-6 text-sm text-slate-700 md:flex">
+          {/* Desktop nav */}
+          <nav className="ml-auto hidden items-center gap-6 text-sm text-slate-700/80 md:flex">
             <a className="hover:text-slate-900 transition" href="#featured">
               Featured
             </a>
             <a className="hover:text-slate-900 transition" href="#availability">
               Availability
             </a>
-            <a className="hover:text-slate-900 transition" href="#testimonials">
+            <a className="hover:text-slate-900 transition" href="#reviews">
               Reviews
+            </a>
+            <a className="hover:text-slate-900 transition" href="#contact">
+              Contact
             </a>
           </nav>
 
+          {/* Desktop CTAs */}
           <div className="hidden items-center gap-3 md:flex">
-            <a
-              className="text-sm text-slate-600 hover:text-slate-900 transition"
-              href={`tel:${BRAND.phone}`}
-            >
+            <a className="text-sm text-slate-700/80 hover:text-slate-900 transition" href={`tel:${BRAND.phone}`}>
               {BRAND.phone}
             </a>
             <a href="#availability">
@@ -378,7 +390,7 @@ export default function Home() {
             <button
               type="button"
               onClick={() => setMobileMenuOpen((v) => !v)}
-              className="rounded-2xl bg-white/55 ring-1 ring-black/10 px-3 py-2 text-sm font-semibold text-slate-800"
+              className="rounded-2xl bg-white/60 ring-1 ring-black/10 px-3 py-2 text-sm font-semibold text-slate-900/80"
               aria-label="Open menu"
             >
               {mobileMenuOpen ? "Close" : "Menu"}
@@ -388,39 +400,30 @@ export default function Home() {
 
         {mobileMenuOpen ? (
           <div className="md:hidden border-t border-black/10 bg-white/70 backdrop-blur-[14px]">
-            <div className="mx-auto max-w-6xl px-4 py-4 grid gap-2 text-sm text-slate-700">
-              <a
-                onClick={() => setMobileMenuOpen(false)}
-                className="rounded-2xl px-3 py-2 hover:bg-black/5"
-                href="#featured"
-              >
+            <div className="mx-auto max-w-6xl px-4 py-4 grid gap-2 text-sm text-slate-800/80">
+              <a onClick={() => setMobileMenuOpen(false)} className="rounded-2xl px-3 py-2 hover:bg-black/5" href="#featured">
                 Featured
               </a>
-              <a
-                onClick={() => setMobileMenuOpen(false)}
-                className="rounded-2xl px-3 py-2 hover:bg-black/5"
-                href="#availability"
-              >
+              <a onClick={() => setMobileMenuOpen(false)} className="rounded-2xl px-3 py-2 hover:bg-black/5" href="#availability">
                 Availability
               </a>
-              <a
-                onClick={() => setMobileMenuOpen(false)}
-                className="rounded-2xl px-3 py-2 hover:bg-black/5"
-                href="#testimonials"
-              >
+              <a onClick={() => setMobileMenuOpen(false)} className="rounded-2xl px-3 py-2 hover:bg-black/5" href="#reviews">
                 Reviews
+              </a>
+              <a onClick={() => setMobileMenuOpen(false)} className="rounded-2xl px-3 py-2 hover:bg-black/5" href="#contact">
+                Contact
               </a>
 
               <div className="mt-2 flex gap-2">
                 <a className="flex-1" href={`tel:${BRAND.phone}`}>
-                  <span className="inline-flex w-full items-center justify-center rounded-2xl px-5 py-3 text-sm font-semibold text-slate-800 bg-white/55 ring-1 ring-black/10">
+                  <span className="inline-flex w-full items-center justify-center rounded-2xl px-5 py-3 text-sm font-semibold text-slate-900/80 bg-white/60 ring-1 ring-black/10">
                     Call
                   </span>
                 </a>
                 <a className="flex-1" href="#availability">
-                  <span className="inline-flex w-full items-center justify-center rounded-2xl px-5 py-3 text-sm font-semibold text-white bg-gradient-to-b from-[#0F6E8C] to-[#0A4C61]">
+                  <PrimaryButton type="button" className="w-full">
                     Check
-                  </span>
+                  </PrimaryButton>
                 </a>
               </div>
             </div>
@@ -428,9 +431,9 @@ export default function Home() {
         ) : null}
       </header>
 
-      {/* HERO (keep dark so text readable on video) */}
-      <section className="relative">
-        <div className="relative h-[78vh] min-h-[560px] overflow-hidden">
+      {/* HERO (kept clean + lighter overlay) */}
+      <section id="top" className="relative">
+        <div className="relative h-[68vh] min-h-[520px] overflow-hidden">
           <video
             className="absolute inset-0 h-full w-full object-cover"
             src="/media/hero.mp4"
@@ -440,73 +443,43 @@ export default function Home() {
             playsInline
             preload="metadata"
           />
-          <div className="absolute inset-0 bg-gradient-to-b from-black/45 via-black/25 to-black/15" />
-          <div className="absolute inset-0 bg-[radial-gradient(900px_500px_at_20%_20%,rgba(100,182,172,0.24),transparent_55%)]" />
+
+          <div className="absolute inset-0 bg-gradient-to-b from-white/30 via-white/15 to-white/65" />
+          <div className="absolute inset-0 bg-[radial-gradient(900px_500px_at_20%_20%,rgba(15,110,140,0.18),transparent_60%)]" />
 
           <div className="absolute inset-0">
-            <div className="mx-auto flex h-full max-w-6xl flex-col justify-end px-4 pb-10 md:pb-14">
-              <div className="max-w-2xl text-white">
+            <div className="mx-auto flex h-full max-w-6xl flex-col justify-end px-4 pb-10 md:pb-12">
+              <div className="max-w-2xl">
                 <div className="flex flex-wrap items-center gap-2">
-                  <span className="inline-flex items-center gap-2 rounded-full px-3 py-1 text-[11px] font-semibold bg-white/10 text-white/90 ring-1 ring-white/15">
-                    Direct booking
-                  </span>
-                  <span className="inline-flex items-center gap-2 rounded-full px-3 py-1 text-[11px] font-semibold bg-white/10 text-white/90 ring-1 ring-white/15">
-                    Resort-style comfort
-                  </span>
-                  <span className="inline-flex items-center gap-2 rounded-full px-3 py-1 text-[11px] font-semibold bg-[#D9B87C]/20 text-[#FFE7B3] ring-1 ring-[#D9B87C]/25">
-                    Best value online
-                  </span>
+                  <Pill>Direct booking</Pill>
+                  <Pill>Resort-style comfort</Pill>
+                  <Pill tone="gold">Best value online</Pill>
                 </div>
 
-                <h1 className="mt-4 text-4xl font-semibold leading-[1.05] tracking-tight md:text-6xl">
-                  A premium oceanfront stay,
-                  <span className="text-white/85"> built for calm.</span>
+                <h1 className="mt-4 text-4xl font-semibold leading-[1.05] tracking-tight text-slate-900 md:text-6xl">
+                  A premium Turtle Bay stay,
+                  <span className="text-slate-900/75"> built for calm.</span>
                 </h1>
 
-                <p className="mt-4 max-w-xl text-sm leading-relaxed text-white/85 md:text-base">
-                  Modern coastal interiors, fast Wi-Fi, family-friendly spaces, and effortless booking —
-                  designed to feel like a luxury hotel, but more private.
+                <p className="mt-4 max-w-xl text-sm leading-relaxed text-slate-700/80 md:text-base">
+                  Modern coastal interiors, fast Wi-Fi, and effortless booking —
+                  powered by Hostaway as the source of truth.
                 </p>
 
                 <div className="mt-6 flex flex-wrap gap-3">
                   <a href="#availability">
                     <PrimaryButton type="button">Check Availability</PrimaryButton>
                   </a>
-                  <a
-                    href="#featured"
-                    className="inline-flex items-center justify-center rounded-2xl px-5 py-3 text-sm font-semibold text-white/90 ring-1 ring-white/20 bg-white/10 backdrop-blur transition hover:bg-white/15"
-                  >
-                    View Featured
+                  <a href="#featured">
+                    <SecondaryButton>View Featured</SecondaryButton>
                   </a>
                 </div>
 
                 <div className="mt-8 grid grid-cols-2 gap-3 md:grid-cols-4">
-                  <div className="rounded-2xl bg-white/10 ring-1 ring-white/15 px-4 py-3">
-                    <div className="text-[11px] font-medium text-white/70">
-                      Response time
-                    </div>
-                    <div className="mt-1 text-sm font-semibold text-white/90">
-                      Fast (typ.)
-                    </div>
-                  </div>
-                  <div className="rounded-2xl bg-white/10 ring-1 ring-white/15 px-4 py-3">
-                    <div className="text-[11px] font-medium text-white/70">Check-in</div>
-                    <div className="mt-1 text-sm font-semibold text-white/90">
-                      Flexible
-                    </div>
-                  </div>
-                  <div className="rounded-2xl bg-white/10 ring-1 ring-white/15 px-4 py-3">
-                    <div className="text-[11px] font-medium text-white/70">Location</div>
-                    <div className="mt-1 text-sm font-semibold text-white/90">
-                      Oceanfront
-                    </div>
-                  </div>
-                  <div className="rounded-2xl bg-white/10 ring-1 ring-white/15 px-4 py-3">
-                    <div className="text-[11px] font-medium text-white/70">Support</div>
-                    <div className="mt-1 text-sm font-semibold text-white/90">
-                      Local team
-                    </div>
-                  </div>
+                  <Stat label="Response time" value="Fast (typ.)" />
+                  <Stat label="Check-in" value="Flexible" />
+                  <Stat label="Location" value="Turtle Bay" />
+                  <Stat label="Support" value="Local team" />
                 </div>
               </div>
             </div>
@@ -524,8 +497,8 @@ export default function Home() {
                   <div className="text-sm font-semibold text-slate-900">
                     Check availability
                   </div>
-                  <div className="mt-1 text-xs text-slate-600">
-                    Connected to Hostaway via server-side routes.
+                  <div className="mt-1 text-xs text-slate-700/70">
+                    Searches Hostaway calendars (server-side) and returns real available listings.
                   </div>
                 </div>
                 <div className="flex items-center gap-2">
@@ -536,7 +509,7 @@ export default function Home() {
 
               <div className="mt-4 grid gap-3 md:grid-cols-12">
                 <div className="md:col-span-3">
-                  <label className="block text-[11px] font-semibold text-slate-600">
+                  <label className="block text-[11px] font-semibold text-slate-700/70">
                     Check-in
                   </label>
                   <div className="mt-2 rounded-2xl bg-white/70 ring-1 ring-black/10 px-3 py-2">
@@ -558,7 +531,7 @@ export default function Home() {
                 </div>
 
                 <div className="md:col-span-3">
-                  <label className="block text-[11px] font-semibold text-slate-600">
+                  <label className="block text-[11px] font-semibold text-slate-700/70">
                     Check-out
                   </label>
                   <div className="mt-2 rounded-2xl bg-white/70 ring-1 ring-black/10 px-3 py-2">
@@ -574,7 +547,7 @@ export default function Home() {
                 </div>
 
                 <div className="md:col-span-2">
-                  <label className="block text-[11px] font-semibold text-slate-600">
+                  <label className="block text-[11px] font-semibold text-slate-700/70">
                     Guests
                   </label>
                   <div className="mt-2 rounded-2xl bg-white/70 ring-1 ring-black/10 px-3 py-2">
@@ -594,27 +567,7 @@ export default function Home() {
                 </div>
 
                 <div className="md:col-span-2">
-                  <label className="block text-[11px] font-semibold text-slate-600">
-                    Property
-                  </label>
-                  <div className="mt-2 rounded-2xl bg-white/70 ring-1 ring-black/10 px-3 py-2">
-                    <select
-                      value={propertyId}
-                      onChange={(e) => setPropertyId(e.target.value)}
-                      className="h-9 w-full bg-transparent text-sm text-slate-900 outline-none"
-                      aria-label="Property selector"
-                    >
-                      {propertyOptions.map((p) => (
-                        <option key={p.id} value={p.id}>
-                          {p.label}
-                        </option>
-                      ))}
-                    </select>
-                  </div>
-                </div>
-
-                <div className="md:col-span-2">
-                  <label className="block text-[11px] font-semibold text-slate-600">
+                  <label className="block text-[11px] font-semibold text-slate-700/70">
                     Promo code (optional)
                   </label>
                   <div className="mt-2 rounded-2xl bg-white/70 ring-1 ring-black/10 px-3 py-2">
@@ -622,7 +575,7 @@ export default function Home() {
                       value={promo}
                       onChange={(e) => setPromo(e.target.value)}
                       placeholder="PROMO"
-                      className="h-9 w-full bg-transparent text-sm text-slate-900 placeholder:text-slate-400 outline-none"
+                      className="h-9 w-full bg-transparent text-sm text-slate-900 placeholder:text-slate-500/70 outline-none"
                       aria-label="Promo code"
                     />
                   </div>
@@ -630,7 +583,7 @@ export default function Home() {
 
                 <div className="md:col-span-12">
                   <div className="flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
-                    <div className="text-xs text-slate-600">
+                    <div className="text-xs text-slate-700/80">
                       {error ? (
                         <span className="inline-flex items-center gap-2 rounded-2xl bg-red-500/10 px-3 py-2 ring-1 ring-red-400/20 text-red-700">
                           <span className="h-1.5 w-1.5 rounded-full bg-red-500" />
@@ -639,7 +592,7 @@ export default function Home() {
                       ) : (
                         <span className="inline-flex items-center gap-2 rounded-2xl bg-black/5 px-3 py-2 ring-1 ring-black/10">
                           <span className="h-1.5 w-1.5 rounded-full bg-[#0F6E8C]" />
-                          Tip: Choose dates first — we’ll show available Hostaway listings next.
+                          Tip: Select dates — we’ll return real Hostaway availability.
                         </span>
                       )}
                     </div>
@@ -660,30 +613,51 @@ export default function Home() {
         </div>
       </section>
 
-      {/* FEATURED RENTALS */}
+      {/* FEATURED (real Hostaway data when API works) */}
       <section id="featured" className="relative">
         <div className="mx-auto max-w-6xl px-4 py-10 md:py-12">
-          <div className="flex items-end justify-between gap-6">
-            <SectionTitle
-              eyebrow="Featured stays"
-              title="Select a space that fits your vibe."
-              desc="These are placeholders for now — next step is wiring real Hostaway listings here."
-            />
-            <div className="hidden md:block">
+          <SectionTitle
+            eyebrow="Featured stays"
+            title="Ocean Villas pulled from Hostaway."
+            desc="If images/details look blank, it means Hostaway listing data didn’t return (auth/env)."
+            right={
               <a href="#availability">
                 <PrimaryButton type="button">Check Availability</PrimaryButton>
               </a>
-            </div>
-          </div>
+            }
+          />
 
-          <div className="mt-8 grid gap-4 md:grid-cols-3">
-            {FEATURED.map((r) => (
-              <RentalCard key={r.id} r={r} />
-            ))}
+          <div className="mt-8">
+            {featuredLoading ? (
+              <div className="text-sm text-slate-700/80">Loading listings…</div>
+            ) : featured.length === 0 ? (
+              <GlassCard className="p-5">
+                <div className="text-sm font-semibold text-slate-900">No featured listings loaded.</div>
+                <div className="mt-2 text-sm text-slate-700/80">
+                  This usually means one of these:
+                  <ul className="mt-2 list-disc pl-5">
+                    <li>Hostaway token call failed</li>
+                    <li>ENV names mismatch (HOSTAWAY_ACCOUNT_ID / HOSTAWAY_API_KEY)</li>
+                    <li>/api/hostaway/listings route is erroring</li>
+                  </ul>
+                </div>
+                <div className="mt-4">
+                  <a href="/availability?startDate=2026-03-01&endDate=2026-03-05&guests=2">
+                    <SecondaryButton>Open availability test</SecondaryButton>
+                  </a>
+                </div>
+              </GlassCard>
+            ) : (
+              <div className="grid gap-4 md:grid-cols-3">
+                {featured.slice(0, 6).map((r) => (
+                  <RentalCard key={r.id} r={r} />
+                ))}
+              </div>
+            )}
           </div>
 
           <div className="mt-6 md:hidden">
-            <a href="#availability" className="block">
+            <a href="#availability">
               <PrimaryButton type="button" className="w-full">
                 Check Availability
               </PrimaryButton>
@@ -692,15 +666,13 @@ export default function Home() {
         </div>
       </section>
 
-      {/* ✅ REMOVED: Experience + Location sections (para dili taas ang scroll) */}
-
-      {/* TESTIMONIALS */}
-      <section id="testimonials" className="relative border-t border-black/10">
+      {/* REVIEWS (keep short, not too tall) */}
+      <section id="reviews" className="relative border-t border-black/10">
         <div className="mx-auto max-w-6xl px-4 py-10 md:py-12">
           <SectionTitle
-            eyebrow="Social proof"
+            eyebrow="Reviews"
             title="Guests remember the feeling."
-            desc="Short quotes + rating — keep it premium and minimal."
+            desc="Short, clean, minimal — keeps scroll shorter."
           />
 
           <div className="mt-8 grid gap-4 md:grid-cols-3">
@@ -719,60 +691,43 @@ export default function Home() {
               },
             ].map((t, i) => (
               <GlassCard key={i} className="p-6">
-                <div className="text-sm text-slate-800">“{t.q}”</div>
-                <div className="mt-4 text-xs font-semibold text-slate-500">{t.a}</div>
+                <div className="text-sm text-slate-900/85">“{t.q}”</div>
+                <div className="mt-4 text-xs font-semibold text-slate-700/70">{t.a}</div>
               </GlassCard>
             ))}
           </div>
         </div>
       </section>
 
-      {/* FINAL CTA */}
-      <section className="relative border-t border-black/10">
+      {/* FOOTER */}
+      <section id="contact" className="relative border-t border-black/10">
         <div className="mx-auto max-w-6xl px-4 py-10 md:py-12">
-          <div className="rounded-3xl bg-gradient-to-b from-white/70 to-white/45 ring-1 ring-black/10 p-8 md:p-10 shadow-[0_18px_55px_rgba(15,23,42,0.10)]">
-            <div className="flex flex-col gap-6 md:flex-row md:items-center md:justify-between">
-              <div className="max-w-xl">
-                <div className="text-2xl font-semibold tracking-tight text-slate-900">
+          <div className="rounded-3xl bg-white/60 ring-1 ring-black/10 p-6 md:p-8">
+            <div className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
+              <div>
+                <div className="text-xl font-semibold tracking-tight text-slate-900">
                   Ready to plan your stay?
                 </div>
-                <p className="mt-2 text-sm text-slate-600">
-                  Choose dates, confirm pricing, and reserve securely — powered by Hostaway.
+                <p className="mt-2 text-sm text-slate-700/80">
+                  Search availability and book securely via Hostaway booking engine.
                 </p>
               </div>
               <div className="flex flex-wrap gap-3">
                 <a href="#availability">
                   <PrimaryButton type="button">Check Availability</PrimaryButton>
                 </a>
-                <a href="#featured">
-                  <SecondaryButton>View Featured</SecondaryButton>
+                <a href={`tel:${BRAND.phone}`}>
+                  <SecondaryButton>Call</SecondaryButton>
                 </a>
               </div>
             </div>
-
-            <div className="mt-6 flex flex-wrap items-center gap-3 text-xs text-slate-600">
-              <span className="inline-flex items-center gap-2">
-                <span className="h-1.5 w-1.5 rounded-full bg-[#0F6E8C]" />
-                Server-side Hostaway routes
-              </span>
-              <span className="inline-flex items-center gap-2">
-                <span className="h-1.5 w-1.5 rounded-full bg-[#D9B87C]" />
-                Premium UI, fast + mobile-first
-              </span>
-            </div>
           </div>
 
-          <footer className="mt-10 flex flex-col gap-4 border-t border-black/10 pt-6 text-xs text-slate-600 md:flex-row md:items-center md:justify-between">
+          <footer className="mt-8 flex flex-col gap-3 border-t border-black/10 pt-6 text-xs text-slate-700/70 md:flex-row md:items-center md:justify-between">
             <div className="flex flex-wrap gap-3">
-              <Link className="hover:text-slate-900/80 transition" href="/privacy-policy">
-                Privacy Policy
-              </Link>
-              <Link className="hover:text-slate-900/80 transition" href="/terms-of-service">
-                Terms of Service
-              </Link>
-              <a className="hover:text-slate-900/80 transition" href="#availability">
-                Availability
-              </a>
+              {/* Keep these as plain text for now if pages don't exist */}
+              <span>Privacy Policy</span>
+              <span>Terms of Service</span>
             </div>
             <div>© {new Date().getFullYear()} {BRAND.name}. All rights reserved.</div>
           </footer>
