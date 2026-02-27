@@ -171,7 +171,7 @@ export default async function ListingDetailsPage({
                   ) : (
                     <div style={{ opacity: 0.7 }}>
                       Booking link not available yet — set{" "}
-                      <b>HOSTAWAY_BOOKING_ENGINE_BASE_URL</b> in Vercel env.
+                      <b>BOOKING_ENGINE_BASE_URL</b> in Vercel env.
                     </div>
                   )}
                 </div>
