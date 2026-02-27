@@ -46,6 +46,22 @@ async function getHostawayAccessToken() {
   return String(token);
 }
 
+function pickBookingUrl(found: any): string | null {
+  // Try common fields that might exist in Hostaway listing payload
+  const candidates = [
+    found?.bookingEnginePublicUrl,
+    found?.bookingEngineUrl,
+    found?.publicUrl,
+    found?.listingUrl,
+    found?.url,
+  ].filter(Boolean);
+
+  if (candidates.length > 0) return String(candidates[0]);
+
+  // If nothing exists, at least return the base domain (page.tsx will build final URL)
+  return BOOKING_ENGINE_BASE_URL || null;
+}
+
 export async function GET(
   _req: NextRequest,
   context: { params: Promise<{ id: string }> }
@@ -81,11 +97,7 @@ export async function GET(
     const images = Array.isArray(found?.listingImages) ? found.listingImages : [];
     const hero = images.find((img: any) => img?.url) || images[0];
 
-    // ✅ IMPORTANT: booking engine listing page
-    // Most Hostaway booking engines use /listing/{listingId}
-    const bookingListingUrl = `${BOOKING_ENGINE_BASE_URL.replace(/\/$/, "")}/listing/${encodeURIComponent(
-      String(found?.id)
-    )}`;
+    const bookingEngineUrl = pickBookingUrl(found);
 
     return NextResponse.json(
       {
@@ -102,8 +114,8 @@ export async function GET(
           bathrooms: found?.bathroomsNumber ?? null,
           heroUrl: hero?.url || hero?.airbnbUrl || null,
 
-          // ✅ now clickable booking page (not just base)
-          bookingEngineUrl: bookingListingUrl,
+          // ✅ Use REAL booking/public URL if available
+          bookingEngineUrl,
         },
       },
       { status: 200 }
