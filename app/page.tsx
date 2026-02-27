@@ -2,7 +2,7 @@
 
 import Image from "next/image";
 import Link from "next/link";
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 
 type FeaturedRental = {
   id: string;
@@ -22,39 +22,17 @@ const BRAND = {
   phone: "(808) XXX-XXXX",
 };
 
-const FEATURED: FeaturedRental[] = [
+// Fallback (in case Hostaway API is down)
+const FALLBACK_FEATURED: FeaturedRental[] = [
   {
-    id: "coastline-suite",
-    name: "Coastline Suite",
-    tagline: "Ocean views • Breezy modern interiors",
+    id: "489089",
+    name: "Ocean Villa",
+    tagline: "Premium stay",
     sleeps: 6,
     beds: 3,
     baths: 2,
-    highlight: "Beach access",
-    image: "/media/rentals/1.jpg",
-    fromPrice: "$399",
-  },
-  {
-    id: "sunset-villa",
-    name: "Sunset Villa",
-    tagline: "Golden-hour balcony • Family friendly",
-    sleeps: 8,
-    beds: 4,
-    baths: 3,
-    highlight: "Private lanai",
-    image: "/media/rentals/2.jpg",
-    fromPrice: "$520",
-  },
-  {
-    id: "reef-house",
-    name: "Reef House",
-    tagline: "Steps to the water • Premium amenities",
-    sleeps: 10,
-    beds: 5,
-    baths: 4,
-    highlight: "Pool + fast Wi-Fi",
-    image: "/media/rentals/3.jpg",
-    fromPrice: "$690",
+    highlight: "Direct booking",
+    image: "/media/map-placeholder.jpg",
   },
 ];
 
@@ -92,7 +70,7 @@ function GlassCard({
   return (
     <div
       className={cx(
-        "rounded-3xl border border-white/10 bg-white/5 backdrop-blur-[16px] shadow-[0_20px_60px_rgba(0,0,0,0.35)]",
+        "rounded-3xl border border-white/10 bg-white/5 backdrop-blur-[16px] shadow-[0_20px_60px_rgba(0,0,0,0.25)]",
         className
       )}
     >
@@ -112,7 +90,7 @@ function PrimaryButton({
       className={cx(
         "relative inline-flex items-center justify-center rounded-2xl px-5 py-3 text-sm font-semibold text-white",
         "bg-gradient-to-b from-[#0F6E8C] to-[#0A4C61]",
-        "shadow-[0_12px_35px_rgba(15,110,140,0.35)]",
+        "shadow-[0_12px_35px_rgba(15,110,140,0.28)]",
         "transition-transform duration-200 hover:scale-[1.01] active:scale-[0.99]",
         "focus:outline-none focus:ring-2 focus:ring-[#64B6AC]/60 focus:ring-offset-0",
         className
@@ -156,7 +134,7 @@ function Pill({
       className={cx(
         "inline-flex items-center gap-2 rounded-full px-3 py-1 text-[11px] font-semibold",
         tone === "gold"
-          ? "bg-[#D9B87C]/15 text-[#D9B87C] ring-1 ring-[#D9B87C]/25"
+          ? "bg-[#D9B87C]/18 text-[#D9B87C] ring-1 ring-[#D9B87C]/25"
           : "bg-white/6 text-white/80 ring-1 ring-white/10"
       )}
     >
@@ -204,14 +182,14 @@ function RentalCard({ r }: { r: FeaturedRental }) {
   return (
     <div className="group overflow-hidden rounded-3xl ring-1 ring-white/10 bg-white/5 backdrop-blur-[14px] transition-transform duration-200 hover:scale-[1.01]">
       <div className="relative aspect-[16/10] overflow-hidden">
-        <Image
-          src={r.image}
+        {/* Use <img> to avoid Next/Image remote domain issues from Hostaway */}
+        {/* eslint-disable-next-line @next/next/no-img-element */}
+        <img
+          src={r.image || "/media/map-placeholder.jpg"}
           alt={r.name}
-          fill
-          className="object-cover transition-transform duration-500 group-hover:scale-[1.04]"
-          sizes="(max-width: 768px) 100vw, 33vw"
+          style={{ width: "100%", height: "100%", objectFit: "cover" }}
         />
-        <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-black/10 to-transparent" />
+        <div className="absolute inset-0 bg-gradient-to-t from-black/55 via-black/10 to-transparent" />
         <div className="absolute left-4 top-4">
           <Pill>{r.highlight}</Pill>
         </div>
@@ -229,7 +207,7 @@ function RentalCard({ r }: { r: FeaturedRental }) {
             <div className="mt-1 text-xs text-white/65">{r.tagline}</div>
           </div>
           <Link
-            href={`/rentals/${r.id}`}
+            href={`/listing/${r.id}`}
             className="shrink-0 rounded-2xl px-3 py-2 text-xs font-semibold text-white/90 bg-white/5 ring-1 ring-white/10 hover:bg-white/8 transition"
           >
             View
@@ -237,9 +215,9 @@ function RentalCard({ r }: { r: FeaturedRental }) {
         </div>
 
         <div className="mt-4 grid grid-cols-3 gap-2">
-          <Stat label="Sleeps" value={`${r.sleeps}`} />
-          <Stat label="Beds" value={`${r.beds}`} />
-          <Stat label="Baths" value={`${r.baths}`} />
+          <Stat label="Sleeps" value={`${r.sleeps || 0}`} />
+          <Stat label="Beds" value={`${r.beds || 0}`} />
+          <Stat label="Baths" value={`${r.baths || 0}`} />
         </div>
       </div>
     </div>
@@ -250,7 +228,7 @@ export default function Home() {
   const today = useMemo(() => formatISO(new Date()), []);
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
 
-  // Booking bar state (mocked flow for now)
+  // Booking bar state
   const [checkIn, setCheckIn] = useState<string>("");
   const [checkOut, setCheckOut] = useState<string>("");
   const [guests, setGuests] = useState<number>(2);
@@ -259,15 +237,49 @@ export default function Home() {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string>("");
 
+  // Hostaway featured listings
+  const [featured, setFeatured] = useState<FeaturedRental[]>([]);
+  const [featuredLoading, setFeaturedLoading] = useState(true);
+
   const propertyOptions = useMemo(
     () => [
       { id: "", label: "Any property" },
+      // Keep these UI options for now; later we can populate from Hostaway too.
       { id: "coastline-suite", label: "Coastline Suite" },
       { id: "sunset-villa", label: "Sunset Villa" },
       { id: "reef-house", label: "Reef House" },
     ],
     []
   );
+
+  useEffect(() => {
+    let mounted = true;
+
+    async function loadFeatured() {
+      try {
+        setFeaturedLoading(true);
+        const res = await fetch("/api/hostaway/featured", { cache: "no-store" });
+        const json = await res.json().catch(() => null);
+
+        if (!mounted) return;
+
+        if (res.ok && json?.success && Array.isArray(json?.featured)) {
+          setFeatured(json.featured);
+        } else {
+          setFeatured(FALLBACK_FEATURED);
+        }
+      } catch {
+        if (mounted) setFeatured(FALLBACK_FEATURED);
+      } finally {
+        if (mounted) setFeaturedLoading(false);
+      }
+    }
+
+    loadFeatured();
+    return () => {
+      mounted = false;
+    };
+  }, []);
 
   async function onSearch() {
     setError("");
@@ -292,17 +304,15 @@ export default function Home() {
     setLoading(true);
 
     try {
-      await new Promise((r) => setTimeout(r, 650));
+      await new Promise((r) => setTimeout(r, 350));
 
-      const qp = new URLSearchParams();
-      qp.set("checkIn", checkIn);
-      qp.set("checkOut", checkOut);
-      qp.set("guests", String(guests));
-      if (propertyId) qp.set("propertyId", propertyId);
-      if (promo.trim()) qp.set("promo", promo.trim());
-
-     window.location.href = `/availability?startDate=${encodeURIComponent(checkIn)}&endDate=${encodeURIComponent(checkOut)}&guests=${encodeURIComponent(String(guests))}`;
-    } catch (e) {
+      // Route to your real availability results page
+      window.location.href = `/availability?startDate=${encodeURIComponent(
+        checkIn
+      )}&endDate=${encodeURIComponent(checkOut)}&guests=${encodeURIComponent(
+        String(guests)
+      )}`;
+    } catch {
       setError("Something went wrong. Please try again.");
     } finally {
       setLoading(false);
@@ -310,19 +320,18 @@ export default function Home() {
   }
 
   return (
-    <main className="min-h-screen bg-[#071421] text-white selection:bg-[#64B6AC]/25 selection:text-white">
-      {/* Subtle background depth */}
-      <div className="pointer-events-none fixed inset-0">
-        <div className="absolute inset-0 bg-[radial-gradient(900px_500px_at_20%_10%,rgba(100,182,172,0.18),transparent_55%),radial-gradient(700px_450px_at_80%_20%,rgba(15,110,140,0.18),transparent_55%),radial-gradient(900px_650px_at_50%_90%,rgba(217,184,124,0.10),transparent_60%)]" />
-        <div className="absolute inset-0 opacity-[0.08] [background-image:url('data:image/svg+xml,%3Csvg xmlns=%22http://www.w3.org/2000/svg%22 width=%22140%22 height=%22140%22 viewBox=%220 0 140 140%22%3E%3Cfilter id=%22n%22%3E%3CfeTurbulence type=%22fractalNoise%22 baseFrequency=%220.9%22 numOctaves=%222%22 stitchTiles=%22stitch%22/%3E%3C/filter%3E%3Crect width=%22140%22 height=%22140%22 filter=%22url(%23n)%22 opacity=%220.7%22/%3E%3C/svg%3E')]" />
+    <main className="min-h-screen bg-[#0B1C2A] text-white selection:bg-[#64B6AC]/25 selection:text-white">
+      {/* Softer background (not too dark, not too heavy on scroll) */}
+      <div className="pointer-events-none absolute inset-0">
+        <div className="absolute inset-0 bg-[radial-gradient(900px_500px_at_20%_10%,rgba(255,255,255,0.10),transparent_55%),radial-gradient(700px_450px_at_80%_20%,rgba(100,182,172,0.16),transparent_55%),radial-gradient(900px_650px_at_50%_90%,rgba(15,110,140,0.12),transparent_60%)]" />
+        <div className="absolute inset-0 opacity-[0.045] [background-image:url('data:image/svg+xml,%3Csvg xmlns=%22http://www.w3.org/2000/svg%22 width=%22140%22 height=%22140%22 viewBox=%220 0 140 140%22%3E%3Cfilter id=%22n%22%3E%3CfeTurbulence type=%22fractalNoise%22 baseFrequency=%220.9%22 numOctaves=%222%22 stitchTiles=%22stitch%22/%3E%3C/filter%3E%3Crect width=%22140%22 height=%22140%22 filter=%22url(%23n)%22 opacity=%220.7%22/%3E%3C/svg%3E')]" />
       </div>
 
       {/* HEADER */}
-      <header className="sticky top-0 z-50 border-b border-white/10 bg-[#071421]/70 backdrop-blur-[14px]">
+      <header className="sticky top-0 z-50 border-b border-white/10 bg-[#0B1C2A]/70 backdrop-blur-[14px]">
         <div className="mx-auto flex h-16 max-w-6xl items-center gap-4 px-4">
           <Link href="/" className="flex items-center gap-3">
             <div className="relative h-9 w-9 overflow-hidden rounded-2xl bg-white/5 ring-1 ring-white/10">
-              {/* ✅ LOGO UPDATED */}
               <Image
                 src="/brand/TTB-Logo.png"
                 alt={BRAND.name}
@@ -372,7 +381,7 @@ export default function Home() {
             </a>
           </div>
 
-          {/* Mobile: CTA + hamburger */}
+          {/* Mobile */}
           <div className="ml-auto flex items-center gap-2 md:hidden">
             <a href="#availability">
               <PrimaryButton type="button" className="px-4 py-2">
@@ -392,7 +401,7 @@ export default function Home() {
 
         {/* Mobile menu */}
         {mobileMenuOpen ? (
-          <div className="md:hidden border-t border-white/10 bg-[#071421]/85 backdrop-blur-[14px]">
+          <div className="md:hidden border-t border-white/10 bg-[#0B1C2A]/85 backdrop-blur-[14px]">
             <div className="mx-auto max-w-6xl px-4 py-4 grid gap-2 text-sm text-white/80">
               <Link
                 onClick={() => setMobileMenuOpen(false)}
@@ -448,7 +457,6 @@ export default function Home() {
       {/* HERO */}
       <section className="relative">
         <div className="relative h-[78vh] min-h-[560px] overflow-hidden">
-          {/* ✅ HERO VIDEO INSERTED */}
           <video
             className="absolute inset-0 h-full w-full object-cover"
             src="/media/hero.mp4"
@@ -459,11 +467,9 @@ export default function Home() {
             preload="metadata"
           />
 
-          {/* Overlay gradients */}
-          <div className="absolute inset-0 bg-gradient-to-b from-black/40 via-black/25 to-[#071421]" />
-          <div className="absolute inset-0 bg-[radial-gradient(900px_500px_at_20%_20%,rgba(100,182,172,0.20),transparent_55%)]" />
+          <div className="absolute inset-0 bg-gradient-to-b from-black/35 via-black/20 to-[#0B1C2A]" />
+          <div className="absolute inset-0 bg-[radial-gradient(900px_500px_at_20%_20%,rgba(100,182,172,0.18),transparent_55%)]" />
 
-          {/* Content */}
           <div className="absolute inset-0">
             <div className="mx-auto flex h-full max-w-6xl flex-col justify-end px-4 pb-10 md:pb-14">
               <div className="max-w-2xl">
@@ -513,7 +519,7 @@ export default function Home() {
                     Check availability
                   </div>
                   <div className="mt-1 text-xs text-white/60">
-                    This is ready to connect to Hostaway once your API keys arrive.
+                    Live availability is powered by Hostaway (source of truth).
                   </div>
                 </div>
                 <div className="flex items-center gap-2">
@@ -522,7 +528,6 @@ export default function Home() {
                 </div>
               </div>
 
-              {/* Fields */}
               <div className="mt-4 grid gap-3 md:grid-cols-12">
                 <div className="md:col-span-3">
                   <label className="block text-[11px] font-semibold text-white/65">
@@ -628,7 +633,7 @@ export default function Home() {
                       ) : (
                         <span className="inline-flex items-center gap-2 rounded-2xl bg-white/5 px-3 py-2 ring-1 ring-white/10">
                           <span className="h-1.5 w-1.5 rounded-full bg-[#64B6AC]" />
-                          Tip: Choose dates first — we’ll show quote breakdown next when Hostaway is connected.
+                          Tip: Choose dates first — results will load on the next screen.
                         </span>
                       )}
                     </div>
@@ -656,7 +661,7 @@ export default function Home() {
             <SectionTitle
               eyebrow="Featured stays"
               title="Select a space that fits your vibe."
-              desc="Premium cards, fast images, and consistent layout — this is the same UI structure we’ll feed with Hostaway listings later."
+              desc="These cards are pulled from Hostaway listings (source of truth)."
             />
             <div className="hidden md:block">
               <SecondaryButton href="/rentals">Browse all</SecondaryButton>
@@ -664,9 +669,15 @@ export default function Home() {
           </div>
 
           <div className="mt-8 grid gap-4 md:grid-cols-3">
-            {FEATURED.map((r) => (
-              <RentalCard key={r.id} r={r} />
-            ))}
+            {featuredLoading ? (
+              <div className="text-sm text-white/70">Loading listings…</div>
+            ) : featured.length === 0 ? (
+              <div className="text-sm text-white/70">
+                No listings found. Check Hostaway IDs / API.
+              </div>
+            ) : (
+              featured.map((r) => <RentalCard key={r.id} r={r} />)
+            )}
           </div>
 
           <div className="mt-6 md:hidden">
@@ -836,7 +847,7 @@ export default function Home() {
                   Ready to plan your stay?
                 </div>
                 <p className="mt-2 text-sm text-white/70">
-                  Choose dates, confirm pricing, and reserve securely — once Hostaway is connected.
+                  Choose dates, confirm pricing, and reserve securely — powered by Hostaway.
                 </p>
               </div>
               <div className="flex flex-wrap gap-3">
@@ -871,7 +882,9 @@ export default function Home() {
                 Contact
               </Link>
             </div>
-            <div>© {new Date().getFullYear()} {BRAND.name}. All rights reserved.</div>
+            <div>
+              © {new Date().getFullYear()} {BRAND.name}. All rights reserved.
+            </div>
           </footer>
         </div>
       </section>
