@@ -93,14 +93,16 @@ function PrimaryButton({ children, className, ...props }: React.ButtonHTMLAttrib
   );
 }
 
-function Pill({ children, tone = "default" }: { children: React.ReactNode; tone?: "default" | "gold" }) {
+function Pill({ children, tone = "default", darkText = false }: { children: React.ReactNode; tone?: "default" | "gold"; darkText?: boolean }) {
   return (
     <span
       className={cx(
-        "inline-flex items-center gap-2 rounded-full px-3 py-1 text-[11px] sm:text-xs font-medium tracking-wide",
+        "inline-flex items-center gap-2 rounded-full px-3 py-1 text-[11px] md:text-xs font-medium tracking-wide",
         tone === "gold"
           ? "bg-[#D9B87C]/15 text-[#8B6B2B] border border-[#D9B87C]/35"
-          : "bg-white/70 text-slate-700 border border-white/70 backdrop-blur"
+          : darkText 
+            ? "bg-slate-100 text-slate-700 border border-slate-200" 
+            : "bg-white/70 text-slate-700 border border-white/70 backdrop-blur"
       )}
     >
       {children}
@@ -111,7 +113,7 @@ function Pill({ children, tone = "default" }: { children: React.ReactNode; tone?
 function Stat({ label, value }: { label: string; value: string }) {
   return (
     <div className="rounded-xl bg-slate-50 border border-slate-100 px-4 py-3 text-center">
-      <div className="text-[10px] sm:text-xs font-medium uppercase tracking-wider text-slate-500">{label}</div>
+      <div className="text-[10px] md:text-xs font-medium uppercase tracking-wider text-slate-500">{label}</div>
       <div className="mt-1 text-sm font-semibold text-slate-900">{value}</div>
     </div>
   );
@@ -151,12 +153,12 @@ function ListingCard({ l }: { l: HostawayListing }) {
           className="object-cover transition-transform duration-700 group-hover:scale-105"
         />
         <div className="absolute top-4 right-4 z-10">
-          <Pill tone="default">#{l.id}</Pill>
+          <Pill tone="default" darkText>#{l.id}</Pill>
         </div>
         <div className="absolute inset-0 bg-black/0 transition-colors duration-300 group-hover:bg-black/5" />
       </div>
 
-      <div className="flex flex-col flex-grow p-6">
+      <div className="flex flex-col flex-grow p-5 md:p-6">
         <div className="flex-grow">
           <h3 className="text-lg font-semibold text-slate-900 line-clamp-1">{title}</h3>
           <p className="mt-2 text-sm text-slate-500 line-clamp-2">
@@ -254,12 +256,7 @@ export default function Home() {
   return (
     <main className="min-h-screen bg-slate-50 text-slate-900 selection:bg-slate-200">
       {/* HEADER */}
-      <header
-        className="sticky top-0 z-50 border-b border-slate-200 bg-white/90 backdrop-blur-md"
-        style={{
-          paddingTop: "env(safe-area-inset-top)", // ✅ iOS notch safe-area
-        }}
-      >
+      <header className="sticky top-0 z-50 border-b border-slate-200 bg-white/90 backdrop-blur-md">
         <div className="mx-auto flex h-16 md:h-20 max-w-7xl items-center justify-between px-4 sm:px-6 lg:px-8">
           <a href="#top" className="flex items-center gap-3">
             <div className="relative h-8 w-8 md:h-10 md:w-10 overflow-hidden">
@@ -285,8 +282,6 @@ export default function Home() {
           <button
             className="md:hidden p-2 text-sm font-semibold text-slate-600"
             onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
-            aria-expanded={mobileMenuOpen}
-            aria-label="Toggle menu"
           >
             {mobileMenuOpen ? "Close" : "Menu"}
           </button>
@@ -294,131 +289,213 @@ export default function Home() {
 
         {/* Mobile Nav Dropdown */}
         {mobileMenuOpen && (
-          <div className="md:hidden border-t border-slate-200 bg-white px-4 py-4 shadow-lg absolute top-full left-0 w-full">
+          <div className="md:hidden border-t border-slate-200 bg-white px-4 py-4 shadow-lg absolute w-full">
             <div className="flex flex-col gap-4 text-sm font-medium text-slate-600">
               <a onClick={() => setMobileMenuOpen(false)} href="#featured" className="py-2 hover:text-slate-900">Featured Villas</a>
-              <a onClick={() => setMobileMenuOpen(false)} href="#availability" className="py-2 hover:text-slate-900">Check Availability</a>
+              <a onClick={() => setMobileMenuOpen(false)} href="#availability-mobile" className="py-2 hover:text-slate-900">Check Availability</a>
               <a href={`tel:${sanitizeTel(BRAND.phone)}`} className="py-2 hover:text-slate-900">Call {BRAND.phone}</a>
             </div>
           </div>
         )}
       </header>
 
-      {/* HERO */}
-      <section id="top" className="relative">
-        {/* ✅ dynamic-friendly hero height: Android/iOS browsers */}
-        <div className="relative h-[85svh] min-h-[620px] md:h-[80vh] w-full">
+      {/* ========================================================================
+        MOBILE LAYOUT (Stacked Block Format to match reference image)
+        ========================================================================
+      */}
+      <div className="md:hidden flex flex-col w-full">
+        {/* 1. Mobile Video Header */}
+        <div className="relative w-full h-[35vh] min-h-[250px]">
+          <video className="absolute inset-0 h-full w-full object-cover" src="/media/hero.mp4" autoPlay muted loop playsInline />
+          <div className="absolute inset-0 bg-slate-900/20" /> {/* Lighter overlay since text is removed */}
+        </div>
+
+        {/* 2. Mobile Booking Bar (Solid background right under video) */}
+        <div id="availability-mobile" className="bg-slate-100 border-b border-slate-200 px-4 py-6 shadow-inner">
+          <div className="grid grid-cols-2 gap-3 mb-3">
+            <div>
+              <label className="block text-[10px] font-bold uppercase tracking-wide text-slate-500 mb-1">Arrival</label>
+              <input
+                type="date"
+                min={today}
+                value={checkIn}
+                onChange={(e) => {
+                  const v = e.target.value;
+                  setCheckIn(v);
+                  if (checkOut && (v === checkOut || isAfter(v, checkOut))) setCheckOut(addDays(v, 2));
+                }}
+                className="w-full rounded-xl border border-slate-200 bg-white px-3 py-2.5 text-sm focus:border-slate-900 focus:outline-none focus:ring-1 focus:ring-slate-900"
+              />
+            </div>
+            <div>
+              <label className="block text-[10px] font-bold uppercase tracking-wide text-slate-500 mb-1">Departure</label>
+              <input
+                type="date"
+                min={checkIn || today}
+                value={checkOut}
+                onChange={(e) => setCheckOut(e.target.value)}
+                className="w-full rounded-xl border border-slate-200 bg-white px-3 py-2.5 text-sm focus:border-slate-900 focus:outline-none focus:ring-1 focus:ring-slate-900"
+              />
+            </div>
+          </div>
+
+          <div className="grid grid-cols-2 gap-3 mb-4">
+            <div>
+              <label className="block text-[10px] font-bold uppercase tracking-wide text-slate-500 mb-1">Guests</label>
+              <select
+                value={guests}
+                onChange={(e) => setGuests(Number(e.target.value))}
+                className="w-full rounded-xl border border-slate-200 bg-white px-3 py-2.5 text-sm focus:border-slate-900 focus:outline-none focus:ring-1 focus:ring-slate-900"
+              >
+                {Array.from({ length: 14 }).map((_, i) => (
+                  <option key={i + 1} value={i + 1}>{i + 1} Guests</option>
+                ))}
+              </select>
+            </div>
+            <div>
+              <label className="block text-[10px] font-bold uppercase tracking-wide text-slate-500 mb-1">Promo</label>
+              <input
+                value={promo}
+                onChange={(e) => setPromo(e.target.value)}
+                placeholder="Optional code"
+                className="w-full rounded-xl border border-slate-200 bg-white px-3 py-2.5 text-sm focus:border-slate-900 focus:outline-none focus:ring-1 focus:ring-slate-900"
+              />
+            </div>
+          </div>
+
+          <PrimaryButton type="button" onClick={onSearch} disabled={loading} className="w-full py-3">
+            {loading ? "Searching…" : "Search Availability"}
+          </PrimaryButton>
+          {error && <div className="mt-3 text-center text-xs text-red-600 font-medium">{error}</div>}
+        </div>
+
+        {/* 3. Mobile Hero Text (White background, totally safe from overlapping) */}
+        <div className="bg-white px-6 py-12 flex flex-col items-center text-center">
+          <div className="flex gap-2 mb-5">
+            <Pill darkText>Oceanfront</Pill>
+            <Pill tone="gold">Exclusive Resort</Pill>
+          </div>
+          <h1 className="text-4xl font-serif tracking-tight text-[#0A4C61] leading-[1.1]">
+            Luxury villas on the North Shore.
+          </h1>
+          <p className="mt-4 text-base text-slate-600 leading-relaxed">
+            Premium space, resort-adjacent location, and direct booking flow. Escape to your private sanctuary.
+          </p>
+          <a href="#featured" className="mt-8 text-sm font-bold text-slate-900 underline underline-offset-4 decoration-2 decoration-[#D9B87C] hover:text-[#D9B87C] transition-colors">
+            View the collection ↓
+          </a>
+        </div>
+      </div>
+
+
+      {/* ========================================================================
+        DESKTOP LAYOUT (Retains the full-screen premium overlay style)
+        ========================================================================
+      */}
+      <div className="hidden md:block">
+        <section id="top" className="relative h-[80vh] w-full">
           <video className="absolute inset-0 h-full w-full object-cover" src="/media/hero.mp4" autoPlay muted loop playsInline />
           <div className="absolute inset-0 bg-slate-900/45" />
 
-          {/* ✅ UNIVERSAL FIX: center content + safe bumpers */}
-          <div className="absolute inset-0 flex flex-col justify-center pt-16 sm:pt-20 pb-40 sm:pb-44 md:pt-16 md:pb-24">
+          <div className="absolute inset-0 flex flex-col justify-center pt-16 pb-24">
             <div className="mx-auto w-full max-w-7xl px-5 sm:px-6 lg:px-8">
               <div className="max-w-3xl">
-                <div className="flex flex-wrap items-center gap-3 mb-4 md:mb-6">
+                <div className="flex flex-wrap items-center gap-3 mb-6">
                   <Pill>Oceanfront</Pill>
                   <Pill tone="gold">Exclusive Resort</Pill>
                 </div>
 
-                {/* ✅ mobile sizes tuned (no overlap) */}
-                <h1 className="text-[42px] leading-[1.06] sm:text-5xl sm:leading-tight md:text-7xl md:leading-tight font-serif font-medium tracking-tight text-white">
+                <h1 className="text-5xl md:text-7xl font-serif font-medium tracking-tight text-white leading-tight">
                   Luxury villas on the North Shore.
                 </h1>
 
-                <p className="mt-4 md:mt-6 max-w-xl text-[15px] sm:text-base md:text-lg text-white/90 leading-relaxed">
+                <p className="mt-6 max-w-xl text-lg text-white/90 leading-relaxed">
                   Premium space, resort-adjacent location, and direct booking flow. Escape to your private sanctuary.
                 </p>
 
-                <div className="mt-8 md:mt-10 flex flex-col sm:flex-row flex-wrap gap-3 md:gap-4">
-                  <a
-                    href="#availability"
-                    className="inline-flex items-center justify-center rounded-xl px-6 md:px-8 py-3.5 text-sm font-bold text-slate-900 bg-white shadow-lg hover:bg-slate-100 transition-all text-center"
-                  >
+                <div className="mt-10 flex flex-row flex-wrap gap-4">
+                  <a href="#availability" className="inline-flex items-center justify-center rounded-xl px-8 py-3.5 text-sm font-bold text-slate-900 bg-white shadow-lg hover:bg-slate-100 transition-all text-center">
                     Check Availability
                   </a>
-
-                  <a
-                    href="#featured"
-                    className="inline-flex items-center justify-center rounded-xl px-6 md:px-8 py-3.5 text-sm font-bold text-white border border-white/50 bg-black/20 backdrop-blur-md hover:bg-black/40 hover:border-white transition-all text-center"
-                  >
+                  <a href="#featured" className="inline-flex items-center justify-center rounded-xl px-8 py-3.5 text-sm font-bold text-white border border-white/50 bg-black/20 backdrop-blur-md hover:bg-black/40 hover:border-white transition-all text-center">
                     View Villas
                   </a>
                 </div>
               </div>
             </div>
           </div>
-        </div>
-      </section>
+        </section>
 
-      {/* BOOKING BAR */}
-      {/* ✅ android/ios: keep overlap but not bite hero */}
-      <section id="availability" className="relative z-10 -mt-14 sm:-mt-16 md:-mt-12 mb-20">
-        <div className="mx-auto max-w-5xl px-4 sm:px-6">
-          <GlassCard className="p-5 md:p-8">
-            <div className="flex flex-col md:flex-row md:items-end gap-4">
-              <div className="flex-1 w-full">
-                <label className="block text-xs font-bold uppercase tracking-wide text-slate-500 mb-1 md:mb-2">Check-in</label>
-                <input
-                  type="date"
-                  min={today}
-                  value={checkIn}
-                  onChange={(e) => {
-                    const v = e.target.value;
-                    setCheckIn(v);
-                    if (checkOut && (v === checkOut || isAfter(v, checkOut))) setCheckOut(addDays(v, 2));
-                  }}
-                  className="w-full rounded-xl border border-slate-200 bg-slate-50 px-4 py-3 text-sm focus:border-slate-900 focus:outline-none focus:ring-1 focus:ring-slate-900"
-                />
+        {/* Desktop Booking Bar */}
+        <section id="availability" className="relative z-10 -mt-12 mb-20">
+          <div className="mx-auto max-w-5xl px-6">
+            <GlassCard className="p-8">
+              <div className="flex flex-row items-end gap-4">
+                <div className="flex-1">
+                  <label className="block text-xs font-bold uppercase tracking-wide text-slate-500 mb-2">Check-in</label>
+                  <input
+                    type="date"
+                    min={today}
+                    value={checkIn}
+                    onChange={(e) => {
+                      const v = e.target.value;
+                      setCheckIn(v);
+                      if (checkOut && (v === checkOut || isAfter(v, checkOut))) setCheckOut(addDays(v, 2));
+                    }}
+                    className="w-full rounded-xl border border-slate-200 bg-slate-50 px-4 py-3 text-sm focus:border-slate-900 focus:outline-none focus:ring-1 focus:ring-slate-900"
+                  />
+                </div>
+
+                <div className="flex-1">
+                  <label className="block text-xs font-bold uppercase tracking-wide text-slate-500 mb-2">Check-out</label>
+                  <input
+                    type="date"
+                    min={checkIn || today}
+                    value={checkOut}
+                    onChange={(e) => setCheckOut(e.target.value)}
+                    className="w-full rounded-xl border border-slate-200 bg-slate-50 px-4 py-3 text-sm focus:border-slate-900 focus:outline-none focus:ring-1 focus:ring-slate-900"
+                  />
+                </div>
+
+                <div className="w-32">
+                  <label className="block text-xs font-bold uppercase tracking-wide text-slate-500 mb-2">Guests</label>
+                  <select
+                    value={guests}
+                    onChange={(e) => setGuests(Number(e.target.value))}
+                    className="w-full rounded-xl border border-slate-200 bg-slate-50 px-4 py-3 text-sm focus:border-slate-900 focus:outline-none focus:ring-1 focus:ring-slate-900"
+                  >
+                    {Array.from({ length: 14 }).map((_, i) => (
+                      <option key={i + 1} value={i + 1}>{i + 1} Guests</option>
+                    ))}
+                  </select>
+                </div>
+
+                <div className="w-44">
+                  <label className="block text-xs font-bold uppercase tracking-wide text-slate-500 mb-2">Promo</label>
+                  <input
+                    value={promo}
+                    onChange={(e) => setPromo(e.target.value)}
+                    placeholder="Optional"
+                    className="w-full rounded-xl border border-slate-200 bg-slate-50 px-4 py-3 text-sm focus:border-slate-900 focus:outline-none focus:ring-1 focus:ring-slate-900"
+                  />
+                </div>
+
+                <div>
+                  <PrimaryButton type="button" onClick={onSearch} disabled={loading} className="w-full py-3 h-[48px]">
+                    {loading ? "Searching…" : "Search"}
+                  </PrimaryButton>
+                </div>
               </div>
 
-              <div className="flex-1 w-full">
-                <label className="block text-xs font-bold uppercase tracking-wide text-slate-500 mb-1 md:mb-2">Check-out</label>
-                <input
-                  type="date"
-                  min={checkIn || today}
-                  value={checkOut}
-                  onChange={(e) => setCheckOut(e.target.value)}
-                  className="w-full rounded-xl border border-slate-200 bg-slate-50 px-4 py-3 text-sm focus:border-slate-900 focus:outline-none focus:ring-1 focus:ring-slate-900"
-                />
-              </div>
+              {error && <div className="mt-4 text-sm text-red-600 font-medium">{error}</div>}
+            </GlassCard>
+          </div>
+        </section>
+      </div>
 
-              <div className="w-full md:w-32">
-                <label className="block text-xs font-bold uppercase tracking-wide text-slate-500 mb-1 md:mb-2">Guests</label>
-                <select
-                  value={guests}
-                  onChange={(e) => setGuests(Number(e.target.value))}
-                  className="w-full rounded-xl border border-slate-200 bg-slate-50 px-4 py-3 text-sm focus:border-slate-900 focus:outline-none focus:ring-1 focus:ring-slate-900"
-                >
-                  {Array.from({ length: 14 }).map((_, i) => (
-                    <option key={i + 1} value={i + 1}>{i + 1} Guests</option>
-                  ))}
-                </select>
-              </div>
-
-              <div className="w-full md:w-44">
-                <label className="block text-xs font-bold uppercase tracking-wide text-slate-500 mb-1 md:mb-2">Promo</label>
-                <input
-                  value={promo}
-                  onChange={(e) => setPromo(e.target.value)}
-                  placeholder="Optional"
-                  className="w-full rounded-xl border border-slate-200 bg-slate-50 px-4 py-3 text-sm focus:border-slate-900 focus:outline-none focus:ring-1 focus:ring-slate-900"
-                />
-              </div>
-
-              <div className="w-full md:w-auto mt-2 md:mt-0">
-                <PrimaryButton type="button" onClick={onSearch} disabled={loading} className="w-full py-3 h-[46px] md:h-[48px]">
-                  {loading ? "Searching…" : "Search"}
-                </PrimaryButton>
-              </div>
-            </div>
-
-            {error && <div className="mt-4 text-sm text-red-600 font-medium">{error}</div>}
-          </GlassCard>
-        </div>
-      </section>
 
       {/* FEATURED LISTINGS */}
-      <section id="featured" className="py-16 md:py-20 bg-white">
+      <section id="featured" className="py-16 md:py-20 bg-white md:bg-slate-50">
         <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
           <SectionTitle eyebrow="The Collection" title="Featured Villas" desc="Carefully curated spaces designed for ultimate relaxation." />
 
