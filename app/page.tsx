@@ -97,7 +97,7 @@ function Pill({ children, tone = "default" }: { children: React.ReactNode; tone?
   return (
     <span
       className={cx(
-        "inline-flex items-center gap-2 rounded-full px-3 py-1 text-xs font-medium tracking-wide",
+        "inline-flex items-center gap-2 rounded-full px-3 py-1 text-[11px] md:text-xs font-medium tracking-wide",
         tone === "gold"
           ? "bg-[#D9B87C]/15 text-[#8B6B2B] border border-[#D9B87C]/35"
           : "bg-white/70 text-slate-700 border border-white/70 backdrop-blur"
@@ -111,7 +111,7 @@ function Pill({ children, tone = "default" }: { children: React.ReactNode; tone?
 function Stat({ label, value }: { label: string; value: string }) {
   return (
     <div className="rounded-xl bg-slate-50 border border-slate-100 px-4 py-3 text-center">
-      <div className="text-xs font-medium uppercase tracking-wider text-slate-500">{label}</div>
+      <div className="text-[10px] md:text-xs font-medium uppercase tracking-wider text-slate-500">{label}</div>
       <div className="mt-1 text-sm font-semibold text-slate-900">{value}</div>
     </div>
   );
@@ -156,7 +156,7 @@ function ListingCard({ l }: { l: HostawayListing }) {
         <div className="absolute inset-0 bg-black/0 transition-colors duration-300 group-hover:bg-black/5" />
       </div>
 
-      <div className="flex flex-col flex-grow p-6">
+      <div className="flex flex-col flex-grow p-5 md:p-6">
         <div className="flex-grow">
           <h3 className="text-lg font-semibold text-slate-900 line-clamp-1">{title}</h3>
           <p className="mt-2 text-sm text-slate-500 line-clamp-2">
@@ -183,6 +183,7 @@ function ListingCard({ l }: { l: HostawayListing }) {
 export default function Home() {
   const router = useRouter();
   const today = useMemo(() => formatISO(new Date()), []);
+  const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
 
   const [checkIn, setCheckIn] = useState<string>("");
   const [checkOut, setCheckOut] = useState<string>("");
@@ -253,13 +254,13 @@ export default function Home() {
   return (
     <main className="min-h-screen bg-slate-50 text-slate-900 selection:bg-slate-200">
       {/* HEADER */}
-      <header className="sticky top-0 z-50 border-b border-slate-200 bg-white/80 backdrop-blur-md">
-        <div className="mx-auto flex h-20 max-w-7xl items-center justify-between px-6 lg:px-8">
+      <header className="sticky top-0 z-50 border-b border-slate-200 bg-white/90 backdrop-blur-md">
+        <div className="mx-auto flex h-16 md:h-20 max-w-7xl items-center justify-between px-4 sm:px-6 lg:px-8">
           <a href="#top" className="flex items-center gap-3">
-            <div className="relative h-10 w-10 overflow-hidden">
+            <div className="relative h-8 w-8 md:h-10 md:w-10 overflow-hidden">
               <Image src="/brand/TTB-Logo.png" alt={BRAND.name} fill className="object-contain" priority />
             </div>
-            <div className="text-xl font-serif font-bold text-slate-900">{BRAND.name}</div>
+            <div className="text-lg md:text-xl font-serif font-bold text-slate-900 hidden sm:block">{BRAND.name}</div>
           </a>
 
           <nav className="hidden md:flex items-center gap-8 text-sm font-medium text-slate-600">
@@ -275,43 +276,66 @@ export default function Home() {
               <PrimaryButton type="button">Book Now</PrimaryButton>
             </a>
           </div>
+
+          {/* Mobile Menu Toggle Button */}
+          <button
+            className="md:hidden p-2 text-sm font-semibold text-slate-600"
+            onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
+          >
+            {mobileMenuOpen ? "Close" : "Menu"}
+          </button>
         </div>
+
+        {/* Mobile Nav Dropdown */}
+        {mobileMenuOpen && (
+          <div className="md:hidden border-t border-slate-200 bg-white px-4 py-4 shadow-lg">
+            <div className="flex flex-col gap-4 text-sm font-medium text-slate-600">
+              <a onClick={() => setMobileMenuOpen(false)} href="#featured" className="py-2 hover:text-slate-900">Featured Villas</a>
+              <a onClick={() => setMobileMenuOpen(false)} href="#availability" className="py-2 hover:text-slate-900">Check Availability</a>
+              <a href={`tel:${sanitizeTel(BRAND.phone)}`} className="py-2 hover:text-slate-900">Call {BRAND.phone}</a>
+            </div>
+          </div>
+        )}
       </header>
 
       {/* HERO */}
       <section id="top" className="relative">
-        <div className="relative h-[80vh] min-h-[600px] w-full">
+        {/* ✅ Adjusted video height slightly to give breathing room on mobile */}
+        <div className="relative h-[85vh] min-h-[600px] md:h-[80vh] w-full">
           <video className="absolute inset-0 h-full w-full object-cover" src="/media/hero.mp4" autoPlay muted loop playsInline />
           <div className="absolute inset-0 bg-slate-900/45" />
 
-          {/* ✅ MOBILE FIX: prevent title from clipping at top */}
-          <div className="absolute inset-0 flex items-start md:items-center">
-            <div className="mx-auto w-full max-w-7xl px-6 lg:px-8 pt-24 pb-28 md:pt-0 md:pb-20">
+          {/* ✅ FIXED MOBILE OVERLAP: Changed flex alignment and padding */}
+          <div className="absolute inset-0 flex flex-col justify-center pt-8 md:pt-0 pb-28 md:pb-16">
+            <div className="mx-auto w-full max-w-7xl px-4 sm:px-6 lg:px-8">
               <div className="max-w-3xl">
-                <div className="flex flex-wrap items-center gap-3 mb-6">
+                <div className="flex flex-wrap items-center gap-2 mb-4 md:mb-6">
                   <Pill>Oceanfront</Pill>
                   <Pill tone="gold">Exclusive Resort</Pill>
                 </div>
 
-                <h1 className="text-4xl sm:text-5xl font-serif font-medium tracking-tight text-white md:text-7xl leading-[1.05] md:leading-tight">
+                {/* ✅ Reduced font sizes and leading on small screens to prevent text overlap */}
+                <h1 className="text-4xl sm:text-5xl md:text-7xl font-serif font-medium tracking-tight text-white leading-[1.15] md:leading-tight">
                   Luxury villas on the North Shore.
                 </h1>
 
-                <p className="mt-6 max-w-xl text-lg text-white/90">
+                {/* ✅ Adjusted top margin for mobile */}
+                <p className="mt-4 md:mt-6 max-w-xl text-base md:text-lg text-white/90 leading-relaxed">
                   Premium space, resort-adjacent location, and direct booking flow. Escape to your private sanctuary.
                 </p>
 
-                <div className="mt-10 flex flex-wrap gap-4">
+                {/* ✅ Buttons will now stack neatly on mobile screens */}
+                <div className="mt-8 md:mt-10 flex flex-col sm:flex-row flex-wrap gap-3 md:gap-4">
                   <a
                     href="#availability"
-                    className="inline-flex items-center justify-center rounded-xl px-8 py-3.5 text-sm font-bold text-slate-900 bg-white shadow-lg hover:bg-slate-100 transition-all"
+                    className="inline-flex items-center justify-center rounded-xl px-6 md:px-8 py-3.5 text-sm font-bold text-slate-900 bg-white shadow-lg hover:bg-slate-100 transition-all text-center"
                   >
                     Check Availability
                   </a>
 
                   <a
                     href="#featured"
-                    className="inline-flex items-center justify-center rounded-xl px-8 py-3.5 text-sm font-bold text-white border border-white/50 bg-black/20 backdrop-blur-md hover:bg-black/40 hover:border-white transition-all"
+                    className="inline-flex items-center justify-center rounded-xl px-6 md:px-8 py-3.5 text-sm font-bold text-white border border-white/50 bg-black/20 backdrop-blur-md hover:bg-black/40 hover:border-white transition-all text-center"
                   >
                     View Villas
                   </a>
@@ -319,17 +343,17 @@ export default function Home() {
               </div>
             </div>
           </div>
-
         </div>
       </section>
 
       {/* BOOKING BAR */}
-      <section id="availability" className="relative z-10 -mt-8 mb-20">
-        <div className="mx-auto max-w-5xl px-6">
-          <GlassCard className="p-6 md:p-8">
+      {/* ✅ Adjusted top margin to push it slightly up without biting into the hero text */}
+      <section id="availability" className="relative z-10 -mt-16 md:-mt-12 mb-20">
+        <div className="mx-auto max-w-5xl px-4 sm:px-6">
+          <GlassCard className="p-5 md:p-8">
             <div className="flex flex-col md:flex-row md:items-end gap-4">
-              <div className="flex-1">
-                <label className="block text-xs font-bold uppercase tracking-wide text-slate-500 mb-2">Check-in</label>
+              <div className="flex-1 w-full">
+                <label className="block text-xs font-bold uppercase tracking-wide text-slate-500 mb-1 md:mb-2">Check-in</label>
                 <input
                   type="date"
                   min={today}
@@ -343,8 +367,8 @@ export default function Home() {
                 />
               </div>
 
-              <div className="flex-1">
-                <label className="block text-xs font-bold uppercase tracking-wide text-slate-500 mb-2">Check-out</label>
+              <div className="flex-1 w-full">
+                <label className="block text-xs font-bold uppercase tracking-wide text-slate-500 mb-1 md:mb-2">Check-out</label>
                 <input
                   type="date"
                   min={checkIn || today}
@@ -355,7 +379,7 @@ export default function Home() {
               </div>
 
               <div className="w-full md:w-32">
-                <label className="block text-xs font-bold uppercase tracking-wide text-slate-500 mb-2">Guests</label>
+                <label className="block text-xs font-bold uppercase tracking-wide text-slate-500 mb-1 md:mb-2">Guests</label>
                 <select
                   value={guests}
                   onChange={(e) => setGuests(Number(e.target.value))}
@@ -368,7 +392,7 @@ export default function Home() {
               </div>
 
               <div className="w-full md:w-44">
-                <label className="block text-xs font-bold uppercase tracking-wide text-slate-500 mb-2">Promo</label>
+                <label className="block text-xs font-bold uppercase tracking-wide text-slate-500 mb-1 md:mb-2">Promo</label>
                 <input
                   value={promo}
                   onChange={(e) => setPromo(e.target.value)}
@@ -377,8 +401,8 @@ export default function Home() {
                 />
               </div>
 
-              <div className="w-full md:w-auto">
-                <PrimaryButton type="button" onClick={onSearch} disabled={loading} className="w-full py-3 h-[46px]">
+              <div className="w-full md:w-auto mt-2 md:mt-0">
+                <PrimaryButton type="button" onClick={onSearch} disabled={loading} className="w-full py-3 h-[46px] md:h-[48px]">
                   {loading ? "Searching…" : "Search"}
                 </PrimaryButton>
               </div>
@@ -390,17 +414,17 @@ export default function Home() {
       </section>
 
       {/* FEATURED LISTINGS */}
-      <section id="featured" className="py-20 bg-white">
-        <div className="mx-auto max-w-7xl px-6 lg:px-8">
+      <section id="featured" className="py-16 md:py-20 bg-white">
+        <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
           <SectionTitle eyebrow="The Collection" title="Featured Villas" desc="Carefully curated spaces designed for ultimate relaxation." />
 
-          <div className="mt-12">
+          <div className="mt-10 md:mt-12">
             {listingsLoading ? (
               <div className="text-center py-20 text-slate-500">Loading premium listings...</div>
             ) : listingsError ? (
-              <div className="text-center py-20 text-red-500 bg-red-50 rounded-2xl">{listingsError}</div>
+              <div className="text-center py-20 text-red-500 bg-red-50 rounded-2xl mx-4 md:mx-0">{listingsError}</div>
             ) : (
-              <div className="grid gap-8 md:grid-cols-2 lg:grid-cols-3">
+              <div className="grid gap-6 md:gap-8 grid-cols-1 md:grid-cols-2 lg:grid-cols-3">
                 {listings.map((l) => (
                   <ListingCard key={l.id} l={l} />
                 ))}
@@ -411,9 +435,9 @@ export default function Home() {
       </section>
 
       {/* FOOTER */}
-      <footer className="border-t border-slate-200 bg-slate-50 py-12 mt-20">
-        <div className="mx-auto max-w-7xl px-6 lg:px-8 flex flex-col md:flex-row justify-between items-center gap-4">
-          <div className="text-xl font-serif font-bold text-slate-900">{BRAND.name}</div>
+      <footer className="border-t border-slate-200 bg-slate-50 py-10 md:py-12 mt-10 md:mt-20">
+        <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8 flex flex-col md:flex-row justify-between items-center gap-4 text-center md:text-left">
+          <div className="text-lg md:text-xl font-serif font-bold text-slate-900">{BRAND.name}</div>
           <div className="text-sm text-slate-500">© {new Date().getFullYear()} {BRAND.name}. All rights reserved.</div>
         </div>
       </footer>
