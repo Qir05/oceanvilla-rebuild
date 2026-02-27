@@ -2,13 +2,8 @@
 import { NextResponse } from "next/server";
 import type { NextRequest } from "next/server";
 
-function buildBookingEngineUrl(listingId: string) {
-  const base = process.env.HOSTAWAY_BOOKING_ENGINE_BASE_URL;
-  if (!base) return null;
-  const clean = base.replace(/\/$/, "");
-  // Common pattern sa Hostaway booking engine:
-  return `${clean}/listing/${encodeURIComponent(listingId)}`;
-}
+const BOOKING_ENGINE_BASE_URL =
+  process.env.BOOKING_ENGINE_BASE_URL || "https://182003_1.holidayfuture.com"; // <-- change if you use custom domain
 
 async function getHostawayAccessToken() {
   const accountId = process.env.HOSTAWAY_ACCOUNT_ID;
@@ -61,7 +56,6 @@ export async function GET(
 
     const token = await getHostawayAccessToken();
 
-    // simple + reliable: fetch all then find one
     const res = await fetch("https://api.hostaway.com/v1/listings", {
       headers: {
         Authorization: `Bearer ${token}`,
@@ -87,12 +81,6 @@ export async function GET(
     const images = Array.isArray(found?.listingImages) ? found.listingImages : [];
     const hero = images.find((img: any) => img?.url) || images[0];
 
-    // IMPORTANT: ayaw i-fallback ang booking url to image url
-    const bookingEngineUrl =
-      found?.bookingEngineUrl ||
-      found?.bookingEnginePublicUrl ||
-      buildBookingEngineUrl(String(id));
-
     return NextResponse.json(
       {
         success: true,
@@ -108,11 +96,8 @@ export async function GET(
           bathrooms: found?.bathroomsNumber ?? null,
           heroUrl: hero?.url || hero?.airbnbUrl || null,
 
-          // mao ni gamiton sa "Book now"
-          bookingEngineUrl: bookingEngineUrl || null,
-        },
-        debug: {
-          hasBookingEngineBase: Boolean(process.env.HOSTAWAY_BOOKING_ENGINE_BASE_URL),
+          // ✅ Always return booking engine base URL (public), not image URL
+          bookingEngineUrl: BOOKING_ENGINE_BASE_URL,
         },
       },
       { status: 200 }
