@@ -301,7 +301,7 @@ export default function Home() {
       if (propertyId) qp.set("propertyId", propertyId);
       if (promo.trim()) qp.set("promo", promo.trim());
 
-      window.location.href = `/rentals?${qp.toString()}`;
+     window.location.href = `/availability?startDate=${encodeURIComponent(checkIn)}&endDate=${encodeURIComponent(checkOut)}&guests=${encodeURIComponent(String(guests))}`;
     } catch (e) {
       setError("Something went wrong. Please try again.");
     } finally {
