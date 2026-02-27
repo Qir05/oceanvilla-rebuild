@@ -334,20 +334,23 @@ export default function Home() {
       {/* ========================================================================
         MOBILE LAYOUT
         ======================================================================== */}
-      <div className="md:hidden flex flex-col w-full">
-        {/* 1. Mobile Video Header ✅ seam fix wrapper */}
-        <div className="relative w-full h-[35vh] min-h-[250px] overflow-hidden bg-black isolate">
-          <video
-            className="absolute inset-0 h-full w-full object-cover object-center"
-            style={videoStyle}
-            src="/media/hero.mp4"
-            autoPlay
-            muted
-            loop
-            playsInline
-          />
-          <div className="absolute inset-0 bg-slate-900/20" />
-        </div>
+      <div className="relative w-full h-[35vh] min-h-[250px] overflow-hidden bg-black isolate">
+  <video
+    className="absolute inset-0 h-full w-full object-cover object-center"
+    style={{
+      transform: "translate3d(-0.5px, 0, 0) scale(1.03)", // ✅ hide 1px seam (mobile)
+      backfaceVisibility: "hidden",
+      WebkitBackfaceVisibility: "hidden",
+    }}
+    src="/media/hero.mp4"
+    autoPlay
+    muted
+    loop
+    playsInline
+    preload="auto"
+  />
+  <div className="absolute inset-0 bg-slate-900/20" />
+</div>
 
         {/* 2. Mobile Booking Bar */}
         <div id="availability-mobile" className="bg-slate-100 border-b border-slate-200 px-4 py-6 shadow-inner">
