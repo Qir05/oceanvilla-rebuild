@@ -192,10 +192,11 @@ function ListingCard({ l }: { l: HostawayListing }) {
   );
 }
 
-/** ✅ Fix for the “vertical line” seam:
+/**
+ * ✅ Seam fix (1px vertical line) — ONLY for the VIDEO rendering:
  * - overflow-hidden + bg-black + isolate on wrappers
- * - small scale(1.01) to hide 1px subpixel gaps
- * - translateZ(0) for GPU compositing consistency on iOS/Android
+ * - translateZ(0) for GPU consistency
+ * - scale(1.01) to cover 1px edge seams (iOS/Android + desktop)
  */
 const videoStyle: React.CSSProperties = { transform: "translateZ(0) scale(1.01)" };
 
@@ -574,7 +575,9 @@ export default function Home() {
       <footer className="border-t border-slate-200 bg-slate-50 py-10 md:py-12 mt-10 md:mt-20">
         <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8 flex flex-col md:flex-row justify-between items-center gap-4 text-center md:text-left">
           <div className="text-lg md:text-xl font-serif font-bold text-slate-900">{BRAND.name}</div>
-          <div className="text-sm text-slate-500">© {new Date().getFullYear()} {BRAND.name}. All rights reserved.</div>
+          <div className="text-sm text-slate-500">
+            © {new Date().getFullYear()} {BRAND.name}. All rights reserved.
+          </div>
         </div>
       </footer>
     </main>
