@@ -1,12 +1,25 @@
-// app/api/hostaway/search/route.ts
 import { NextResponse } from "next/server";
+
+const LISTING_IDS = ["489089", "489093", "489095", "489097", "489092", "489094"] as const;
+
+const BOOKING_ENGINE_BASE_URL =
+  process.env.HOSTAWAY_BOOKING_ENGINE_BASE_URL ||
+  process.env.NEXT_PUBLIC_BOOKING_URL ||
+  "https://182003_1.holidayfuture.com";
+
+let cachedToken: string | null = null;
+let cachedAt = 0;
+const TOKEN_TTL_MS = 1000 * 60 * 60 * 24 * 7; // 7 days
 
 async function getHostawayAccessToken() {
   const accountId = process.env.HOSTAWAY_ACCOUNT_ID;
   const apiKey = process.env.HOSTAWAY_API_KEY;
 
-  if (!accountId) throw new Error("Missing HOSTAWAY_ACCOUNT_ID");
-  if (!apiKey) throw new Error("Missing HOSTAWAY_API_KEY");
+  if (!accountId || !apiKey) {
+    throw new Error("Missing HOSTAWAY_ACCOUNT_ID or HOSTAWAY_API_KEY in environment variables.");
+  }
+
+  if (cachedToken && Date.now() - cachedAt < TOKEN_TTL_MS) return cachedToken;
 
   const body = new URLSearchParams();
   body.set("grant_type", "client_credentials");
@@ -20,241 +33,156 @@ async function getHostawayAccessToken() {
     cache: "no-store",
   });
 
-  const json = await res.json().catch(() => ({}));
-
-  const token =
-    json?.access_token ||
-    json?.accessToken ||
-    json?.token ||
-    json?.result?.access_token ||
-    json?.result?.accessToken ||
-    json?.result?.token ||
-    json?.data?.access_token ||
-    json?.data?.accessToken ||
-    json?.data?.token;
-
-  if (!res.ok || !token) {
-    throw new Error(
-      `Failed to get access token (${res.status}): ${JSON.stringify(json)}`
-    );
+  const json = await res.json().catch(() => ({} as any));
+  if (!res.ok || !json?.access_token) {
+    throw new Error(`Failed to get Hostaway access token (status ${res.status}).`);
   }
 
-  return String(token);
+  cachedToken = String(json.access_token);
+  cachedAt = Date.now();
+  return cachedToken;
 }
 
-function pickCalendarDays(payload: any): any[] {
-  const d = payload?.result ?? payload?.data ?? payload;
-
-  if (Array.isArray(d)) return d;
-  if (Array.isArray(d?.days)) return d.days;
-  if (Array.isArray(d?.calendar)) return d.calendar;
-  if (Array.isArray(d?.data)) return d.data;
-
-  return [];
+function isValidISODate(s: string) {
+  return /^\d{4}-\d{2}-\d{2}$/.test(s);
 }
 
-function isoToTime(iso: string) {
-  // iso expected: YYYY-MM-DD
-  const t = Date.parse(`${iso}T00:00:00Z`);
-  return Number.isFinite(t) ? t : NaN;
+function parseGuests(s: string | null) {
+  const n = Number(s || "2");
+  if (!Number.isFinite(n) || n < 1) return 2;
+  return Math.floor(n);
 }
 
-// STRICT MODE:
-// If ANY relevant day looks blocked/booked/unavailable -> NOT available
-function isUnavailableDay(day: any) {
-  if (!day) return false;
-
-  // booleans
-  if (typeof day.available === "boolean") return day.available === false;
-  if (typeof day.isAvailable === "boolean") return day.isAvailable === false;
-  if (typeof day.isBooked === "boolean") return day.isBooked === true;
-  if (typeof day.booked === "boolean") return day.booked === true;
-  if (typeof day.blocked === "boolean") return day.blocked === true;
-  if (typeof day.isBlocked === "boolean") return day.isBlocked === true;
-
-  // numbers (common in some calendars): 1/0
-  if (typeof day.available === "number") return day.available === 0;
-  if (typeof day.isAvailable === "number") return day.isAvailable === 0;
-  if (typeof day.booked === "number") return day.booked === 1;
-  if (typeof day.blocked === "number") return day.blocked === 1;
-
-  // strings
-  const status = String(day.status ?? day.state ?? day.availability ?? "").toLowerCase();
-  const bad = new Set([
-    "booked",
-    "reserved",
-    "blocked",
-    "unavailable",
-    "occupied",
-    "notavailable",
-    "closed",
-    "hold",
-  ]);
-  if (status && bad.has(status)) return true;
-
-  return false;
+function daysBetween(startISO: string, endISO: string) {
+  const a = new Date(startISO).getTime();
+  const b = new Date(endISO).getTime();
+  return Math.round((b - a) / (1000 * 60 * 60 * 24));
 }
 
-function dayIso(day: any): string | null {
-  // different keys across payloads
-  const v =
-    day?.date ||
-    day?.day ||
-    day?.calendarDate ||
-    day?.startDate ||
-    day?.localDate ||
-    null;
-
-  if (!v) return null;
-  const s = String(v).slice(0, 10); // keep YYYY-MM-DD
-  // quick guard
-  if (!/^\d{4}-\d{2}-\d{2}$/.test(s)) return null;
-  return s;
+function isAfterOrEqual(aISO: string, bISO: string) {
+  return new Date(aISO).getTime() >= new Date(bISO).getTime();
 }
 
 export async function GET(req: Request) {
   try {
-    const ids = process.env.OCEANVILLAS_LISTING_IDS;
-    if (!ids) {
-      return NextResponse.json(
-        { success: false, error: "Missing OCEANVILLAS_LISTING_IDS" },
-        { status: 500 }
-      );
-    }
-
     const { searchParams } = new URL(req.url);
-    const startDate = searchParams.get("startDate");
-    const endDate = searchParams.get("endDate");
-    const guests = searchParams.get("guests"); // optional (UI only for now)
+    const startDate = searchParams.get("startDate") || "";
+    const endDate = searchParams.get("endDate") || "";
+    const guests = parseGuests(searchParams.get("guests"));
 
-    if (!startDate || !endDate) {
-      return NextResponse.json(
-        { success: false, error: "Required: startDate, endDate" },
-        { status: 400 }
-      );
+    if (!isValidISODate(startDate) || !isValidISODate(endDate)) {
+      return NextResponse.json({ success: false, error: "Invalid or missing dates" }, { status: 400 });
+    }
+    if (isAfterOrEqual(startDate, endDate)) {
+      return NextResponse.json({ success: false, error: "endDate must be after startDate" }, { status: 400 });
     }
 
-    const startT = isoToTime(startDate);
-    const endT = isoToTime(endDate);
+    // number of nights
+    const nights = daysBetween(startDate, endDate);
 
-    if (!Number.isFinite(startT) || !Number.isFinite(endT) || endT <= startT) {
-      return NextResponse.json(
-        { success: false, error: "Invalid date range" },
-        { status: 400 }
-      );
-    }
+    const token = await getHostawayAccessToken();
 
-    const listingIds = ids
-      .split(",")
-      .map((s) => s.trim())
-      .filter(Boolean);
+    const availableListings = await Promise.all(
+      LISTING_IDS.map(async (id) => {
+        // Calendar endpoint: /v1/listings/{listingId}/calendar?startDate=&endDate= :contentReference[oaicite:5]{index=5}
+        const calRes = await fetch(
+          `https://api.hostaway.com/v1/listings/${encodeURIComponent(id)}/calendar?startDate=${encodeURIComponent(
+            startDate
+          )}&endDate=${encodeURIComponent(endDate)}&includeResources=0`,
+          {
+            headers: {
+              Authorization: `Bearer ${token}`,
+              "Content-Type": "application/json",
+              "Cache-control": "no-cache",
+            },
+            cache: "no-store",
+          }
+        );
 
-    const accessToken = await getHostawayAccessToken();
+        const calJson = await calRes.json().catch(() => ({} as any));
+        const days = Array.isArray(calJson?.result) ? calJson.result : [];
 
-    const authHeaders = {
-      Authorization: `Bearer ${accessToken}`,
-      "Content-Type": "application/json",
-    };
+        // If API fails, treat as not available (don’t break whole search)
+        if (!calRes.ok || days.length === 0) return null;
 
-    // 1) Pull listing details (increase limit/perPage to avoid missing listings)
-    const listingsRes = await fetch(
-      "https://api.hostaway.com/v1/listings?limit=1000&perPage=1000",
-      { headers: authHeaders, cache: "no-store" }
-    );
+        // Basic availability check: every day in range must be available
+        // (Hostaway calendar days include availability flags; we’re using a conservative filter.)
+        const allAvailable = days.every((d: any) => {
+          // some accounts return 1/0; treat truthy 1 as available
+          const isAvailable = d?.isAvailable;
+          const closedOnArrival = d?.closedOnArrival;
+          const closedOnDeparture = d?.closedOnDeparture;
 
-    const listingsJson = await listingsRes.json().catch(() => ({}));
-    const allListings = listingsJson?.result || listingsJson?.data || listingsJson;
+          // Keep it simple:
+          if (Number(isAvailable) !== 1) return false;
+          if (closedOnArrival === 1) return false;
+          if (closedOnDeparture === 1) return false;
+          return true;
+        });
 
-    const listings = Array.isArray(allListings)
-      ? allListings.filter((l: any) => listingIds.includes(String(l?.id)))
-      : [];
+        if (!allAvailable) return null;
 
-    // 2) Calendar checks per listing
-    const checks = await Promise.all(
-      listingIds.map(async (listingId) => {
-        const url =
-          `https://api.hostaway.com/v1/listings/${encodeURIComponent(listingId)}/calendar` +
-          `?startDate=${encodeURIComponent(startDate)}` +
-          `&endDate=${encodeURIComponent(endDate)}`;
+        // Also pull the listing details (for name + hero)
+        const listingRes = await fetch(
+          `https://api.hostaway.com/v1/listings/${encodeURIComponent(id)}?includeResources=1`,
+          {
+            headers: {
+              Authorization: `Bearer ${token}`,
+              "Content-Type": "application/json",
+              "Cache-control": "no-cache",
+            },
+            cache: "no-store",
+          }
+        );
 
-        const res = await fetch(url, { headers: authHeaders, cache: "no-store" });
-        const json = await res.json().catch(() => null);
-        const daysRaw = pickCalendarDays(json);
+        const listingJson = await listingRes.json().catch(() => ({} as any));
+        const l = listingJson?.result;
+        if (!listingRes.ok || !l) return null;
 
-        // ✅ Only evaluate "stay nights": startDate <= day < endDate
-        const relevantDays = Array.isArray(daysRaw)
-          ? daysRaw.filter((d: any) => {
-              const iso = dayIso(d);
-              if (!iso) return false;
-              const t = isoToTime(iso);
-              return Number.isFinite(t) && t >= startT && t < endT; // ignore checkout day
-            })
-          : [];
+        // guests filter (basic capacity check)
+        const capacity = l.personCapacity ?? l.maxGuests ?? null;
+        if (capacity != null && Number(capacity) < guests) return null;
 
-        // STRICT: if ANY relevant day is unavailable => listing not available
-        const anyUnavailable = relevantDays.some(isUnavailableDay);
+        // minimumStay check (conservative: if any day has minimumStay > nights, reject)
+        const minStayTooHigh = days.some((d: any) => {
+          const ms = d?.minimumStay;
+          if (ms == null) return false;
+          return Number(ms) > nights;
+        });
+        if (minStayTooHigh) return null;
 
-        // conservative: if we couldn't read relevant days, mark unavailable
-        const available =
-          res.ok && relevantDays.length > 0 && !anyUnavailable;
+        const images = Array.isArray(l?.listingImages) ? l.listingImages : [];
+        const hero = images.find((img: any) => img?.url) || images[0];
 
         return {
-          listingId: String(listingId),
-          status: res.status,
-          available,
-          url,
-          daysCount: Array.isArray(daysRaw) ? daysRaw.length : 0,
-          relevantCount: relevantDays.length,
-          anyUnavailable,
+          id: String(l.id),
+          name: l.name || l.externalListingName || `Listing ${id}`,
+          city: l.city || null,
+          state: l.state || null,
+          maxGuests: capacity,
+          bedrooms: l.bedroomsNumber ?? null,
+          bathrooms: l.bathroomsNumber ?? null,
+          thumbnailUrl: hero?.url || hero?.airbnbUrl || null,
+          bookingEngineBase: BOOKING_ENGINE_BASE_URL,
         };
       })
     );
 
-    const availableIds = checks.filter((c) => c.available).map((c) => c.listingId);
-
-    const availableListings = listings.filter((l: any) =>
-      availableIds.includes(String(l?.id))
-    );
-
-    // Compact response for UI
-    const compactListings = availableListings.map((l: any) => {
-      const images = Array.isArray(l?.listingImages) ? l.listingImages : [];
-      const hero =
-        images.find((img: any) => img?.url) ||
-        images.find((img: any) => img?.airbnbUrl) ||
-        images[0];
-
-      return {
-        id: String(l?.id),
-        name: l?.name || l?.externalListingName || "Listing",
-        city: l?.city || null,
-        state: l?.state || null,
-        country: l?.country || null,
-        maxGuests: l?.personCapacity ?? l?.maxGuests ?? null,
-        bedrooms: l?.bedroomsNumber ?? null,
-        bathrooms: l?.bathroomsNumber ?? null,
-        thumbnailUrl: hero?.url || hero?.airbnbUrl || null,
-        priceNightly: l?.priceNightly ?? l?.baseRate ?? null,
-      };
-    });
+    const cleaned = availableListings.filter(Boolean);
 
     return NextResponse.json(
       {
         success: true,
-        query: { startDate, endDate, guests },
-        totalConfigured: listingIds.length,
-        totalFoundListings: listings.length,
-        availableCount: compactListings.length,
-        availableListings: compactListings,
-        debug: {
-          checked: checks,
-        },
+        startDate,
+        endDate,
+        guests,
+        availableListings: cleaned,
       },
       { status: 200 }
     );
   } catch (err: any) {
     return NextResponse.json(
-      { success: false, error: err?.message || "Unknown error" },
+      { success: false, error: err?.message || "Internal Server Error" },
       { status: 500 }
     );
   }
