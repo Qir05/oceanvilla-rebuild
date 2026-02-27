@@ -3,7 +3,9 @@ import { NextResponse } from "next/server";
 import type { NextRequest } from "next/server";
 
 const BOOKING_ENGINE_BASE_URL =
-  process.env.BOOKING_ENGINE_BASE_URL || "https://182003_1.holidayfuture.com";
+  process.env.HOSTAWAY_BOOKING_ENGINE_BASE_URL ||
+  process.env.NEXT_PUBLIC_BOOKING_URL ||
+  "https://182003_1.holidayfuture.com";
 
 async function getHostawayAccessToken() {
   const accountId = process.env.HOSTAWAY_ACCOUNT_ID;
@@ -52,12 +54,11 @@ export async function GET(
 ) {
   try {
     const { id } = await context.params;
-    if (!id)
-      return NextResponse.json({ error: "Missing id" }, { status: 400 });
+    if (!id) return NextResponse.json({ error: "Missing id" }, { status: 400 });
 
     const token = await getHostawayAccessToken();
 
-    const res = await fetch("https://api.hostaway.com/v1/listings", {
+    const res = await fetch("https://api.hostaway.com/v1/listings?limit=1000&perPage=1000", {
       headers: {
         Authorization: `Bearer ${token}`,
         "Content-Type": "application/json",
@@ -73,15 +74,10 @@ export async function GET(
       : null;
 
     if (!found) {
-      return NextResponse.json(
-        { error: "Listing not found", id },
-        { status: 404 }
-      );
+      return NextResponse.json({ error: "Listing not found", id }, { status: 404 });
     }
 
-    const images = Array.isArray(found?.listingImages)
-      ? found.listingImages
-      : [];
+    const images = Array.isArray(found?.listingImages) ? found.listingImages : [];
     const hero = images.find((img: any) => img?.url) || images[0];
 
     return NextResponse.json(
@@ -89,21 +85,17 @@ export async function GET(
         success: true,
         listing: {
           id: String(found?.id),
-          name:
-            found?.name ||
-            found?.externalListingName ||
-            `Listing ${id}`,
+          name: found?.name || found?.externalListingName || `Listing ${id}`,
           description: found?.description || null,
           city: found?.city || null,
           state: found?.state || null,
           country: found?.country || null,
-          maxGuests:
-            found?.personCapacity ?? found?.maxGuests ?? null,
+          maxGuests: found?.personCapacity ?? found?.maxGuests ?? null,
           bedrooms: found?.bedroomsNumber ?? null,
           bathrooms: found?.bathroomsNumber ?? null,
           heroUrl: hero?.url || hero?.airbnbUrl || null,
 
-          // IMPORTANT: return base domain only
+          // ✅ correct env var
           bookingEngineBase: BOOKING_ENGINE_BASE_URL,
         },
       },
