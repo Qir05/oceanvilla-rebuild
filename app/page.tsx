@@ -15,6 +15,7 @@ type HostawayListing = {
   bedrooms?: number;
   bathrooms?: number;
   heroUrl?: string;
+  bookingEngineBase?: string;
 };
 
 const BRAND = {
@@ -57,7 +58,6 @@ function clampText(s: string, max = 120) {
 }
 
 function sanitizeTel(phone: string) {
-  // keep + and digits only
   const cleaned = (phone || "").replace(/[^\d+]/g, "");
   return cleaned || phone;
 }
@@ -67,7 +67,7 @@ function GlassCard({ className, children }: { className?: string; children: Reac
     <div
       className={cx(
         "rounded-2xl border border-white/60 bg-white/80 backdrop-blur-xl",
-        "shadow-[0_8px_30px_rgb(0,0,0,0.04)]",
+        "shadow-[0_10px_40px_rgba(15,23,42,0.08)]",
         className
       )}
     >
@@ -81,8 +81,8 @@ function PrimaryButton({ children, className, ...props }: React.ButtonHTMLAttrib
     <button
       {...props}
       className={cx(
-        "relative inline-flex items-center justify-center rounded-xl px-6 py-3 text-sm font-medium text-white",
-        "bg-slate-900 shadow-md",
+        "inline-flex items-center justify-center rounded-xl px-6 py-3 text-sm font-semibold",
+        "bg-slate-900 text-white shadow-md",
         "transition-all duration-200 hover:bg-slate-800 hover:shadow-lg active:scale-[0.98]",
         "focus:outline-none focus:ring-2 focus:ring-slate-400 focus:ring-offset-2",
         className
@@ -93,30 +93,14 @@ function PrimaryButton({ children, className, ...props }: React.ButtonHTMLAttrib
   );
 }
 
-function SecondaryButton({ children, className, ...props }: React.AnchorHTMLAttributes<HTMLAnchorElement>) {
-  return (
-    <a
-      {...props}
-      className={cx(
-        "inline-flex items-center justify-center rounded-xl px-6 py-3 text-sm font-medium",
-        "text-slate-900 border border-slate-200 bg-white shadow-sm",
-        "transition-all duration-200 hover:bg-slate-50 hover:border-slate-300 active:scale-[0.98]",
-        className
-      )}
-    >
-      {children}
-    </a>
-  );
-}
-
 function Pill({ children, tone = "default" }: { children: React.ReactNode; tone?: "default" | "gold" }) {
   return (
     <span
       className={cx(
         "inline-flex items-center gap-2 rounded-full px-3 py-1 text-xs font-medium tracking-wide",
         tone === "gold"
-          ? "bg-[#D9B87C]/10 text-[#8B6B2B] border border-[#D9B87C]/30"
-          : "bg-slate-100 text-slate-700 border border-slate-200"
+          ? "bg-[#D9B87C]/15 text-[#8B6B2B] border border-[#D9B87C]/35"
+          : "bg-white/70 text-slate-700 border border-white/70 backdrop-blur"
       )}
     >
       {children}
@@ -148,19 +132,29 @@ function ListingCard({ l }: { l: HostawayListing }) {
   const subtitle = clampText(l.description || "", 86);
   const hero = l.heroUrl || "/media/rentals/placeholder.jpg";
 
+  // Default booking engine format is commonly /listings/{listingID} :contentReference[oaicite:7]{index=7}
+  const base = (l.bookingEngineBase || "https://182003_1.holidayfuture.com").replace(/\/$/, "");
+  const bookUrl = `${base}/listings/${encodeURIComponent(l.id)}`;
+
   return (
-    <div className="group flex flex-col overflow-hidden rounded-2xl bg-white shadow-[0_4px_20px_rgb(0,0,0,0.03)] border border-slate-100 transition-all duration-300 hover:shadow-[0_8px_30px_rgb(0,0,0,0.08)] hover:-translate-y-1">
+    <a
+      href={bookUrl}
+      target="_blank"
+      rel="noopener noreferrer"
+      className="group flex flex-col overflow-hidden rounded-2xl bg-white shadow-[0_6px_26px_rgba(15,23,42,0.06)] border border-slate-100 transition-all duration-300 hover:shadow-[0_18px_60px_rgba(15,23,42,0.14)] hover:-translate-y-1.5"
+    >
       <div className="relative aspect-[4/3] overflow-hidden bg-slate-100">
         <Image
           src={hero}
           alt={title}
           fill
+          unoptimized={true}
           className="object-cover transition-transform duration-700 group-hover:scale-105"
-          sizes="(max-width: 768px) 100vw, 33vw"
         />
-        <div className="absolute top-4 right-4">
-          <Pill>#{l.id}</Pill>
+        <div className="absolute top-4 right-4 z-10">
+          <Pill tone="default">#{l.id}</Pill>
         </div>
+        <div className="absolute inset-0 bg-black/0 transition-colors duration-300 group-hover:bg-black/5" />
       </div>
 
       <div className="flex flex-col flex-grow p-6">
@@ -176,16 +170,20 @@ function ListingCard({ l }: { l: HostawayListing }) {
           <Stat label="Beds" value={`${l.bedrooms ?? "-"}`} />
           <Stat label="Baths" value={`${l.bathrooms ?? "-"}`} />
         </div>
+
+        <div className="mt-5">
+          <span className="flex w-full items-center justify-center rounded-xl bg-slate-900 py-3 text-sm font-semibold text-white transition group-hover:bg-slate-800">
+            View & Book
+          </span>
+        </div>
       </div>
-    </div>
+    </a>
   );
 }
 
 export default function Home() {
   const router = useRouter();
   const today = useMemo(() => formatISO(new Date()), []);
-
-  const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
 
   const [checkIn, setCheckIn] = useState<string>("");
   const [checkOut, setCheckOut] = useState<string>("");
@@ -211,9 +209,7 @@ export default function Home() {
           LISTING_IDS.map(async (id) => {
             const res = await fetch(`/api/hostaway/listings?id=${encodeURIComponent(id)}`, { cache: "no-store" });
             const json = await res.json().catch(() => null);
-
             if (!res.ok || !json?.success) throw new Error(`Failed to load listing ${id}`);
-
             return json.listing as HostawayListing;
           })
         );
@@ -235,7 +231,7 @@ export default function Home() {
     };
   }, []);
 
-  async function onSearch() {
+  function onSearch() {
     setError("");
 
     if (!checkIn || !checkOut) return setError("Please choose your check-in and check-out dates.");
@@ -245,7 +241,6 @@ export default function Home() {
 
     setLoading(true);
     try {
-      // ✅ This assumes you have app/availability/page.tsx
       router.push(
         `/availability?startDate=${encodeURIComponent(checkIn)}&endDate=${encodeURIComponent(checkOut)}&guests=${encodeURIComponent(
           String(guests)
@@ -262,30 +257,25 @@ export default function Home() {
       <header className="sticky top-0 z-50 border-b border-slate-200 bg-white/80 backdrop-blur-md">
         <div className="mx-auto flex h-20 max-w-7xl items-center justify-between px-6 lg:px-8">
           <a href="#top" className="flex items-center gap-3">
+            <div className="relative h-10 w-10 overflow-hidden">
+              <Image src="/brand/TTB-Logo.png" alt={BRAND.name} fill className="object-contain" priority />
+            </div>
             <div className="text-xl font-serif font-bold text-slate-900">{BRAND.name}</div>
           </a>
 
           <nav className="hidden md:flex items-center gap-8 text-sm font-medium text-slate-600">
             <a className="hover:text-slate-900 transition-colors" href="#featured">Featured</a>
             <a className="hover:text-slate-900 transition-colors" href="#availability">Availability</a>
-            <a className="hover:text-slate-900 transition-colors" href="#reviews">Reviews</a>
           </nav>
 
           <div className="hidden md:flex items-center gap-6">
-            <a
-              className="text-sm font-medium text-slate-600 hover:text-slate-900 transition"
-              href={`tel:${sanitizeTel(BRAND.phone)}`}
-            >
+            <a className="text-sm font-medium text-slate-600 hover:text-slate-900 transition" href={`tel:${sanitizeTel(BRAND.phone)}`}>
               {BRAND.phone}
             </a>
             <a href="#availability">
               <PrimaryButton type="button">Book Now</PrimaryButton>
             </a>
           </div>
-
-          <button className="md:hidden p-2 text-slate-600" onClick={() => setMobileMenuOpen(!mobileMenuOpen)}>
-            {mobileMenuOpen ? "Close" : "Menu"}
-          </button>
         </div>
       </header>
 
@@ -293,42 +283,48 @@ export default function Home() {
       <section id="top" className="relative">
         <div className="relative h-[80vh] min-h-[600px] w-full">
           <video className="absolute inset-0 h-full w-full object-cover" src="/media/hero.mp4" autoPlay muted loop playsInline />
-          <div className="absolute inset-0 bg-slate-900/40" />
+          <div className="absolute inset-0 bg-slate-900/45" />
 
           <div className="absolute inset-0 flex items-center">
-            <div className="mx-auto w-full max-w-7xl px-6 lg:px-8">
+            <div className="mx-auto w-full max-w-7xl px-6 lg:px-8 pb-20">
               <div className="max-w-3xl">
                 <div className="flex flex-wrap items-center gap-3 mb-6">
                   <Pill>Oceanfront</Pill>
                   <Pill tone="gold">Exclusive Resort</Pill>
                 </div>
+
                 <h1 className="text-5xl font-serif font-medium tracking-tight text-white md:text-7xl leading-tight">
                   Luxury villas on the North Shore.
                 </h1>
+
                 <p className="mt-6 max-w-xl text-lg text-white/90">
                   Premium space, resort-adjacent location, and direct booking flow. Escape to your private sanctuary.
                 </p>
+
                 <div className="mt-10 flex flex-wrap gap-4">
-                  <a href="#availability">
-                    <PrimaryButton type="button" className="bg-white text-slate-900 hover:bg-slate-50">
-                      Check Availability
-                    </PrimaryButton>
+                  <a
+                    href="#availability"
+                    className="inline-flex items-center justify-center rounded-xl px-8 py-3.5 text-sm font-bold text-slate-900 bg-white shadow-lg hover:bg-slate-100 transition-all"
+                  >
+                    Check Availability
                   </a>
-                  <SecondaryButton
+
+                  <a
                     href="#featured"
-                    className="bg-transparent border-white/30 text-white hover:bg-white/10 hover:border-white/50"
+                    className="inline-flex items-center justify-center rounded-xl px-8 py-3.5 text-sm font-bold text-white border border-white/50 bg-black/20 backdrop-blur-md hover:bg-black/40 hover:border-white transition-all"
                   >
                     View Villas
-                  </SecondaryButton>
+                  </a>
                 </div>
               </div>
             </div>
           </div>
+
         </div>
       </section>
 
       {/* BOOKING BAR */}
-      <section id="availability" className="relative z-10 -mt-16 mb-20">
+      <section id="availability" className="relative z-10 -mt-8 mb-20">
         <div className="mx-auto max-w-5xl px-6">
           <GlassCard className="p-6 md:p-8">
             <div className="flex flex-col md:flex-row md:items-end gap-4">
@@ -341,9 +337,7 @@ export default function Home() {
                   onChange={(e) => {
                     const v = e.target.value;
                     setCheckIn(v);
-                    if (checkOut && (v === checkOut || isAfter(v, checkOut))) {
-                      setCheckOut(addDays(v, 2));
-                    }
+                    if (checkOut && (v === checkOut || isAfter(v, checkOut))) setCheckOut(addDays(v, 2));
                   }}
                   className="w-full rounded-xl border border-slate-200 bg-slate-50 px-4 py-3 text-sm focus:border-slate-900 focus:outline-none focus:ring-1 focus:ring-slate-900"
                 />
@@ -368,14 +362,11 @@ export default function Home() {
                   className="w-full rounded-xl border border-slate-200 bg-slate-50 px-4 py-3 text-sm focus:border-slate-900 focus:outline-none focus:ring-1 focus:ring-slate-900"
                 >
                   {Array.from({ length: 14 }).map((_, i) => (
-                    <option key={i + 1} value={i + 1}>
-                      {i + 1} Guests
-                    </option>
+                    <option key={i + 1} value={i + 1}>{i + 1} Guests</option>
                   ))}
                 </select>
               </div>
 
-              {/* OPTIONAL: Promo */}
               <div className="w-full md:w-44">
                 <label className="block text-xs font-bold uppercase tracking-wide text-slate-500 mb-2">Promo</label>
                 <input
