@@ -97,7 +97,7 @@ function Pill({ children, tone = "default" }: { children: React.ReactNode; tone?
   return (
     <span
       className={cx(
-        "inline-flex items-center gap-2 rounded-full px-3 py-1 text-[11px] md:text-xs font-medium tracking-wide",
+        "inline-flex items-center gap-2 rounded-full px-3 py-1 text-xs font-medium tracking-wide",
         tone === "gold"
           ? "bg-[#D9B87C]/15 text-[#8B6B2B] border border-[#D9B87C]/35"
           : "bg-white/70 text-slate-700 border border-white/70 backdrop-blur"
@@ -111,7 +111,7 @@ function Pill({ children, tone = "default" }: { children: React.ReactNode; tone?
 function Stat({ label, value }: { label: string; value: string }) {
   return (
     <div className="rounded-xl bg-slate-50 border border-slate-100 px-4 py-3 text-center">
-      <div className="text-[10px] md:text-xs font-medium uppercase tracking-wider text-slate-500">{label}</div>
+      <div className="text-xs font-medium uppercase tracking-wider text-slate-500">{label}</div>
       <div className="mt-1 text-sm font-semibold text-slate-900">{value}</div>
     </div>
   );
@@ -156,7 +156,7 @@ function ListingCard({ l }: { l: HostawayListing }) {
         <div className="absolute inset-0 bg-black/0 transition-colors duration-300 group-hover:bg-black/5" />
       </div>
 
-      <div className="flex flex-col flex-grow p-5 md:p-6">
+      <div className="flex flex-col flex-grow p-6">
         <div className="flex-grow">
           <h3 className="text-lg font-semibold text-slate-900 line-clamp-1">{title}</h3>
           <p className="mt-2 text-sm text-slate-500 line-clamp-2">
@@ -277,7 +277,6 @@ export default function Home() {
             </a>
           </div>
 
-          {/* Mobile Menu Toggle Button */}
           <button
             className="md:hidden p-2 text-sm font-semibold text-slate-600"
             onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
@@ -288,7 +287,7 @@ export default function Home() {
 
         {/* Mobile Nav Dropdown */}
         {mobileMenuOpen && (
-          <div className="md:hidden border-t border-slate-200 bg-white px-4 py-4 shadow-lg">
+          <div className="md:hidden border-t border-slate-200 bg-white px-4 py-4 shadow-lg absolute w-full">
             <div className="flex flex-col gap-4 text-sm font-medium text-slate-600">
               <a onClick={() => setMobileMenuOpen(false)} href="#featured" className="py-2 hover:text-slate-900">Featured Villas</a>
               <a onClick={() => setMobileMenuOpen(false)} href="#availability" className="py-2 hover:text-slate-900">Check Availability</a>
@@ -300,31 +299,27 @@ export default function Home() {
 
       {/* HERO */}
       <section id="top" className="relative">
-        {/* ✅ Adjusted video height slightly to give breathing room on mobile */}
-        <div className="relative h-[85vh] min-h-[600px] md:h-[80vh] w-full">
+        <div className="relative h-[85vh] min-h-[620px] md:h-[80vh] w-full">
           <video className="absolute inset-0 h-full w-full object-cover" src="/media/hero.mp4" autoPlay muted loop playsInline />
           <div className="absolute inset-0 bg-slate-900/45" />
 
-          {/* ✅ FIXED MOBILE OVERLAP: Changed flex alignment and padding */}
-          <div className="absolute inset-0 flex flex-col justify-center pt-8 md:pt-0 pb-28 md:pb-16">
-            <div className="mx-auto w-full max-w-7xl px-4 sm:px-6 lg:px-8">
+          {/* ✅ THE FIX: Flex-col, justify-center, ug solid nga paddings (pt-20 ug pb-36) para dili matabunan bisag unsaon! */}
+          <div className="absolute inset-0 flex flex-col justify-center pt-20 pb-36 md:pt-16 md:pb-24">
+            <div className="mx-auto w-full max-w-7xl px-5 sm:px-6 lg:px-8">
               <div className="max-w-3xl">
-                <div className="flex flex-wrap items-center gap-2 mb-4 md:mb-6">
+                <div className="flex flex-wrap items-center gap-3 mb-4 md:mb-6">
                   <Pill>Oceanfront</Pill>
                   <Pill tone="gold">Exclusive Resort</Pill>
                 </div>
 
-                {/* ✅ Reduced font sizes and leading on small screens to prevent text overlap */}
                 <h1 className="text-4xl sm:text-5xl md:text-7xl font-serif font-medium tracking-tight text-white leading-[1.15] md:leading-tight">
                   Luxury villas on the North Shore.
                 </h1>
 
-                {/* ✅ Adjusted top margin for mobile */}
                 <p className="mt-4 md:mt-6 max-w-xl text-base md:text-lg text-white/90 leading-relaxed">
                   Premium space, resort-adjacent location, and direct booking flow. Escape to your private sanctuary.
                 </p>
 
-                {/* ✅ Buttons will now stack neatly on mobile screens */}
                 <div className="mt-8 md:mt-10 flex flex-col sm:flex-row flex-wrap gap-3 md:gap-4">
                   <a
                     href="#availability"
@@ -347,8 +342,7 @@ export default function Home() {
       </section>
 
       {/* BOOKING BAR */}
-      {/* ✅ Adjusted top margin to push it slightly up without biting into the hero text */}
-      <section id="availability" className="relative z-10 -mt-16 md:-mt-12 mb-20">
+      <section id="availability" className="relative z-10 -mt-16 mb-20">
         <div className="mx-auto max-w-5xl px-4 sm:px-6">
           <GlassCard className="p-5 md:p-8">
             <div className="flex flex-col md:flex-row md:items-end gap-4">
