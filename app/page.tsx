@@ -193,10 +193,7 @@ function ListingCard({ l }: { l: HostawayListing }) {
 }
 
 /**
- * ✅ Seam fix (1px vertical line) — ONLY for the VIDEO rendering:
- * - overflow-hidden + bg-black + isolate on wrappers
- * - translateZ(0) for GPU consistency
- * - scale(1.01) to cover 1px edge seams (iOS/Android + desktop)
+ * Desktop video seam fix
  */
 const videoStyle: React.CSSProperties = { transform: "translateZ(0) scale(1.01)" };
 
@@ -332,27 +329,29 @@ export default function Home() {
       </header>
 
       {/* ========================================================================
-        MOBILE LAYOUT
+        ✅ MOBILE LAYOUT (WRAPPED PROPERLY so it won't show on desktop)
         ======================================================================== */}
-      <div className="relative w-full h-[35vh] min-h-[250px] overflow-hidden bg-black isolate">
-  <video
-    className="absolute inset-0 h-full w-full object-cover object-center"
-    style={{
-      transform: "translate3d(-0.5px, 0, 0) scale(1.03)", // ✅ hide 1px seam (mobile)
-      backfaceVisibility: "hidden",
-      WebkitBackfaceVisibility: "hidden",
-    }}
-    src="/media/hero.mp4"
-    autoPlay
-    muted
-    loop
-    playsInline
-    preload="auto"
-  />
-  <div className="absolute inset-0 bg-slate-900/20" />
-</div>
+      <div className="block md:hidden">
+        {/* 1) Mobile Video Header (seam fix mobile-only) */}
+        <div className="relative w-full h-[35vh] min-h-[250px] overflow-hidden bg-black isolate">
+          <video
+            className="absolute inset-0 h-full w-full object-cover object-center"
+            style={{
+              transform: "translate3d(-0.5px, 0, 0) scale(1.03)", // hide 1px seam (mobile)
+              backfaceVisibility: "hidden",
+              WebkitBackfaceVisibility: "hidden",
+            }}
+            src="/media/hero.mp4"
+            autoPlay
+            muted
+            loop
+            playsInline
+            preload="auto"
+          />
+          <div className="absolute inset-0 bg-slate-900/20" />
+        </div>
 
-        {/* 2. Mobile Booking Bar */}
+        {/* 2) Mobile Booking Bar */}
         <div id="availability-mobile" className="bg-slate-100 border-b border-slate-200 px-4 py-6 shadow-inner">
           <div className="grid grid-cols-2 gap-3 mb-3">
             <div>
@@ -410,10 +409,11 @@ export default function Home() {
           <PrimaryButton type="button" onClick={onSearch} disabled={loading} className="w-full py-3">
             {loading ? "Searching…" : "Search Availability"}
           </PrimaryButton>
+
           {error && <div className="mt-3 text-center text-xs text-red-600 font-medium">{error}</div>}
         </div>
 
-        {/* 3. Mobile Hero Text Section */}
+        {/* 3) Mobile Hero Text Section */}
         <div className="bg-white px-6 py-10 flex flex-col items-center text-center">
           <div className="flex gap-2 mb-4">
             <Pill darkText>Oceanfront</Pill>
@@ -423,6 +423,7 @@ export default function Home() {
           <p className="mt-2 text-base text-slate-600 leading-relaxed">
             Premium space, resort-adjacent location, and direct booking flow. Escape to your private sanctuary.
           </p>
+
           <a
             href="#featured"
             className="mt-6 text-sm font-bold text-slate-900 underline underline-offset-4 decoration-2 decoration-[#D9B87C] hover:text-[#D9B87C] transition-colors"
@@ -430,12 +431,12 @@ export default function Home() {
             View the collection ↓
           </a>
         </div>
-      
+      </div>
+
       {/* ========================================================================
         DESKTOP LAYOUT
         ======================================================================== */}
       <div className="hidden md:block">
-        {/* ✅ seam fix wrapper */}
         <section id="top" className="relative h-[80vh] w-full overflow-hidden bg-black isolate">
           <video
             className="absolute inset-0 h-full w-full object-cover object-center"
