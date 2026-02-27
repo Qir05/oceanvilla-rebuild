@@ -2,7 +2,11 @@
 import Link from "next/link";
 import { headers } from "next/headers";
 
-type SearchParams = { startDate?: string; endDate?: string; guests?: string };
+type SearchParams = {
+  startDate?: string;
+  endDate?: string;
+  guests?: string;
+};
 
 async function getBaseUrlFromHeaders() {
   const h = await headers();
@@ -15,209 +19,77 @@ export default async function ListingDetailsPage({
   params,
   searchParams,
 }: {
-  // ✅ Next 16: params can be a Promise
   params: { id: string } | Promise<{ id: string }>;
-  // ✅ Next 16: searchParams can be a Promise
   searchParams: SearchParams | Promise<SearchParams>;
 }) {
   const p = await Promise.resolve(params);
   const sp = await Promise.resolve(searchParams);
 
-  const id = p?.id; // ✅ now safe
-
+  const id = p?.id;
   const startDate = sp?.startDate || "";
   const endDate = sp?.endDate || "";
   const guests = sp?.guests || "2";
 
-  const baseUrl = await getBaseUrlFromHeaders();
-
-  // guard: if id missing
   if (!id) {
-    return (
-      <div style={{ padding: 28, maxWidth: 1100, margin: "0 auto" }}>
-        <h1 style={{ fontSize: 34, fontWeight: 900 }}>Listing</h1>
-        <div style={{ marginTop: 12, color: "#b00", fontWeight: 800 }}>
-          Missing listing id from route params.
-        </div>
-      </div>
-    );
+    return <div>Missing listing id</div>;
   }
 
-  const apiUrl = `${baseUrl}/api/hostaway/listings/${encodeURIComponent(id)}`;
+  const baseUrl = await getBaseUrlFromHeaders();
+  const apiUrl = `${baseUrl}/api/hostaway/listings/${id}`;
 
-  let data: any = null;
-  let error: any = null;
-  let status = 200;
+  const res = await fetch(apiUrl, { cache: "no-store" });
+  const data = await res.json();
+  const listing = data?.listing;
 
-  try {
-    const res = await fetch(apiUrl, { cache: "no-store" });
-    status = res.status;
-
-    const text = await res.text();
-    try {
-      data = JSON.parse(text);
-    } catch {
-      error = { error: "API returned non-JSON", status, body: text.slice(0, 300) };
-    }
-
-    if (!res.ok && !error) error = data;
-  } catch (e: any) {
-    error = { error: e?.message || "Fetch failed" };
+  if (!listing) {
+    return <div>Listing not found</div>;
   }
 
-  const listing = data?.listing || null;
-
-  const bookingUrl = listing?.bookingEngineUrl
-    ? buildBookingUrl(listing.bookingEngineUrl, id, startDate, endDate, guests)
-    : null;
+  const bookingUrl = buildBookingUrl(
+    listing.bookingEngineBase,
+    id,
+    startDate,
+    endDate,
+    guests
+  );
 
   return (
     <div style={{ padding: 28, maxWidth: 1100, margin: "0 auto" }}>
-      <div style={{ marginBottom: 14 }}>
-        <Link
-          href={`/availability?startDate=${encodeURIComponent(
-            startDate
-          )}&endDate=${encodeURIComponent(endDate)}&guests=${encodeURIComponent(guests)}`}
-          style={{ textDecoration: "none", fontWeight: 700 }}
+      <Link
+        href={`/availability?startDate=${startDate}&endDate=${endDate}&guests=${guests}`}
+      >
+        ← Back to availability
+      </Link>
+
+      <h1>{listing.name}</h1>
+
+      <div>
+        {startDate} → {endDate} • Guests: {guests}
+      </div>
+
+      <img
+        src={listing.heroUrl}
+        alt={listing.name}
+        style={{ width: "100%", maxWidth: 600 }}
+      />
+
+      <div style={{ marginTop: 20 }}>
+        <a
+          href={bookingUrl}
+          target="_blank"
+          rel="noreferrer"
+          style={{
+            padding: "12px 18px",
+            background: "black",
+            color: "white",
+            borderRadius: 10,
+            textDecoration: "none",
+            fontWeight: 700,
+          }}
         >
-          ← Back to availability
-        </Link>
+          Book now
+        </a>
       </div>
-
-      <h1 style={{ fontSize: 34, fontWeight: 900, letterSpacing: -0.5 }}>
-        {listing?.name || `Listing ${id}`}
-      </h1>
-
-      <div style={{ marginTop: 10, opacity: 0.85 }}>
-        {startDate && endDate ? (
-          <>
-            <b>{startDate}</b> → <b>{endDate}</b> • Guests: <b>{guests}</b>
-          </>
-        ) : (
-          <span style={{ color: "#b00" }}>
-            Missing dates (booking still works but dates won’t prefill).
-          </span>
-        )}
-      </div>
-
-      {error ? (
-        <div style={{ marginTop: 18 }}>
-          <div style={{ fontWeight: 900 }}>API error ({status}):</div>
-          <pre
-            style={{
-              marginTop: 10,
-              padding: 14,
-              background: "#111",
-              color: "#fff",
-              borderRadius: 12,
-              overflow: "auto",
-              fontSize: 12,
-              lineHeight: 1.4,
-            }}
-          >
-            {JSON.stringify(error, null, 2)}
-          </pre>
-        </div>
-      ) : !listing ? (
-        <div style={{ marginTop: 18 }}>
-          <div style={{ fontWeight: 900 }}>Listing not found.</div>
-        </div>
-      ) : (
-        <div style={{ marginTop: 18 }}>
-          <div
-            style={{
-              display: "grid",
-              gridTemplateColumns: "repeat(auto-fit, minmax(320px, 1fr))",
-              gap: 18,
-              alignItems: "start",
-            }}
-          >
-            <div
-              style={{
-                border: "1px solid rgba(0,0,0,0.10)",
-                borderRadius: 16,
-                overflow: "hidden",
-                background: "#fff",
-                boxShadow: "0 8px 24px rgba(0,0,0,0.06)",
-              }}
-            >
-              <div style={{ height: 280, background: "#f4f4f4" }}>
-                {/* eslint-disable-next-line @next/next/no-img-element */}
-                {listing?.heroUrl ? (
-                  <img
-                    src={listing.heroUrl}
-                    alt={listing.name || `Listing ${id}`}
-                    style={{ width: "100%", height: "100%", objectFit: "cover" }}
-                  />
-                ) : null}
-              </div>
-
-              <div style={{ padding: 16 }}>
-                <div style={{ fontSize: 16, fontWeight: 900 }}>
-                  {listing?.city
-                    ? `${listing.city}${listing.state ? `, ${listing.state}` : ""}`
-                    : "Location"}
-                </div>
-
-                <div style={{ marginTop: 10, opacity: 0.8, fontSize: 13 }}>
-                  Listing ID: <b>{listing.id}</b>
-                </div>
-
-                <div style={{ marginTop: 14, display: "flex", gap: 10 }}>
-                  {bookingUrl ? (
-                    <a
-                      href={bookingUrl}
-                      target="_blank"
-                      rel="noreferrer"
-                      style={{
-                        display: "inline-flex",
-                        alignItems: "center",
-                        justifyContent: "center",
-                        padding: "12px 14px",
-                        borderRadius: 12,
-                        fontWeight: 900,
-                        textDecoration: "none",
-                        color: "#fff",
-                        background: "#111",
-                      }}
-                    >
-                      Book now
-                    </a>
-                  ) : (
-                    <div style={{ opacity: 0.7 }}>
-                      Booking link not available yet — set <b>BOOKING_ENGINE_BASE_URL</b>{" "}
-                      in Vercel env (or keep default in route.ts).
-                    </div>
-                  )}
-                </div>
-              </div>
-            </div>
-
-            <div
-              style={{
-                border: "1px solid rgba(0,0,0,0.10)",
-                borderRadius: 16,
-                padding: 16,
-                background: "#fff",
-                boxShadow: "0 8px 24px rgba(0,0,0,0.06)",
-              }}
-            >
-              <div style={{ fontSize: 18, fontWeight: 900 }}>Details</div>
-
-              <div style={{ marginTop: 10, opacity: 0.9, lineHeight: 1.5 }}>
-                {listing?.description ? (
-                  <div style={{ whiteSpace: "pre-wrap" }}>
-                    {String(listing.description).slice(0, 1600)}
-                    {String(listing.description).length > 1600 ? "..." : ""}
-                  </div>
-                ) : (
-                  <div style={{ opacity: 0.7 }}>No description returned.</div>
-                )}
-              </div>
-            </div>
-          </div>
-        </div>
-      )}
     </div>
   );
 }
@@ -229,24 +101,14 @@ function buildBookingUrl(
   endDate: string,
   guests: string
 ) {
-  if (!base) return "#";
-  try {
-    const u = new URL(base);
+  const u = new URL(base);
 
-    // ✅ Hostaway booking engine commonly uses /listing/<id>
-    // If base is like https://182003_1.holidayfuture.com, we convert to listing page:
-    if (!u.pathname.includes("/listing/")) {
-      u.pathname = `/listing/${encodeURIComponent(listingId)}`;
-    }
+  // ✅ CORRECT PATH FOR HOSTAWAY BOOKING ENGINE
+  u.pathname = `/property/${listingId}`;
 
-    if (startDate) u.searchParams.set("startDate", startDate);
-    if (endDate) u.searchParams.set("endDate", endDate);
-    if (guests) {
-      u.searchParams.set("guests", guests);
-      u.searchParams.set("adults", guests);
-    }
-    return u.toString();
-  } catch {
-    return base;
-  }
+  if (startDate) u.searchParams.set("startDate", startDate);
+  if (endDate) u.searchParams.set("endDate", endDate);
+  if (guests) u.searchParams.set("adults", guests);
+
+  return u.toString();
 }
