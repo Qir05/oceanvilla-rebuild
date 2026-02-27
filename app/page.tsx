@@ -132,7 +132,6 @@ function ListingCard({ l }: { l: HostawayListing }) {
   const subtitle = clampText(l.description || "", 86);
   const hero = l.heroUrl || "/media/rentals/placeholder.jpg";
 
-  // Default booking engine format is commonly /listings/{listingID} :contentReference[oaicite:7]{index=7}
   const base = (l.bookingEngineBase || "https://182003_1.holidayfuture.com").replace(/\/$/, "");
   const bookUrl = `${base}/listings/${encodeURIComponent(l.id)}`;
 
@@ -285,15 +284,16 @@ export default function Home() {
           <video className="absolute inset-0 h-full w-full object-cover" src="/media/hero.mp4" autoPlay muted loop playsInline />
           <div className="absolute inset-0 bg-slate-900/45" />
 
-          <div className="absolute inset-0 flex items-center">
-            <div className="mx-auto w-full max-w-7xl px-6 lg:px-8 pb-20">
+          {/* ✅ MOBILE FIX: prevent title from clipping at top */}
+          <div className="absolute inset-0 flex items-start md:items-center">
+            <div className="mx-auto w-full max-w-7xl px-6 lg:px-8 pt-24 pb-28 md:pt-0 md:pb-20">
               <div className="max-w-3xl">
                 <div className="flex flex-wrap items-center gap-3 mb-6">
                   <Pill>Oceanfront</Pill>
                   <Pill tone="gold">Exclusive Resort</Pill>
                 </div>
 
-                <h1 className="text-5xl font-serif font-medium tracking-tight text-white md:text-7xl leading-tight">
+                <h1 className="text-4xl sm:text-5xl font-serif font-medium tracking-tight text-white md:text-7xl leading-[1.05] md:leading-tight">
                   Luxury villas on the North Shore.
                 </h1>
 
