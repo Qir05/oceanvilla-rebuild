@@ -93,16 +93,24 @@ function PrimaryButton({ children, className, ...props }: React.ButtonHTMLAttrib
   );
 }
 
-function Pill({ children, tone = "default", darkText = false }: { children: React.ReactNode; tone?: "default" | "gold"; darkText?: boolean }) {
+function Pill({
+  children,
+  tone = "default",
+  darkText = false,
+}: {
+  children: React.ReactNode;
+  tone?: "default" | "gold";
+  darkText?: boolean;
+}) {
   return (
     <span
       className={cx(
         "inline-flex items-center gap-2 rounded-full px-3 py-1 text-[11px] md:text-xs font-medium tracking-wide",
         tone === "gold"
           ? "bg-[#D9B87C]/15 text-[#8B6B2B] border border-[#D9B87C]/35"
-          : darkText 
-            ? "bg-slate-100 text-slate-700 border border-slate-200" 
-            : "bg-white/70 text-slate-700 border border-white/70 backdrop-blur"
+          : darkText
+          ? "bg-slate-100 text-slate-700 border border-slate-200"
+          : "bg-white/70 text-slate-700 border border-white/70 backdrop-blur"
       )}
     >
       {children}
@@ -153,7 +161,9 @@ function ListingCard({ l }: { l: HostawayListing }) {
           className="object-cover transition-transform duration-700 group-hover:scale-105"
         />
         <div className="absolute top-4 right-4 z-10">
-          <Pill tone="default" darkText>#{l.id}</Pill>
+          <Pill tone="default" darkText>
+            #{l.id}
+          </Pill>
         </div>
         <div className="absolute inset-0 bg-black/0 transition-colors duration-300 group-hover:bg-black/5" />
       </div>
@@ -181,6 +191,13 @@ function ListingCard({ l }: { l: HostawayListing }) {
     </a>
   );
 }
+
+/** ✅ Fix for the “vertical line” seam:
+ * - overflow-hidden + bg-black + isolate on wrappers
+ * - small scale(1.01) to hide 1px subpixel gaps
+ * - translateZ(0) for GPU compositing consistency on iOS/Android
+ */
+const videoStyle: React.CSSProperties = { transform: "translateZ(0) scale(1.01)" };
 
 export default function Home() {
   const router = useRouter();
@@ -265,7 +282,7 @@ export default function Home() {
             <div className="text-lg md:text-xl font-serif font-bold text-slate-900 hidden sm:block">{BRAND.name}</div>
           </a>
 
-          {/* ✅ MOBILE FIX: Dinhi dapit nabutang ang gipangita ni boss Toby (Centrered text for Mobile Only) */}
+          {/* MOBILE centered title */}
           <div className="absolute inset-0 flex items-center justify-center md:hidden pointer-events-none px-14">
             <span className="text-[13px] font-serif font-bold text-[#0A4C61] text-center leading-tight tracking-tight">
               Luxury villas on the North Shore.
@@ -273,8 +290,12 @@ export default function Home() {
           </div>
 
           <nav className="hidden md:flex items-center gap-8 text-sm font-medium text-slate-600 z-10">
-            <a className="hover:text-slate-900 transition-colors" href="#featured">Featured</a>
-            <a className="hover:text-slate-900 transition-colors" href="#availability">Availability</a>
+            <a className="hover:text-slate-900 transition-colors" href="#featured">
+              Featured
+            </a>
+            <a className="hover:text-slate-900 transition-colors" href="#availability">
+              Availability
+            </a>
           </nav>
 
           <div className="hidden md:flex items-center gap-6 z-10">
@@ -286,10 +307,7 @@ export default function Home() {
             </a>
           </div>
 
-          <button
-            className="md:hidden p-2 text-sm font-semibold text-slate-600 z-10"
-            onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
-          >
+          <button className="md:hidden p-2 text-sm font-semibold text-slate-600 z-10" onClick={() => setMobileMenuOpen(!mobileMenuOpen)}>
             {mobileMenuOpen ? "Close" : "Menu"}
           </button>
         </div>
@@ -298,30 +316,35 @@ export default function Home() {
         {mobileMenuOpen && (
           <div className="md:hidden border-t border-slate-200 bg-white px-4 py-4 shadow-lg absolute w-full z-20">
             <div className="flex flex-col gap-4 text-sm font-medium text-slate-600">
-              <a onClick={() => setMobileMenuOpen(false)} href="#featured" className="py-2 hover:text-slate-900">Featured Villas</a>
-              <a onClick={() => setMobileMenuOpen(false)} href="#availability-mobile" className="py-2 hover:text-slate-900">Check Availability</a>
-              <a href={`tel:${sanitizeTel(BRAND.phone)}`} className="py-2 hover:text-slate-900">Call {BRAND.phone}</a>
+              <a onClick={() => setMobileMenuOpen(false)} href="#featured" className="py-2 hover:text-slate-900">
+                Featured Villas
+              </a>
+              <a onClick={() => setMobileMenuOpen(false)} href="#availability-mobile" className="py-2 hover:text-slate-900">
+                Check Availability
+              </a>
+              <a href={`tel:${sanitizeTel(BRAND.phone)}`} className="py-2 hover:text-slate-900">
+                Call {BRAND.phone}
+              </a>
             </div>
           </div>
         )}
       </header>
 
       {/* ========================================================================
-        MOBILE LAYOUT (Stacked Block Format to match reference image)
-        ========================================================================
-      */}
+        MOBILE LAYOUT
+        ======================================================================== */}
       <div className="md:hidden flex flex-col w-full">
-        {/* 1. Mobile Video Header */}
-        <div className="relative w-full h-[35vh] min-h-[250px] overflow-hidden bg-black">
+        {/* 1. Mobile Video Header ✅ seam fix wrapper */}
+        <div className="relative w-full h-[35vh] min-h-[250px] overflow-hidden bg-black isolate">
           <video
-  className="absolute inset-0 h-full w-full object-cover object-center"
-  style={{ transform: "translateZ(0)" }}
-  src="/media/hero.mp4"
-  autoPlay
-  muted
-  loop
-  playsInline
-/>
+            className="absolute inset-0 h-full w-full object-cover object-center"
+            style={videoStyle}
+            src="/media/hero.mp4"
+            autoPlay
+            muted
+            loop
+            playsInline
+          />
           <div className="absolute inset-0 bg-slate-900/20" />
         </div>
 
@@ -363,7 +386,9 @@ export default function Home() {
                 className="w-full rounded-xl border border-slate-200 bg-white px-3 py-2.5 text-sm focus:border-slate-900 focus:outline-none focus:ring-1 focus:ring-slate-900"
               >
                 {Array.from({ length: 14 }).map((_, i) => (
-                  <option key={i + 1} value={i + 1}>{i + 1} Guests</option>
+                  <option key={i + 1} value={i + 1}>
+                    {i + 1} Guests
+                  </option>
                 ))}
               </select>
             </div>
@@ -390,26 +415,34 @@ export default function Home() {
             <Pill darkText>Oceanfront</Pill>
             <Pill tone="gold">Exclusive Resort</Pill>
           </div>
-          
-          {/* ✅ Gikuha na nako ang H1 diri kay atoa nang gibalhin sa ibabaw nga header */}
 
           <p className="mt-2 text-base text-slate-600 leading-relaxed">
             Premium space, resort-adjacent location, and direct booking flow. Escape to your private sanctuary.
           </p>
-          <a href="#featured" className="mt-6 text-sm font-bold text-slate-900 underline underline-offset-4 decoration-2 decoration-[#D9B87C] hover:text-[#D9B87C] transition-colors">
+          <a
+            href="#featured"
+            className="mt-6 text-sm font-bold text-slate-900 underline underline-offset-4 decoration-2 decoration-[#D9B87C] hover:text-[#D9B87C] transition-colors"
+          >
             View the collection ↓
           </a>
         </div>
       </div>
 
-
       {/* ========================================================================
-        DESKTOP LAYOUT (Retains the full-screen premium overlay style)
-        ========================================================================
-      */}
+        DESKTOP LAYOUT
+        ======================================================================== */}
       <div className="hidden md:block">
-        <section id="top" className="relative h-[80vh] w-full">
-          <video className="absolute inset-0 h-full w-full object-cover" src="/media/hero.mp4" autoPlay muted loop playsInline />
+        {/* ✅ seam fix wrapper */}
+        <section id="top" className="relative h-[80vh] w-full overflow-hidden bg-black isolate">
+          <video
+            className="absolute inset-0 h-full w-full object-cover object-center"
+            style={videoStyle}
+            src="/media/hero.mp4"
+            autoPlay
+            muted
+            loop
+            playsInline
+          />
           <div className="absolute inset-0 bg-slate-900/45" />
 
           <div className="absolute inset-0 flex flex-col justify-center pt-16 pb-24">
@@ -429,10 +462,16 @@ export default function Home() {
                 </p>
 
                 <div className="mt-10 flex flex-row flex-wrap gap-4">
-                  <a href="#availability" className="inline-flex items-center justify-center rounded-xl px-8 py-3.5 text-sm font-bold text-slate-900 bg-white shadow-lg hover:bg-slate-100 transition-all text-center">
+                  <a
+                    href="#availability"
+                    className="inline-flex items-center justify-center rounded-xl px-8 py-3.5 text-sm font-bold text-slate-900 bg-white shadow-lg hover:bg-slate-100 transition-all text-center"
+                  >
                     Check Availability
                   </a>
-                  <a href="#featured" className="inline-flex items-center justify-center rounded-xl px-8 py-3.5 text-sm font-bold text-white border border-white/50 bg-black/20 backdrop-blur-md hover:bg-black/40 hover:border-white transition-all text-center">
+                  <a
+                    href="#featured"
+                    className="inline-flex items-center justify-center rounded-xl px-8 py-3.5 text-sm font-bold text-white border border-white/50 bg-black/20 backdrop-blur-md hover:bg-black/40 hover:border-white transition-all text-center"
+                  >
                     View Villas
                   </a>
                 </div>
@@ -480,7 +519,9 @@ export default function Home() {
                     className="w-full rounded-xl border border-slate-200 bg-slate-50 px-4 py-3 text-sm focus:border-slate-900 focus:outline-none focus:ring-1 focus:ring-slate-900"
                   >
                     {Array.from({ length: 14 }).map((_, i) => (
-                      <option key={i + 1} value={i + 1}>{i + 1} Guests</option>
+                      <option key={i + 1} value={i + 1}>
+                        {i + 1} Guests
+                      </option>
                     ))}
                   </select>
                 </div>
@@ -507,7 +548,6 @@ export default function Home() {
           </div>
         </section>
       </div>
-
 
       {/* FEATURED LISTINGS */}
       <section id="featured" className="py-16 md:py-20 bg-white md:bg-slate-50">
