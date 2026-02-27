@@ -15,16 +15,34 @@ export default async function ListingDetailsPage({
   params,
   searchParams,
 }: {
-  params: { id: string };
-  searchParams: SearchParams;
+  // ✅ Next 16: params can be a Promise
+  params: { id: string } | Promise<{ id: string }>;
+  // ✅ Next 16: searchParams can be a Promise
+  searchParams: SearchParams | Promise<SearchParams>;
 }) {
-  const id = params.id;
+  const p = await Promise.resolve(params);
+  const sp = await Promise.resolve(searchParams);
 
-  const startDate = searchParams.startDate || "";
-  const endDate = searchParams.endDate || "";
-  const guests = searchParams.guests || "2";
+  const id = p?.id; // ✅ now safe
+
+  const startDate = sp?.startDate || "";
+  const endDate = sp?.endDate || "";
+  const guests = sp?.guests || "2";
 
   const baseUrl = await getBaseUrlFromHeaders();
+
+  // guard: if id missing
+  if (!id) {
+    return (
+      <div style={{ padding: 28, maxWidth: 1100, margin: "0 auto" }}>
+        <h1 style={{ fontSize: 34, fontWeight: 900 }}>Listing</h1>
+        <div style={{ marginTop: 12, color: "#b00", fontWeight: 800 }}>
+          Missing listing id from route params.
+        </div>
+      </div>
+    );
+  }
+
   const apiUrl = `${baseUrl}/api/hostaway/listings/${encodeURIComponent(id)}`;
 
   let data: any = null;
@@ -49,10 +67,9 @@ export default async function ListingDetailsPage({
 
   const listing = data?.listing || null;
 
-  const bookingUrl =
-    listing?.bookingEngineUrl
-      ? buildBookingUrl(listing.bookingEngineUrl, startDate, endDate, guests)
-      : null;
+  const bookingUrl = listing?.bookingEngineUrl
+    ? buildBookingUrl(listing.bookingEngineUrl, id, startDate, endDate, guests)
+    : null;
 
   return (
     <div style={{ padding: 28, maxWidth: 1100, margin: "0 auto" }}>
@@ -60,9 +77,7 @@ export default async function ListingDetailsPage({
         <Link
           href={`/availability?startDate=${encodeURIComponent(
             startDate
-          )}&endDate=${encodeURIComponent(endDate)}&guests=${encodeURIComponent(
-            guests
-          )}`}
+          )}&endDate=${encodeURIComponent(endDate)}&guests=${encodeURIComponent(guests)}`}
           style={{ textDecoration: "none", fontWeight: 700 }}
         >
           ← Back to availability
@@ -170,8 +185,8 @@ export default async function ListingDetailsPage({
                     </a>
                   ) : (
                     <div style={{ opacity: 0.7 }}>
-                      Booking link not available yet — set{" "}
-                      <b>BOOKING_ENGINE_BASE_URL</b> in Vercel env.
+                      Booking link not available yet — set <b>BOOKING_ENGINE_BASE_URL</b>{" "}
+                      in Vercel env (or keep default in route.ts).
                     </div>
                   )}
                 </div>
@@ -207,10 +222,23 @@ export default async function ListingDetailsPage({
   );
 }
 
-function buildBookingUrl(base: string, startDate: string, endDate: string, guests: string) {
+function buildBookingUrl(
+  base: string,
+  listingId: string,
+  startDate: string,
+  endDate: string,
+  guests: string
+) {
   if (!base) return "#";
   try {
     const u = new URL(base);
+
+    // ✅ Hostaway booking engine commonly uses /listing/<id>
+    // If base is like https://182003_1.holidayfuture.com, we convert to listing page:
+    if (!u.pathname.includes("/listing/")) {
+      u.pathname = `/listing/${encodeURIComponent(listingId)}`;
+    }
+
     if (startDate) u.searchParams.set("startDate", startDate);
     if (endDate) u.searchParams.set("endDate", endDate);
     if (guests) {
