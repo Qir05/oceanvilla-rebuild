@@ -3,7 +3,7 @@ import { NextResponse } from "next/server";
 import type { NextRequest } from "next/server";
 
 const BOOKING_ENGINE_BASE_URL =
-  process.env.BOOKING_ENGINE_BASE_URL || "https://182003_1.holidayfuture.com"; // <-- change if you use custom domain
+  process.env.BOOKING_ENGINE_BASE_URL || "https://182003_1.holidayfuture.com";
 
 async function getHostawayAccessToken() {
   const accountId = process.env.HOSTAWAY_ACCOUNT_ID;
@@ -81,6 +81,12 @@ export async function GET(
     const images = Array.isArray(found?.listingImages) ? found.listingImages : [];
     const hero = images.find((img: any) => img?.url) || images[0];
 
+    // ✅ IMPORTANT: booking engine listing page
+    // Most Hostaway booking engines use /listing/{listingId}
+    const bookingListingUrl = `${BOOKING_ENGINE_BASE_URL.replace(/\/$/, "")}/listing/${encodeURIComponent(
+      String(found?.id)
+    )}`;
+
     return NextResponse.json(
       {
         success: true,
@@ -96,8 +102,8 @@ export async function GET(
           bathrooms: found?.bathroomsNumber ?? null,
           heroUrl: hero?.url || hero?.airbnbUrl || null,
 
-          // ✅ Always return booking engine base URL (public), not image URL
-          bookingEngineUrl: BOOKING_ENGINE_BASE_URL,
+          // ✅ now clickable booking page (not just base)
+          bookingEngineUrl: bookingListingUrl,
         },
       },
       { status: 200 }
