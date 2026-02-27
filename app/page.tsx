@@ -257,20 +257,27 @@ export default function Home() {
     <main className="min-h-screen bg-slate-50 text-slate-900 selection:bg-slate-200">
       {/* HEADER */}
       <header className="sticky top-0 z-50 border-b border-slate-200 bg-white/90 backdrop-blur-md">
-        <div className="mx-auto flex h-16 md:h-20 max-w-7xl items-center justify-between px-4 sm:px-6 lg:px-8">
-          <a href="#top" className="flex items-center gap-3">
+        <div className="relative mx-auto flex h-16 md:h-20 max-w-7xl items-center justify-between px-4 sm:px-6 lg:px-8">
+          <a href="#top" className="flex items-center gap-3 z-10 shrink-0">
             <div className="relative h-8 w-8 md:h-10 md:w-10 overflow-hidden">
               <Image src="/brand/TTB-Logo.png" alt={BRAND.name} fill className="object-contain" priority />
             </div>
             <div className="text-lg md:text-xl font-serif font-bold text-slate-900 hidden sm:block">{BRAND.name}</div>
           </a>
 
-          <nav className="hidden md:flex items-center gap-8 text-sm font-medium text-slate-600">
+          {/* ✅ MOBILE FIX: Dinhi dapit nabutang ang gipangita ni boss Toby (Centrered text for Mobile Only) */}
+          <div className="absolute inset-0 flex items-center justify-center md:hidden pointer-events-none px-14">
+            <span className="text-[13px] font-serif font-bold text-[#0A4C61] text-center leading-tight tracking-tight">
+              Luxury villas on the North Shore.
+            </span>
+          </div>
+
+          <nav className="hidden md:flex items-center gap-8 text-sm font-medium text-slate-600 z-10">
             <a className="hover:text-slate-900 transition-colors" href="#featured">Featured</a>
             <a className="hover:text-slate-900 transition-colors" href="#availability">Availability</a>
           </nav>
 
-          <div className="hidden md:flex items-center gap-6">
+          <div className="hidden md:flex items-center gap-6 z-10">
             <a className="text-sm font-medium text-slate-600 hover:text-slate-900 transition" href={`tel:${sanitizeTel(BRAND.phone)}`}>
               {BRAND.phone}
             </a>
@@ -280,7 +287,7 @@ export default function Home() {
           </div>
 
           <button
-            className="md:hidden p-2 text-sm font-semibold text-slate-600"
+            className="md:hidden p-2 text-sm font-semibold text-slate-600 z-10"
             onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
           >
             {mobileMenuOpen ? "Close" : "Menu"}
@@ -289,7 +296,7 @@ export default function Home() {
 
         {/* Mobile Nav Dropdown */}
         {mobileMenuOpen && (
-          <div className="md:hidden border-t border-slate-200 bg-white px-4 py-4 shadow-lg absolute w-full">
+          <div className="md:hidden border-t border-slate-200 bg-white px-4 py-4 shadow-lg absolute w-full z-20">
             <div className="flex flex-col gap-4 text-sm font-medium text-slate-600">
               <a onClick={() => setMobileMenuOpen(false)} href="#featured" className="py-2 hover:text-slate-900">Featured Villas</a>
               <a onClick={() => setMobileMenuOpen(false)} href="#availability-mobile" className="py-2 hover:text-slate-900">Check Availability</a>
@@ -307,10 +314,10 @@ export default function Home() {
         {/* 1. Mobile Video Header */}
         <div className="relative w-full h-[35vh] min-h-[250px]">
           <video className="absolute inset-0 h-full w-full object-cover" src="/media/hero.mp4" autoPlay muted loop playsInline />
-          <div className="absolute inset-0 bg-slate-900/20" /> {/* Lighter overlay since text is removed */}
+          <div className="absolute inset-0 bg-slate-900/20" />
         </div>
 
-        {/* 2. Mobile Booking Bar (Solid background right under video) */}
+        {/* 2. Mobile Booking Bar */}
         <div id="availability-mobile" className="bg-slate-100 border-b border-slate-200 px-4 py-6 shadow-inner">
           <div className="grid grid-cols-2 gap-3 mb-3">
             <div>
@@ -369,19 +376,19 @@ export default function Home() {
           {error && <div className="mt-3 text-center text-xs text-red-600 font-medium">{error}</div>}
         </div>
 
-        {/* 3. Mobile Hero Text (White background, totally safe from overlapping) */}
-        <div className="bg-white px-6 py-12 flex flex-col items-center text-center">
-          <div className="flex gap-2 mb-5">
+        {/* 3. Mobile Hero Text Section */}
+        <div className="bg-white px-6 py-10 flex flex-col items-center text-center">
+          <div className="flex gap-2 mb-4">
             <Pill darkText>Oceanfront</Pill>
             <Pill tone="gold">Exclusive Resort</Pill>
           </div>
-          <h1 className="text-4xl font-serif tracking-tight text-[#0A4C61] leading-[1.1]">
-            Luxury villas on the North Shore.
-          </h1>
-          <p className="mt-4 text-base text-slate-600 leading-relaxed">
+          
+          {/* ✅ Gikuha na nako ang H1 diri kay atoa nang gibalhin sa ibabaw nga header */}
+
+          <p className="mt-2 text-base text-slate-600 leading-relaxed">
             Premium space, resort-adjacent location, and direct booking flow. Escape to your private sanctuary.
           </p>
-          <a href="#featured" className="mt-8 text-sm font-bold text-slate-900 underline underline-offset-4 decoration-2 decoration-[#D9B87C] hover:text-[#D9B87C] transition-colors">
+          <a href="#featured" className="mt-6 text-sm font-bold text-slate-900 underline underline-offset-4 decoration-2 decoration-[#D9B87C] hover:text-[#D9B87C] transition-colors">
             View the collection ↓
           </a>
         </div>
