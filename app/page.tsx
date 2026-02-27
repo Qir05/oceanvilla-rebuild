@@ -312,8 +312,16 @@ export default function Home() {
       */}
       <div className="md:hidden flex flex-col w-full">
         {/* 1. Mobile Video Header */}
-        <div className="relative w-full h-[35vh] min-h-[250px]">
-          <video className="absolute inset-0 h-full w-full object-cover" src="/media/hero.mp4" autoPlay muted loop playsInline />
+        <div className="relative w-full h-[35vh] min-h-[250px] overflow-hidden bg-black">
+          <video
+  className="absolute inset-0 h-full w-full object-cover object-center"
+  style={{ transform: "translateZ(0)" }}
+  src="/media/hero.mp4"
+  autoPlay
+  muted
+  loop
+  playsInline
+/>
           <div className="absolute inset-0 bg-slate-900/20" />
         </div>
 
