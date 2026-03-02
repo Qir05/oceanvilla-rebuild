@@ -21,7 +21,7 @@ type HostawayListing = {
 const BRAND = {
   name: "Ocean Villas • Turtle Bay",
   sub: "Oceanfront • Private Luxury Stay",
-  phone: "(808) XXX-XXXX",
+  phone: "(858) 345-2082",
 };
 
 const LISTING_IDS = ["489089", "489093", "489095", "489097", "489092", "489094"] as const;
