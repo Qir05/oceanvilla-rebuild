@@ -458,7 +458,7 @@ export default function Home() {
                 </div>
 
                 <h1 className="text-5xl md:text-7xl font-serif font-medium tracking-tight text-white leading-tight">
-                  Luxury villas on the North Shore.
+                  Luxury Villas on the North Shore.
                 </h1>
 
                 <p className="mt-6 max-w-xl text-lg text-white/90 leading-relaxed">
