@@ -283,7 +283,7 @@ export default function Home() {
           {/* MOBILE centered title */}
           <div className="absolute inset-0 flex items-center justify-center md:hidden pointer-events-none px-14">
             <span className="text-[13px] font-serif font-bold text-[#0A4C61] text-center leading-tight tracking-tight">
-              Luxury villas on the North Shore.
+              Luxury Villas on the North Shore.
             </span>
           </div>
 
