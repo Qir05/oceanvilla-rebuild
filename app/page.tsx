@@ -1,6 +1,8 @@
 "use client";
 
 import Image from "next/image";
+import Link from "next/link";
+import Script from "next/script";
 import React, { useEffect, useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
 
@@ -18,9 +20,11 @@ type HostawayListing = {
   bookingEngineBase?: string;
 };
 
+const SITE_URL = "https://oceanvillasturtlebay.com";
+
 const BRAND = {
-  name: "Ocean Villas • Turtle Bay",
-  sub: "Oceanfront • Private Luxury Stay",
+  name: "Ocean Villas at Turtle Bay",
+  sub: "Luxury Vacation Rentals on Oahu’s North Shore",
   phone: "(858) 345-2082",
 };
 
@@ -50,7 +54,7 @@ function isAfter(aISO: string, bISO: string) {
   return new Date(aISO).getTime() > new Date(bISO).getTime();
 }
 
-function clampText(s: string, max = 120) {
+function clampText(s: string, max = 140) {
   const clean = (s || "").replace(/\s+/g, " ").trim();
   if (!clean) return "";
   if (clean.length <= max) return clean;
@@ -129,7 +133,7 @@ function Stat({ label, value }: { label: string; value: string }) {
 
 function SectionTitle({ eyebrow, title, desc }: { eyebrow?: string; title: string; desc?: string }) {
   return (
-    <div className="max-w-2xl">
+    <div className="max-w-3xl">
       {eyebrow ? <div className="text-xs font-bold uppercase tracking-widest text-slate-400 mb-2">{eyebrow}</div> : null}
       <h2 className="text-3xl font-serif tracking-tight text-slate-900 md:text-4xl">{title}</h2>
       {desc ? <p className="mt-4 text-base leading-relaxed text-slate-600">{desc}</p> : null}
@@ -137,42 +141,94 @@ function SectionTitle({ eyebrow, title, desc }: { eyebrow?: string; title: strin
   );
 }
 
-function ListingCard({ l }: { l: HostawayListing }) {
-  const title = l.name || `Listing ${l.id}`;
-  const subtitle = clampText(l.description || "", 86);
-  const hero = l.heroUrl || "/media/rentals/placeholder.jpg";
+function InfoCard({
+  title,
+  desc,
+}: {
+  title: string;
+  desc: string;
+}) {
+  return (
+    <div className="rounded-2xl border border-slate-200 bg-white p-6 shadow-[0_8px_30px_rgba(15,23,42,0.05)]">
+      <h3 className="text-lg font-semibold text-slate-900">{title}</h3>
+      <p className="mt-3 text-sm leading-7 text-slate-600">{desc}</p>
+    </div>
+  );
+}
 
+function GuideCard({
+  href,
+  title,
+  desc,
+}: {
+  href: string;
+  title: string;
+  desc: string;
+}) {
+  return (
+    <Link
+      href={href}
+      className="group rounded-2xl border border-slate-200 bg-white p-6 shadow-[0_8px_30px_rgba(15,23,42,0.05)] transition hover:-translate-y-1 hover:shadow-[0_16px_50px_rgba(15,23,42,0.1)]"
+    >
+      <h3 className="text-lg font-semibold text-slate-900 group-hover:text-slate-700">{title}</h3>
+      <p className="mt-3 text-sm leading-7 text-slate-600">{desc}</p>
+      <span className="mt-5 inline-flex text-sm font-semibold text-slate-900">
+        Explore →
+      </span>
+    </Link>
+  );
+}
+
+function FAQItem({
+  question,
+  answer,
+}: {
+  question: string;
+  answer: string;
+}) {
+  return (
+    <details className="group rounded-2xl border border-slate-200 bg-white p-5">
+      <summary className="cursor-pointer list-none text-base font-semibold text-slate-900">
+        {question}
+      </summary>
+      <p className="mt-3 text-sm leading-7 text-slate-600">{answer}</p>
+    </details>
+  );
+}
+
+function ListingCard({ l }: { l: HostawayListing }) {
+  const title = l.name || `Villa ${l.id}`;
+  const subtitle =
+    clampText(l.description || "", 110) ||
+    `Browse this Turtle Bay villa on Oahu’s North Shore and explore live availability, stay details, and direct booking options.`;
+
+  const hero = l.heroUrl || "/media/rentals/placeholder.jpg";
   const base = (l.bookingEngineBase || "https://182003_1.holidayfuture.com").replace(/\/$/, "");
   const bookUrl = `${base}/listings/${encodeURIComponent(l.id)}`;
+  const detailUrl = `/listing/${encodeURIComponent(l.id)}`;
 
   return (
-    <a
-      href={bookUrl}
-      target="_blank"
-      rel="noopener noreferrer"
-      className="group flex flex-col overflow-hidden rounded-2xl bg-white shadow-[0_6px_26px_rgba(15,23,42,0.06)] border border-slate-100 transition-all duration-300 hover:shadow-[0_18px_60px_rgba(15,23,42,0.14)] hover:-translate-y-1.5"
-    >
+    <article className="flex flex-col overflow-hidden rounded-2xl bg-white shadow-[0_6px_26px_rgba(15,23,42,0.06)] border border-slate-100 transition-all duration-300 hover:shadow-[0_18px_60px_rgba(15,23,42,0.14)]">
       <div className="relative aspect-[4/3] overflow-hidden bg-slate-100">
         <Image
           src={hero}
-          alt={title}
+          alt={`${title} at Turtle Bay`}
           fill
           unoptimized={true}
-          className="object-cover transition-transform duration-700 group-hover:scale-105"
+          className="object-cover transition-transform duration-700 hover:scale-105"
         />
         <div className="absolute top-4 right-4 z-10">
           <Pill tone="default" darkText>
-            #{l.id}
+            Villa #{l.id}
           </Pill>
         </div>
-        <div className="absolute inset-0 bg-black/0 transition-colors duration-300 group-hover:bg-black/5" />
       </div>
 
       <div className="flex flex-col flex-grow p-5 md:p-6">
         <div className="flex-grow">
-          <h3 className="text-lg font-semibold text-slate-900 line-clamp-1">{title}</h3>
-          <p className="mt-2 text-sm text-slate-500 line-clamp-2">
-            {subtitle || `${l.city || ""}${l.state ? `, ${l.state}` : ""}`}
+          <h3 className="text-lg font-semibold text-slate-900">{title}</h3>
+          <p className="mt-2 text-sm text-slate-500">
+            {subtitle}
           </p>
         </div>
 
@@ -182,13 +238,25 @@ function ListingCard({ l }: { l: HostawayListing }) {
           <Stat label="Baths" value={`${l.bathrooms ?? "-"}`} />
         </div>
 
-        <div className="mt-5">
-          <span className="flex w-full items-center justify-center rounded-xl bg-slate-900 py-3 text-sm font-semibold text-white transition group-hover:bg-slate-800">
-            View & Book
-          </span>
+        <div className="mt-5 grid grid-cols-1 sm:grid-cols-2 gap-3">
+          <Link
+            href={detailUrl}
+            className="inline-flex items-center justify-center rounded-xl border border-slate-200 px-4 py-3 text-sm font-semibold text-slate-900 transition hover:bg-slate-50"
+          >
+            View Villa
+          </Link>
+
+          <a
+            href={bookUrl}
+            target="_blank"
+            rel="noopener noreferrer"
+            className="inline-flex items-center justify-center rounded-xl bg-slate-900 px-4 py-3 text-sm font-semibold text-white transition hover:bg-slate-800"
+          >
+            Book Direct
+          </a>
         </div>
       </div>
-    </a>
+    </article>
   );
 }
 
@@ -213,6 +281,54 @@ export default function Home() {
   const [listings, setListings] = useState<HostawayListing[]>([]);
   const [listingsLoading, setListingsLoading] = useState(true);
   const [listingsError, setListingsError] = useState<string>("");
+
+  const faqJsonLd = {
+    "@context": "https://schema.org",
+    "@type": "FAQPage",
+    mainEntity: [
+      {
+        "@type": "Question",
+        name: "How do I check availability for Ocean Villas at Turtle Bay?",
+        acceptedAnswer: {
+          "@type": "Answer",
+          text: "Use the availability search on this page to view live dates and start your direct booking flow.",
+        },
+      },
+      {
+        "@type": "Question",
+        name: "Can I book direct from the Ocean Villas website?",
+        acceptedAnswer: {
+          "@type": "Answer",
+          text: "Yes. You can browse villa details, check availability, and continue into the direct booking path from the website.",
+        },
+      },
+      {
+        "@type": "Question",
+        name: "Where are Ocean Villas located?",
+        acceptedAnswer: {
+          "@type": "Answer",
+          text: "Ocean Villas are positioned in the Turtle Bay area on Oahu’s North Shore, giving guests a premium base for a luxury island stay.",
+        },
+      },
+      {
+        "@type": "Question",
+        name: "Can I browse individual villas before booking?",
+        acceptedAnswer: {
+          "@type": "Answer",
+          text: "Yes. Featured villas can be explored individually so you can compare layouts, guest capacity, and booking options before you reserve.",
+        },
+      },
+    ],
+  };
+
+  const websiteJsonLd = {
+    "@context": "https://schema.org",
+    "@type": "WebSite",
+    name: BRAND.name,
+    url: SITE_URL,
+    description:
+      "Luxury vacation rentals at Turtle Bay on Oahu’s North Shore with direct booking and live availability support.",
+  };
 
   useEffect(() => {
     let alive = true;
@@ -270,6 +386,17 @@ export default function Home() {
 
   return (
     <main className="min-h-screen bg-slate-50 text-slate-900 selection:bg-slate-200">
+      <Script
+        id="ov-website-schema"
+        type="application/ld+json"
+        dangerouslySetInnerHTML={{ __html: JSON.stringify(websiteJsonLd) }}
+      />
+      <Script
+        id="ov-faq-schema"
+        type="application/ld+json"
+        dangerouslySetInnerHTML={{ __html: JSON.stringify(faqJsonLd) }}
+      />
+
       {/* HEADER */}
       <header className="sticky top-0 z-50 border-b border-slate-200 bg-white/90 backdrop-blur-md">
         <div className="relative mx-auto flex h-16 md:h-20 max-w-7xl items-center justify-between px-4 sm:px-6 lg:px-8">
@@ -280,20 +407,28 @@ export default function Home() {
             <div className="text-lg md:text-xl font-serif font-bold text-slate-900 hidden sm:block">{BRAND.name}</div>
           </a>
 
-          {/* MOBILE centered title */}
           <div className="absolute inset-0 flex items-center justify-center md:hidden pointer-events-none px-14">
             <span className="text-[13px] font-serif font-bold text-[#0A4C61] text-center leading-tight tracking-tight">
-              Luxury Villas on the North Shore.
+              Luxury Villas on Oahu’s North Shore
             </span>
           </div>
 
-          <nav className="hidden md:flex items-center gap-8 text-sm font-medium text-slate-600 z-10">
+          <nav className="hidden md:flex items-center gap-6 text-sm font-medium text-slate-600 z-10">
             <a className="hover:text-slate-900 transition-colors" href="#featured">
               Featured
             </a>
             <a className="hover:text-slate-900 transition-colors" href="#availability">
               Availability
             </a>
+            <Link className="hover:text-slate-900 transition-colors" href="/rentals">
+              Rentals
+            </Link>
+            <Link className="hover:text-slate-900 transition-colors" href="/location">
+              Location
+            </Link>
+            <Link className="hover:text-slate-900 transition-colors" href="/amenities">
+              Amenities
+            </Link>
           </nav>
 
           <div className="hidden md:flex items-center gap-6 z-10">
@@ -310,7 +445,6 @@ export default function Home() {
           </button>
         </div>
 
-        {/* Mobile Nav Dropdown */}
         {mobileMenuOpen && (
           <div className="md:hidden border-t border-slate-200 bg-white px-4 py-4 shadow-lg absolute w-full z-20">
             <div className="flex flex-col gap-4 text-sm font-medium text-slate-600">
@@ -320,6 +454,15 @@ export default function Home() {
               <a onClick={() => setMobileMenuOpen(false)} href="#availability-mobile" className="py-2 hover:text-slate-900">
                 Check Availability
               </a>
+              <Link onClick={() => setMobileMenuOpen(false)} href="/rentals" className="py-2 hover:text-slate-900">
+                Rentals
+              </Link>
+              <Link onClick={() => setMobileMenuOpen(false)} href="/location" className="py-2 hover:text-slate-900">
+                Location
+              </Link>
+              <Link onClick={() => setMobileMenuOpen(false)} href="/amenities" className="py-2 hover:text-slate-900">
+                Amenities
+              </Link>
               <a href={`tel:${sanitizeTel(BRAND.phone)}`} className="py-2 hover:text-slate-900">
                 Call {BRAND.phone}
               </a>
@@ -328,16 +471,13 @@ export default function Home() {
         )}
       </header>
 
-      {/* ========================================================================
-        ✅ MOBILE LAYOUT (WRAPPED PROPERLY so it won't show on desktop)
-        ======================================================================== */}
+      {/* MOBILE */}
       <div className="block md:hidden">
-        {/* 1) Mobile Video Header (seam fix mobile-only) */}
         <div className="relative w-full h-[35vh] min-h-[250px] overflow-hidden bg-black isolate">
           <video
             className="absolute inset-0 h-full w-full object-cover object-center"
             style={{
-              transform: "translate3d(-0.5px, 0, 0) scale(1.03)", // hide 1px seam (mobile)
+              transform: "translate3d(-0.5px, 0, 0) scale(1.03)",
               backfaceVisibility: "hidden",
               WebkitBackfaceVisibility: "hidden",
             }}
@@ -351,7 +491,6 @@ export default function Home() {
           <div className="absolute inset-0 bg-slate-900/20" />
         </div>
 
-        {/* 2) Mobile Booking Bar */}
         <div id="availability-mobile" className="bg-slate-100 border-b border-slate-200 px-4 py-6 shadow-inner">
           <div className="grid grid-cols-2 gap-3 mb-3">
             <div>
@@ -413,29 +552,39 @@ export default function Home() {
           {error && <div className="mt-3 text-center text-xs text-red-600 font-medium">{error}</div>}
         </div>
 
-        {/* 3) Mobile Hero Text Section */}
-        <div className="bg-white px-6 py-10 flex flex-col items-center text-center">
-          <div className="flex gap-2 mb-4">
-            <Pill darkText>Oceanfront</Pill>
-            <Pill tone="gold">Exclusive Resort</Pill>
+        <section className="bg-white px-6 py-10 flex flex-col items-center text-center">
+          <div className="flex gap-2 mb-4 flex-wrap justify-center">
+            <Pill darkText>Turtle Bay</Pill>
+            <Pill tone="gold">North Shore Oahu</Pill>
+            <Pill darkText>Direct Booking</Pill>
           </div>
 
-          <p className="mt-2 text-base text-slate-600 leading-relaxed">
-            Premium space, resort-adjacent location, and direct booking flow. Escape to your private sanctuary.
+          <h1 className="text-4xl font-serif font-medium tracking-tight text-slate-900 leading-tight">
+            Luxury Villas at Turtle Bay
+          </h1>
+
+          <p className="mt-4 text-base text-slate-600 leading-relaxed max-w-xl">
+            Explore premium vacation rentals on Oahu’s North Shore, browse featured villas, and check live availability for your next Turtle Bay stay.
           </p>
 
-          <a
-            href="#featured"
-            className="mt-6 text-sm font-bold text-slate-900 underline underline-offset-4 decoration-2 decoration-[#D9B87C] hover:text-[#D9B87C] transition-colors"
-          >
-            View the collection ↓
-          </a>
-        </div>
+          <div className="mt-6 flex flex-wrap justify-center gap-3">
+            <a
+              href="#featured"
+              className="inline-flex items-center justify-center rounded-xl px-5 py-3 text-sm font-bold text-slate-900 border border-slate-200 bg-white hover:bg-slate-50 transition-colors"
+            >
+              View Villas
+            </a>
+            <Link
+              href="/location"
+              className="inline-flex items-center justify-center rounded-xl px-5 py-3 text-sm font-bold text-white bg-slate-900 hover:bg-slate-800 transition-colors"
+            >
+              Explore Location
+            </Link>
+          </div>
+        </section>
       </div>
 
-      {/* ========================================================================
-        DESKTOP LAYOUT
-        ======================================================================== */}
+      {/* DESKTOP */}
       <div className="hidden md:block">
         <section id="top" className="relative h-[80vh] w-full overflow-hidden bg-black isolate">
           <video
@@ -451,18 +600,19 @@ export default function Home() {
 
           <div className="absolute inset-0 flex flex-col justify-center pt-16 pb-24">
             <div className="mx-auto w-full max-w-7xl px-5 sm:px-6 lg:px-8">
-              <div className="max-w-3xl">
+              <div className="max-w-4xl">
                 <div className="flex flex-wrap items-center gap-3 mb-6">
-                  <Pill>Oceanfront</Pill>
-                  <Pill tone="gold">Exclusive Resort</Pill>
+                  <Pill>Turtle Bay</Pill>
+                  <Pill tone="gold">North Shore Oahu</Pill>
+                  <Pill>Direct Booking</Pill>
                 </div>
 
                 <h1 className="text-5xl md:text-7xl font-serif font-medium tracking-tight text-white leading-tight">
-                  Luxury Villas on the North Shore.
+                  Luxury Vacation Rentals at Turtle Bay
                 </h1>
 
-                <p className="mt-6 max-w-xl text-lg text-white/90 leading-relaxed">
-                  Premium space, resort-adjacent location, and direct booking flow. Escape to your private sanctuary.
+                <p className="mt-6 max-w-2xl text-lg text-white/90 leading-relaxed">
+                  Ocean Villas at Turtle Bay offers a premium North Shore Oahu stay with featured villas, live availability search, and a direct booking path designed for travelers who want a cleaner luxury booking experience.
                 </p>
 
                 <div className="mt-10 flex flex-row flex-wrap gap-4">
@@ -478,13 +628,18 @@ export default function Home() {
                   >
                     View Villas
                   </a>
+                  <Link
+                    href="/location"
+                    className="inline-flex items-center justify-center rounded-xl px-8 py-3.5 text-sm font-bold text-white border border-white/50 bg-black/20 backdrop-blur-md hover:bg-black/40 hover:border-white transition-all text-center"
+                  >
+                    Explore Turtle Bay
+                  </Link>
                 </div>
               </div>
             </div>
           </div>
         </section>
 
-        {/* Desktop Booking Bar */}
         <section id="availability" className="relative z-10 -mt-12 mb-20">
           <div className="mx-auto max-w-5xl px-6">
             <GlassCard className="p-8">
@@ -553,14 +708,44 @@ export default function Home() {
         </section>
       </div>
 
-      {/* FEATURED LISTINGS */}
-      <section id="featured" className="py-16 md:py-20 bg-white md:bg-slate-50">
+      {/* TRUST / POSITIONING */}
+      <section className="py-16 md:py-20 bg-white">
         <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
-          <SectionTitle eyebrow="The Collection" title="Featured Villas" desc="Carefully curated spaces designed for ultimate relaxation." />
+          <SectionTitle
+            eyebrow="Why Ocean Villas"
+            title="A stronger luxury booking experience at Turtle Bay"
+            desc="This homepage is designed to help guests understand where they are staying, what kind of experience to expect, and how to move from discovery into a direct booking path."
+          />
+
+          <div className="mt-10 grid gap-6 md:grid-cols-3">
+            <InfoCard
+              title="Luxury North Shore positioning"
+              desc="Ocean Villas at Turtle Bay is framed around premium vacation rental intent for guests searching for a higher-end stay on Oahu’s North Shore."
+            />
+            <InfoCard
+              title="Direct booking path"
+              desc="Guests can search live availability, review featured villas, and continue into a clean direct booking experience without unnecessary friction."
+            />
+            <InfoCard
+              title="Property-first browsing"
+              desc="Featured villas now support stronger internal browsing so visitors and search engines can move deeper into the site before booking."
+            />
+          </div>
+        </div>
+      </section>
+
+      {/* FEATURED LISTINGS */}
+      <section id="featured" className="py-16 md:py-20 bg-slate-50">
+        <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
+          <SectionTitle
+            eyebrow="The Collection"
+            title="Featured Turtle Bay Villas"
+            desc="Browse curated villas connected to live booking data, then view the individual villa page or continue directly into booking."
+          />
 
           <div className="mt-10 md:mt-12">
             {listingsLoading ? (
-              <div className="text-center py-20 text-slate-500">Loading premium listings...</div>
+              <div className="text-center py-20 text-slate-500">Loading featured villas...</div>
             ) : listingsError ? (
               <div className="text-center py-20 text-red-500 bg-red-50 rounded-2xl mx-4 md:mx-0">{listingsError}</div>
             ) : (
@@ -574,10 +759,78 @@ export default function Home() {
         </div>
       </section>
 
+      {/* INTERNAL SEO LINKS */}
+      <section className="py-16 md:py-20 bg-white">
+        <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
+          <SectionTitle
+            eyebrow="Plan Your Stay"
+            title="Explore more of Ocean Villas at Turtle Bay"
+            desc="These pages help guests and search engines understand the stay, the setting, and the direct booking journey more clearly."
+          />
+
+          <div className="mt-10 grid gap-6 md:grid-cols-2 xl:grid-cols-4">
+            <GuideCard
+              href="/rentals"
+              title="Browse Rentals"
+              desc="See the broader rental collection and compare available villa options."
+            />
+            <GuideCard
+              href="/location"
+              title="Explore the Location"
+              desc="Strengthen the Turtle Bay and North Shore context for guests planning their stay."
+            />
+            <GuideCard
+              href="/amenities"
+              title="View Amenities"
+              desc="Review the comfort, convenience, and lifestyle details that matter before booking."
+            />
+            <GuideCard
+              href="/availability"
+              title="Check Availability"
+              desc="Move directly into date-based availability for a faster booking decision."
+            />
+          </div>
+        </div>
+      </section>
+
+      {/* FAQ */}
+      <section className="py-16 md:py-20 bg-slate-50">
+        <div className="mx-auto max-w-5xl px-4 sm:px-6 lg:px-8">
+          <SectionTitle
+            eyebrow="FAQ"
+            title="Questions guests ask before booking"
+            desc="This section helps both users and search engines understand the site’s purpose, booking flow, and location relevance."
+          />
+
+          <div className="mt-10 space-y-4">
+            <FAQItem
+              question="How do I check availability for Ocean Villas at Turtle Bay?"
+              answer="Use the availability search on this page to view live dates and continue into the booking path."
+            />
+            <FAQItem
+              question="Can I book direct from the website?"
+              answer="Yes. The site supports a direct booking journey so guests can browse villas, check availability, and move toward reservation from the website."
+            />
+            <FAQItem
+              question="Where are the villas located?"
+              answer="The villas are positioned in the Turtle Bay area on Oahu’s North Shore, making this site especially relevant for guests searching that destination."
+            />
+            <FAQItem
+              question="Can I review individual villas before I book?"
+              answer="Yes. You can browse featured villas and open individual villa pages to compare the stay before continuing to book."
+            />
+          </div>
+        </div>
+      </section>
+
       {/* FOOTER */}
-      <footer className="border-t border-slate-200 bg-slate-50 py-10 md:py-12 mt-10 md:mt-20">
+      <footer className="border-t border-slate-200 bg-slate-50 py-10 md:py-12">
         <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8 flex flex-col md:flex-row justify-between items-center gap-4 text-center md:text-left">
-          <div className="text-lg md:text-xl font-serif font-bold text-slate-900">{BRAND.name}</div>
+          <div>
+            <div className="text-lg md:text-xl font-serif font-bold text-slate-900">{BRAND.name}</div>
+            <div className="mt-1 text-sm text-slate-500">{BRAND.sub}</div>
+          </div>
+
           <div className="text-sm text-slate-500">
             © {new Date().getFullYear()} {BRAND.name}. All rights reserved.
           </div>
