@@ -1,297 +1,414 @@
-// app/availability/page.tsx
-import Link from "next/link";
-import Image from "next/image";
-import { headers } from "next/headers";
-import type { Metadata } from "next";
+"use client";
 
-export const metadata: Metadata = {
-  title: "Check Availability | Ocean Villas at Turtle Bay",
-  description:
-    "Search live availability for luxury vacation rentals at Turtle Bay on Oahu's North Shore. View open dates, compare villas, and book direct.",
-  alternates: { canonical: "/availability" },
-  robots: { index: true, follow: true },
+import Image from "next/image";
+import Link from "next/link";
+import React, { useEffect, useMemo, useState } from "react";
+import { useRouter, useSearchParams } from "next/navigation";
+
+type HostawayListing = {
+  id: string;
+  name: string;
+  description?: string;
+  city?: string;
+  state?: string;
+  country?: string;
+  maxGuests?: number;
+  bedrooms?: number;
+  bathrooms?: number;
+  heroUrl?: string;
+  thumbnailUrl?: string;
+  bookingEngineBase?: string;
 };
 
-type SP = { startDate?: string; endDate?: string; guests?: string; promo?: string };
+const LISTING_IDS = ["489089", "489093", "489095", "489097", "489092", "489094"] as const;
 
-async function getBaseUrlFromHeaders() {
-  const h = await headers();
-  const proto = h.get("x-forwarded-proto") || "https";
-  const host = h.get("x-forwarded-host") || h.get("host");
-  return host ? `${proto}://${host}` : "http://localhost:3000";
+function formatISO(d: Date) {
+  const y = d.getFullYear();
+  const m = String(d.getMonth() + 1).padStart(2, "0");
+  const day = String(d.getDate()).padStart(2, "0");
+  return `${y}-${m}-${day}`;
 }
 
-export default async function AvailabilityPage({
-  searchParams,
-}: {
-  searchParams: SP | Promise<SP>;
-}) {
-  const sp = await Promise.resolve(searchParams);
-  const startDate = sp.startDate || "";
-  const endDate = sp.endDate || "";
-  const guests = sp.guests || "2";
-  const hasValidDates =
-    startDate.length === 10 &&
-    endDate.length === 10 &&
-    /^\d{4}-\d{2}-\d{2}$/.test(startDate) &&
-    /^\d{4}-\d{2}-\d{2}$/.test(endDate) &&
-    new Date(endDate).getTime() > new Date(startDate).getTime();
+function addDays(dateISO: string, days: number) {
+  if (!dateISO) return "";
+  const [y, m, d] = dateISO.split("-").map(Number);
+  const dt = new Date(y, m - 1, d);
+  dt.setDate(dt.getDate() + days);
+  return formatISO(dt);
+}
 
-  // No-dates state: render a useful landing page instead of an error
-  if (!hasValidDates) {
-    return (
-      <main className="min-h-screen bg-slate-50 text-slate-900">
-        <header className="sticky top-0 z-50 border-b border-slate-200 bg-white/80 backdrop-blur-md">
-          <div className="mx-auto flex h-20 max-w-7xl items-center justify-between px-6 lg:px-8">
-            <Link href="/" className="text-sm font-semibold text-slate-600 hover:text-slate-900 transition">
-              ← Back to Home
-            </Link>
-            <span className="text-sm font-medium text-slate-500">Ocean Villas at Turtle Bay</span>
-          </div>
-        </header>
-        <section className="mx-auto max-w-3xl px-6 py-24 text-center">
-          <div className="inline-flex items-center rounded-full bg-slate-100 px-4 py-1.5 text-xs font-semibold uppercase tracking-widest text-slate-500 mb-6">
-            Live Availability Search
-          </div>
-          <h1 className="text-4xl md:text-5xl font-serif font-medium tracking-tight text-slate-900 leading-tight">
-            Find Your Turtle Bay Villa
-          </h1>
-          <p className="mt-5 text-lg text-slate-600 leading-relaxed max-w-xl mx-auto">
-            Enter your travel dates below to search live availability across all Ocean Villas at Turtle Bay. All pricing and booking is powered by Hostaway.
-          </p>
-          <div className="mt-12 rounded-2xl border border-slate-200 bg-white p-8 shadow-[0_8px_40px_rgba(15,23,42,0.07)] text-left">
-            {/* Client-side search form rendered via a small island */}
-            <NoDatesForm />
-          </div>
-          <div className="mt-10 grid grid-cols-1 sm:grid-cols-3 gap-6 text-center">
-            {[
-              { label: "Villas Available", value: "6" },
-              { label: "Location", value: "Turtle Bay, Oahu" },
-              { label: "Booking", value: "100% Direct" },
-            ].map((s) => (
-              <div key={s.label} className="rounded-xl bg-white border border-slate-100 px-6 py-5 shadow-sm">
-                <div className="text-2xl font-serif font-semibold text-slate-900">{s.value}</div>
-                <div className="mt-1 text-xs font-medium uppercase tracking-wider text-slate-400">{s.label}</div>
-              </div>
-            ))}
-          </div>
-        </section>
-      </main>
-    );
-  }
+function isAfter(aISO: string, bISO: string) {
+  if (!aISO || !bISO) return false;
+  return new Date(aISO).getTime() > new Date(bISO).getTime();
+}
 
-  // Has valid dates: fetch and show results
-  const baseUrl = await getBaseUrlFromHeaders();
-  const apiUrl = `${baseUrl}/api/hostaway/search?startDate=${encodeURIComponent(startDate)}&endDate=${encodeURIComponent(endDate)}&guests=${encodeURIComponent(guests)}`;
+function clampText(s?: string, max = 110) {
+  const clean = (s || "").replace(/\s+/g, " ").trim();
+  if (!clean) return "";
+  if (clean.length <= max) return clean;
+  return clean.slice(0, max).trimEnd() + "…";
+}
 
-  let data: any = null;
-  let error: any = null;
-  let status = 200;
-
-  try {
-    const res = await fetch(apiUrl, { cache: "no-store" });
-    status = res.status;
-    data = await res.json().catch(() => null);
-    if (!res.ok) error = data || { error: "Search failed." };
-  } catch (e: any) {
-    error = { error: e?.message || "Search failed." };
-    status = 500;
-  }
-
-  const listings = data?.availableListings || [];
-
+function Stat({ label, value }: { label: string; value: string }) {
   return (
-    <main className="min-h-screen bg-slate-50 text-slate-900 pb-20">
-      <header className="sticky top-0 z-50 border-b border-slate-200 bg-white/80 backdrop-blur-md">
-        <div className="mx-auto flex h-20 max-w-7xl items-center justify-between px-6 lg:px-8">
-          <Link href="/" className="text-sm font-semibold text-slate-600 hover:text-slate-900 transition">
-            ← Back to Home
-          </Link>
-          <div className="text-sm text-slate-600">
-            <span className="font-semibold text-slate-900">{startDate}</span>{" "}
-            <span className="text-slate-400">→</span>{" "}
-            <span className="font-semibold text-slate-900">{endDate}</span>{" "}
-            <span className="text-slate-300 mx-1">•</span>
-            Guests: <span className="font-semibold text-slate-900">{guests}</span>
-          </div>
-        </div>
-      </header>
-
-      <div className="mx-auto max-w-7xl px-6 lg:px-8 mt-10">
-        <div className="mb-10">
-          <h1 className="text-4xl font-serif font-medium tracking-tight text-slate-900">
-            Available Ocean Villas
-          </h1>
-          <p className="mt-3 text-lg text-slate-600">
-            Select a villa below to continue to secure checkout.
-          </p>
-        </div>
-
-        {error ? (
-          <div className="rounded-2xl bg-red-50 border border-red-100 p-8">
-            <h3 className="font-bold text-red-800 text-lg">Availability search failed</h3>
-            <p className="mt-2 text-sm text-red-700">
-              We couldn't retrieve availability right now. Please try again or return to the homepage.
-            </p>
-            <div className="mt-6 flex gap-3">
-              <Link
-                href="/"
-                className="inline-flex px-5 py-2.5 bg-slate-900 text-white rounded-xl font-medium hover:bg-slate-800 transition text-sm"
-              >
-                Back to Home
-              </Link>
-              <Link
-                href="/availability"
-                className="inline-flex px-5 py-2.5 bg-white border border-slate-200 text-slate-700 rounded-xl font-medium hover:bg-slate-50 transition text-sm"
-              >
-                New Search
-              </Link>
-            </div>
-          </div>
-        ) : listings.length === 0 ? (
-          <div className="rounded-2xl border border-slate-200 bg-white p-12 text-center">
-            <p className="text-lg text-slate-500 font-medium">No villas available for these dates.</p>
-            <p className="mt-2 text-sm text-slate-400">
-              Try adjusting your dates or guest count.
-            </p>
-            <Link
-              href="/"
-              className="mt-6 inline-block px-6 py-3 bg-slate-900 text-white rounded-xl text-sm font-semibold hover:bg-slate-800 transition"
-            >
-              Change Dates
-            </Link>
-          </div>
-        ) : (
-          <div className="grid gap-8 md:grid-cols-2 lg:grid-cols-3">
-            {listings.map((l: any) => {
-              const base = String(l.bookingEngineBase || "https://182003_1.holidayfuture.com").replace(/\/$/, "");
-              const bookUrl = `${base}/listings/${encodeURIComponent(l.id)}`;
-              const hero = l.thumbnailUrl || "/media/rentals/placeholder.jpg";
-              return (
-                <a
-                  key={l.id}
-                  href={bookUrl}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="group flex flex-col overflow-hidden rounded-2xl bg-white shadow-[0_6px_26px_rgba(15,23,42,0.06)] border border-slate-100 transition-all duration-300 hover:shadow-[0_18px_60px_rgba(15,23,42,0.14)] hover:-translate-y-1.5"
-                >
-                  <div className="relative aspect-[4/3] overflow-hidden bg-slate-100">
-                    <Image
-                      src={hero}
-                      alt={l.name || `Listing ${l.id}`}
-                      fill
-                      unoptimized={true}
-                      className="object-cover transition-transform duration-700 group-hover:scale-105"
-                    />
-                    <div className="absolute top-4 right-4 z-10">
-                      <span className="inline-flex items-center rounded-full bg-white/90 backdrop-blur-sm px-3 py-1 text-xs font-semibold tracking-wide text-slate-800 shadow-sm">
-                        Available
-                      </span>
-                    </div>
-                  </div>
-                  <div className="flex flex-col flex-grow p-6">
-                    <div className="flex-grow">
-                      <h3 className="text-lg font-semibold text-slate-900 line-clamp-1">
-                        {l.name || `Listing ${l.id}`}
-                      </h3>
-                      <p className="mt-1 text-sm text-slate-500">
-                        {l.city ? `${l.city}${l.state ? `, ${l.state}` : ""}` : "Turtle Bay"}
-                      </p>
-                    </div>
-                    <div className="mt-5 grid grid-cols-3 gap-2 text-center text-xs">
-                      {[
-                        { label: "Sleeps", value: l.maxGuests ?? "–" },
-                        { label: "Beds", value: l.bedrooms ?? "–" },
-                        { label: "Baths", value: l.bathrooms ?? "–" },
-                      ].map((s) => (
-                        <div key={s.label} className="rounded-lg bg-slate-50 border border-slate-100 py-2">
-                          <div className="font-semibold text-slate-900">{String(s.value)}</div>
-                          <div className="text-slate-400">{s.label}</div>
-                        </div>
-                      ))}
-                    </div>
-                    <div className="mt-5">
-                      <span className="flex w-full items-center justify-center rounded-xl bg-slate-900 py-3 text-sm font-semibold text-white transition group-hover:bg-slate-800">
-                        View & Book
-                      </span>
-                    </div>
-                  </div>
-                </a>
-              );
-            })}
-          </div>
-        )}
+    <div className="rounded-xl bg-slate-50 border border-slate-100 px-4 py-3 text-center">
+      <div className="text-[10px] uppercase tracking-wider text-slate-500 font-medium">
+        {label}
       </div>
-    </main>
+      <div className="mt-1 text-sm font-semibold text-slate-900">{value}</div>
+    </div>
   );
 }
 
-// Small inline client component for the no-dates search form
-// (avoids making the whole page client-side)
-function NoDatesForm() {
-  // This is a server component — we render a plain HTML form that GET-submits to /availability
-  // This works without JS and is SEO-safe
+function AvailabilityCard({
+  listing,
+  startDate,
+  endDate,
+  guests,
+}: {
+  listing: HostawayListing;
+  startDate: string;
+  endDate: string;
+  guests: string;
+}) {
+  const hero = listing.heroUrl || listing.thumbnailUrl || "/media/rentals/placeholder.jpg";
+  const title = listing.name || `Villa ${listing.id}`;
+  const subtitle =
+    clampText(listing.description, 110) ||
+    (listing.city
+      ? `${listing.city}${listing.state ? `, ${listing.state}` : ""}`
+      : "Turtle Bay · North Shore, Oahu");
+
+  const detailHref = `/listing/${encodeURIComponent(listing.id)}?startDate=${encodeURIComponent(
+    startDate
+  )}&endDate=${encodeURIComponent(endDate)}&guests=${encodeURIComponent(guests)}`;
+
+  const base = (listing.bookingEngineBase || "https://182003_1.holidayfuture.com").replace(/\/$/, "");
+  const bookUrl = `${base}/listings/${encodeURIComponent(listing.id)}`;
+
   return (
-    <form method="GET" action="/availability">
-      <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 mb-4">
-        <div>
-          <label className="block text-xs font-bold uppercase tracking-wide text-slate-500 mb-2">
-            Check-in
-          </label>
-          <input
-            type="date"
-            name="startDate"
-            required
-            className="w-full rounded-xl border border-slate-200 bg-slate-50 px-4 py-3 text-sm focus:border-slate-900 focus:outline-none focus:ring-1 focus:ring-slate-900"
-          />
-        </div>
-        <div>
-          <label className="block text-xs font-bold uppercase tracking-wide text-slate-500 mb-2">
-            Check-out
-          </label>
-          <input
-            type="date"
-            name="endDate"
-            required
-            className="w-full rounded-xl border border-slate-200 bg-slate-50 px-4 py-3 text-sm focus:border-slate-900 focus:outline-none focus:ring-1 focus:ring-slate-900"
-          />
+    <article className="group flex flex-col overflow-hidden rounded-2xl bg-white shadow-[0_6px_26px_rgba(15,23,42,0.06)] border border-slate-100 transition-all duration-300 hover:shadow-[0_18px_60px_rgba(15,23,42,0.14)]">
+      <div className="relative aspect-[4/3] overflow-hidden bg-slate-100">
+        <Image
+          src={hero}
+          alt={`${title} at Turtle Bay`}
+          fill
+          unoptimized
+          className="object-cover transition-transform duration-700 group-hover:scale-105"
+        />
+        <div className="absolute top-4 right-4 z-10">
+          <span className="inline-flex items-center rounded-full bg-white/90 backdrop-blur-sm px-3 py-1 text-xs font-semibold tracking-wide text-slate-800 shadow-sm">
+            Villa #{listing.id}
+          </span>
         </div>
       </div>
-      <div className="grid grid-cols-2 gap-4 mb-6">
-        <div>
-          <label className="block text-xs font-bold uppercase tracking-wide text-slate-500 mb-2">
-            Guests
-          </label>
-          <select
-            name="guests"
-            defaultValue="2"
-            className="w-full rounded-xl border border-slate-200 bg-slate-50 px-4 py-3 text-sm focus:border-slate-900 focus:outline-none focus:ring-1 focus:ring-slate-900"
+
+      <div className="flex flex-col flex-grow p-6">
+        <h3 className="text-lg font-semibold text-slate-900">{title}</h3>
+        <p className="mt-2 text-sm text-slate-500">{subtitle}</p>
+
+        <div className="mt-6 grid grid-cols-3 gap-3">
+          <Stat label="Sleeps" value={`${listing.maxGuests ?? "-"}`} />
+          <Stat label="Beds" value={`${listing.bedrooms ?? "-"}`} />
+          <Stat label="Baths" value={`${listing.bathrooms ?? "-"}`} />
+        </div>
+
+        <div className="mt-6 grid grid-cols-2 gap-3">
+          <Link
+            href={detailHref}
+            className="inline-flex items-center justify-center rounded-xl border border-slate-200 px-4 py-2.5 text-sm font-semibold text-slate-900 hover:bg-slate-50 transition"
           >
-            {Array.from({ length: 14 }).map((_, i) => (
-              <option key={i + 1} value={i + 1}>
-                {i + 1} Guest{i > 0 ? "s" : ""}
-              </option>
-            ))}
-          </select>
-        </div>
-        <div>
-          <label className="block text-xs font-bold uppercase tracking-wide text-slate-500 mb-2">
-            Promo Code
-          </label>
-          <input
-            type="text"
-            name="promo"
-            placeholder="Optional"
-            className="w-full rounded-xl border border-slate-200 bg-slate-50 px-4 py-3 text-sm focus:border-slate-900 focus:outline-none focus:ring-1 focus:ring-slate-900"
-          />
+            View Villa
+          </Link>
+
+          <a
+            href={bookUrl}
+            target="_blank"
+            rel="noopener noreferrer"
+            className="inline-flex items-center justify-center rounded-xl bg-slate-900 px-4 py-2.5 text-sm font-semibold text-white hover:bg-slate-800 transition"
+          >
+            Book Direct
+          </a>
         </div>
       </div>
-      <button
-        type="submit"
-        className="w-full rounded-xl bg-slate-900 py-3.5 text-sm font-semibold text-white hover:bg-slate-800 transition"
-      >
-        Search Availability
-      </button>
-    </form>
+    </article>
+  );
+}
+
+export default function AvailabilityPage() {
+  const router = useRouter();
+  const searchParams = useSearchParams();
+
+  const today = useMemo(() => formatISO(new Date()), []);
+
+  const startDate = searchParams.get("startDate") || "";
+  const endDate = searchParams.get("endDate") || "";
+  const guestsParam = searchParams.get("guests") || "2";
+  const promoParam = searchParams.get("promo") || "";
+
+  const [checkIn, setCheckIn] = useState(startDate);
+  const [checkOut, setCheckOut] = useState(endDate);
+  const [guests, setGuests] = useState(Number(guestsParam) || 2);
+  const [promo, setPromo] = useState(promoParam);
+
+  const [listings, setListings] = useState<HostawayListing[]>([]);
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState("");
+  const [fallbackNotice, setFallbackNotice] = useState("");
+
+  useEffect(() => {
+    setCheckIn(startDate);
+    setCheckOut(endDate);
+    setGuests(Number(guestsParam) || 2);
+    setPromo(promoParam);
+  }, [startDate, endDate, guestsParam, promoParam]);
+
+  useEffect(() => {
+    let alive = true;
+
+    async function loadFallback() {
+      const results = await Promise.all(
+        LISTING_IDS.map(async (id) => {
+          const res = await fetch(`/api/hostaway/listings?id=${encodeURIComponent(id)}`, {
+            cache: "no-store",
+          });
+          const json = await res.json().catch(() => null);
+          if (!res.ok || !json?.success || !json?.listing) return null;
+          return json.listing as HostawayListing;
+        })
+      );
+
+      return results.filter(Boolean) as HostawayListing[];
+    }
+
+    async function load() {
+      if (!startDate || !endDate) {
+        setListings([]);
+        setLoading(false);
+        setError("");
+        setFallbackNotice("");
+        return;
+      }
+
+      setLoading(true);
+      setError("");
+      setFallbackNotice("");
+
+      try {
+        const res = await fetch(
+          `/api/hostaway/search?startDate=${encodeURIComponent(startDate)}&endDate=${encodeURIComponent(
+            endDate
+          )}&guests=${encodeURIComponent(String(guests))}`,
+          { cache: "no-store" }
+        );
+
+        const json = await res.json().catch(() => null);
+
+        if (res.ok && json?.success && Array.isArray(json?.availableListings)) {
+          const normalized = json.availableListings.map((l: any) => ({
+            id: String(l.id),
+            name: l.name,
+            city: l.city,
+            state: l.state,
+            maxGuests: l.maxGuests,
+            bedrooms: l.bedrooms,
+            bathrooms: l.bathrooms,
+            heroUrl: l.thumbnailUrl || null,
+            thumbnailUrl: l.thumbnailUrl || null,
+            bookingEngineBase: l.bookingEngineBase,
+          })) as HostawayListing[];
+
+          if (!alive) return;
+          setListings(normalized);
+        } else {
+          const fallback = await loadFallback();
+          if (!alive) return;
+          setListings(fallback);
+          setFallbackNotice(
+            "We couldn’t confirm live availability right now, but you can still browse the villas below and continue to direct booking."
+          );
+        }
+      } catch {
+        const fallback = await loadFallback();
+        if (!alive) return;
+        setListings(fallback);
+        setFallbackNotice(
+          "We couldn’t confirm live availability right now, but you can still browse the villas below and continue to direct booking."
+        );
+      } finally {
+        if (!alive) return;
+        setLoading(false);
+      }
+    }
+
+    load();
+
+    return () => {
+      alive = false;
+    };
+  }, [startDate, endDate, guests]);
+
+  function onSearch() {
+    setError("");
+
+    if (!checkIn || !checkOut) return setError("Please choose your check-in and check-out dates.");
+    if (isAfter(checkIn, checkOut) || checkIn === checkOut) return setError("Check-out must be after check-in.");
+    if (isAfter(today, checkIn)) return setError("Check-in date must be today or later.");
+    if (guests < 1) return setError("Guests must be at least 1.");
+
+    router.push(
+      `/availability?startDate=${encodeURIComponent(checkIn)}&endDate=${encodeURIComponent(
+        checkOut
+      )}&guests=${encodeURIComponent(String(guests))}${promo.trim() ? `&promo=${encodeURIComponent(promo.trim())}` : ""}`
+    );
+  }
+
+  return (
+    <main className="min-h-screen bg-slate-50 text-slate-900 pb-16">
+      <header className="sticky top-0 z-50 border-b border-slate-200 bg-white/80 backdrop-blur-md">
+        <div className="mx-auto flex h-20 max-w-7xl items-center justify-between px-6 lg:px-8">
+          <Link
+            href="/"
+            className="text-sm font-semibold text-slate-600 hover:text-slate-900 transition"
+          >
+            ← Back to Home
+          </Link>
+          <span className="text-sm font-medium text-slate-500">Ocean Villas at Turtle Bay</span>
+        </div>
+      </header>
+
+      <section className="bg-white border-b border-slate-100 py-12 md:py-16">
+        <div className="mx-auto max-w-7xl px-6 lg:px-8">
+          <h1 className="text-4xl md:text-5xl font-serif font-medium tracking-tight text-slate-900">
+            Check Availability
+          </h1>
+          <p className="mt-4 max-w-2xl text-slate-600 leading-relaxed">
+            Search your dates below, then browse the villas that best fit your stay at Turtle Bay.
+          </p>
+
+          <div className="mt-8 rounded-2xl border border-slate-200 bg-slate-50 p-6 md:p-8">
+            <div className="grid gap-4 md:grid-cols-[1fr_1fr_140px_180px_120px] md:items-end">
+              <div>
+                <label className="block text-xs font-bold uppercase tracking-wide text-slate-500 mb-2">Check-in</label>
+                <input
+                  type="date"
+                  min={today}
+                  value={checkIn}
+                  onChange={(e) => {
+                    const v = e.target.value;
+                    setCheckIn(v);
+                    if (checkOut && (v === checkOut || isAfter(v, checkOut))) {
+                      setCheckOut(addDays(v, 2));
+                    }
+                  }}
+                  className="w-full rounded-xl border border-slate-200 bg-white px-4 py-3 text-sm focus:border-slate-900 focus:outline-none focus:ring-1 focus:ring-slate-900"
+                />
+              </div>
+
+              <div>
+                <label className="block text-xs font-bold uppercase tracking-wide text-slate-500 mb-2">Check-out</label>
+                <input
+                  type="date"
+                  min={checkIn || today}
+                  value={checkOut}
+                  onChange={(e) => setCheckOut(e.target.value)}
+                  className="w-full rounded-xl border border-slate-200 bg-white px-4 py-3 text-sm focus:border-slate-900 focus:outline-none focus:ring-1 focus:ring-slate-900"
+                />
+              </div>
+
+              <div>
+                <label className="block text-xs font-bold uppercase tracking-wide text-slate-500 mb-2">Guests</label>
+                <select
+                  value={guests}
+                  onChange={(e) => setGuests(Number(e.target.value))}
+                  className="w-full rounded-xl border border-slate-200 bg-white px-4 py-3 text-sm focus:border-slate-900 focus:outline-none focus:ring-1 focus:ring-slate-900"
+                >
+                  {Array.from({ length: 14 }).map((_, i) => (
+                    <option key={i + 1} value={i + 1}>
+                      {i + 1} Guests
+                    </option>
+                  ))}
+                </select>
+              </div>
+
+              <div>
+                <label className="block text-xs font-bold uppercase tracking-wide text-slate-500 mb-2">Promo</label>
+                <input
+                  value={promo}
+                  onChange={(e) => setPromo(e.target.value)}
+                  placeholder="Optional"
+                  className="w-full rounded-xl border border-slate-200 bg-white px-4 py-3 text-sm focus:border-slate-900 focus:outline-none focus:ring-1 focus:ring-slate-900"
+                />
+              </div>
+
+              <div>
+                <button
+                  type="button"
+                  onClick={onSearch}
+                  disabled={loading}
+                  className="inline-flex w-full items-center justify-center rounded-xl bg-slate-900 px-4 py-3 text-sm font-semibold text-white transition hover:bg-slate-800 disabled:opacity-70"
+                >
+                  {loading ? "Searching…" : "Search"}
+                </button>
+              </div>
+            </div>
+
+            {error && <div className="mt-4 text-sm text-red-600 font-medium">{error}</div>}
+          </div>
+        </div>
+      </section>
+
+      <section className="py-12 md:py-16">
+        <div className="mx-auto max-w-7xl px-6 lg:px-8">
+          {startDate && endDate ? (
+            <div className="mb-8">
+              <div className="text-sm text-slate-500">
+                Showing results for{" "}
+                <span className="font-semibold text-slate-900">{startDate}</span> →{" "}
+                <span className="font-semibold text-slate-900">{endDate}</span>{" "}
+                <span className="text-slate-300">•</span>{" "}
+                <span className="font-semibold text-slate-900">{guests} guests</span>
+              </div>
+            </div>
+          ) : null}
+
+          {fallbackNotice ? (
+            <div className="mb-8 rounded-2xl border border-amber-200 bg-amber-50 px-5 py-4 text-sm text-amber-800">
+              {fallbackNotice}
+            </div>
+          ) : null}
+
+          {!startDate || !endDate ? (
+            <div className="rounded-2xl border border-slate-200 bg-white p-10 text-center">
+              <h2 className="text-2xl font-serif text-slate-900">Choose your dates to begin</h2>
+              <p className="mt-4 text-slate-600 max-w-2xl mx-auto">
+                Enter your check-in and check-out dates above to browse your Turtle Bay villa options.
+              </p>
+            </div>
+          ) : loading ? (
+            <div className="text-center py-20 text-slate-500">Loading villa options...</div>
+          ) : listings.length === 0 ? (
+            <div className="rounded-2xl border border-slate-200 bg-white p-10 text-center">
+              <h2 className="text-2xl font-serif text-slate-900">No villas found</h2>
+              <p className="mt-4 text-slate-600 max-w-2xl mx-auto">
+                Try adjusting your dates or guest count and search again.
+              </p>
+            </div>
+          ) : (
+            <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
+              {listings.map((listing) => (
+                <AvailabilityCard
+                  key={listing.id}
+                  listing={listing}
+                  startDate={startDate}
+                  endDate={endDate}
+                  guests={String(guests)}
+                />
+              ))}
+            </div>
+          )}
+        </div>
+      </section>
+    </main>
   );
 }
