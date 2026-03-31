@@ -160,16 +160,34 @@ function GuideCard({
   href,
   title,
   desc,
+  onClick,
 }: {
-  href: string;
+  href?: string;
   title: string;
   desc: string;
+  onClick?: () => void;
 }) {
+  const sharedClassName =
+    "group rounded-2xl border border-slate-200 bg-white p-6 shadow-[0_8px_30px_rgba(15,23,42,0.05)] transition hover:-translate-y-1 hover:shadow-[0_16px_50px_rgba(15,23,42,0.1)]";
+
+  if (onClick) {
+    return (
+      <button
+        type="button"
+        onClick={onClick}
+        className={`${sharedClassName} text-left`}
+      >
+        <h3 className="text-lg font-semibold text-slate-900 group-hover:text-slate-700">{title}</h3>
+        <p className="mt-3 text-sm leading-7 text-slate-600">{desc}</p>
+        <span className="mt-5 inline-flex text-sm font-semibold text-slate-900">
+          Explore →
+        </span>
+      </button>
+    );
+  }
+
   return (
-    <Link
-      href={href}
-      className="group rounded-2xl border border-slate-200 bg-white p-6 shadow-[0_8px_30px_rgba(15,23,42,0.05)] transition hover:-translate-y-1 hover:shadow-[0_16px_50px_rgba(15,23,42,0.1)]"
-    >
+    <Link href={href || "/"} className={sharedClassName}>
       <h3 className="text-lg font-semibold text-slate-900 group-hover:text-slate-700">{title}</h3>
       <p className="mt-3 text-sm leading-7 text-slate-600">{desc}</p>
       <span className="mt-5 inline-flex text-sm font-semibold text-slate-900">
@@ -364,6 +382,19 @@ export default function Home() {
     };
   }, []);
 
+  function scrollToAvailability(targetId?: "availability" | "availability-mobile") {
+    const resolvedTarget =
+      targetId || (window.innerWidth < 768 ? "availability-mobile" : "availability");
+
+    const section = document.getElementById(resolvedTarget);
+    if (section) {
+      section.scrollIntoView({ behavior: "smooth", block: "start" });
+      return;
+    }
+
+    router.push("/");
+  }
+
   function onSearch() {
     setError("");
 
@@ -417,9 +448,13 @@ export default function Home() {
             <a className="hover:text-slate-900 transition-colors" href="#featured">
               Featured
             </a>
-            <a className="hover:text-slate-900 transition-colors" href="#availability">
+            <button
+              type="button"
+              onClick={() => scrollToAvailability("availability")}
+              className="hover:text-slate-900 transition-colors"
+            >
               Availability
-            </a>
+            </button>
             <Link className="hover:text-slate-900 transition-colors" href="/rentals">
               Rentals
             </Link>
@@ -435,9 +470,9 @@ export default function Home() {
             <a className="text-sm font-medium text-slate-600 hover:text-slate-900 transition" href={`tel:${sanitizeTel(BRAND.phone)}`}>
               {BRAND.phone}
             </a>
-            <a href="#availability">
-              <PrimaryButton type="button">Book Now</PrimaryButton>
-            </a>
+            <PrimaryButton type="button" onClick={() => scrollToAvailability("availability")}>
+              Book Now
+            </PrimaryButton>
           </div>
 
           <button className="md:hidden p-2 text-sm font-semibold text-slate-600 z-10" onClick={() => setMobileMenuOpen(!mobileMenuOpen)}>
@@ -451,9 +486,16 @@ export default function Home() {
               <a onClick={() => setMobileMenuOpen(false)} href="#featured" className="py-2 hover:text-slate-900">
                 Featured Villas
               </a>
-              <a onClick={() => setMobileMenuOpen(false)} href="#availability-mobile" className="py-2 hover:text-slate-900">
+              <button
+                type="button"
+                onClick={() => {
+                  setMobileMenuOpen(false);
+                  scrollToAvailability("availability-mobile");
+                }}
+                className="py-2 text-left hover:text-slate-900"
+              >
                 Check Availability
-              </a>
+              </button>
               <Link onClick={() => setMobileMenuOpen(false)} href="/rentals" className="py-2 hover:text-slate-900">
                 Rentals
               </Link>
@@ -616,12 +658,13 @@ export default function Home() {
                 </p>
 
                 <div className="mt-10 flex flex-row flex-wrap gap-4">
-                  <a
-                    href="#availability"
+                  <button
+                    type="button"
+                    onClick={() => scrollToAvailability("availability")}
                     className="inline-flex items-center justify-center rounded-xl px-8 py-3.5 text-sm font-bold text-slate-900 bg-white shadow-lg hover:bg-slate-100 transition-all text-center"
                   >
                     Check Availability
-                  </a>
+                  </button>
                   <a
                     href="#featured"
                     className="inline-flex items-center justify-center rounded-xl px-8 py-3.5 text-sm font-bold text-white border border-white/50 bg-black/20 backdrop-blur-md hover:bg-black/40 hover:border-white transition-all text-center"
@@ -785,9 +828,9 @@ export default function Home() {
               desc="Review the comfort, convenience, and lifestyle details that matter before booking."
             />
             <GuideCard
-              href="/availability"
               title="Check Availability"
-              desc="Move directly into date-based availability for a faster booking decision."
+              desc="Move directly into the live availability search without hitting an empty results page."
+              onClick={() => scrollToAvailability()}
             />
           </div>
         </div>
