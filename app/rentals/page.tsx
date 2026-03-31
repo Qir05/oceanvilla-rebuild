@@ -12,15 +12,20 @@ export const metadata: Metadata = {
   robots: { index: true, follow: true },
 };
 
-type FeaturedListing = {
+const LISTING_IDS = ["489089", "489093", "489095", "489097", "489092", "489094"] as const;
+
+type Listing = {
   id: string;
   name: string;
-  tagline?: string;
-  sleeps?: number;
-  beds?: number;
-  baths?: number;
-  highlight?: string;
-  image?: string | null;
+  description?: string | null;
+  city?: string | null;
+  state?: string | null;
+  country?: string | null;
+  maxGuests?: number | null;
+  bedrooms?: number | null;
+  bathrooms?: number | null;
+  heroUrl?: string | null;
+  bookingEngineBase?: string | null;
 };
 
 async function getBaseUrlFromHeaders() {
@@ -30,27 +35,37 @@ async function getBaseUrlFromHeaders() {
   return host ? `${proto}://${host}` : "http://localhost:3000";
 }
 
-async function getFeaturedListings(): Promise<FeaturedListing[]> {
+async function getListings(): Promise<Listing[]> {
   try {
     const baseUrl = await getBaseUrlFromHeaders();
-    const res = await fetch(`${baseUrl}/api/hostaway/featured`, {
-      cache: "no-store",
-    });
 
-    const json = await res.json().catch(() => null);
+    const results = await Promise.all(
+      LISTING_IDS.map(async (id) => {
+        const res = await fetch(`${baseUrl}/api/hostaway/listings?id=${encodeURIComponent(id)}`, {
+          cache: "no-store",
+        });
 
-    if (!res.ok || !json?.success || !Array.isArray(json?.featured)) {
-      return [];
-    }
+        const json = await res.json().catch(() => null);
+        if (!res.ok || !json?.success || !json?.listing) return null;
+        return json.listing as Listing;
+      })
+    );
 
-    return json.featured as FeaturedListing[];
+    return results.filter(Boolean) as Listing[];
   } catch {
     return [];
   }
 }
 
+function clampText(s?: string | null, max = 110) {
+  const clean = (s || "").replace(/\s+/g, " ").trim();
+  if (!clean) return "";
+  if (clean.length <= max) return clean;
+  return clean.slice(0, max).trimEnd() + "…";
+}
+
 export default async function RentalsPage() {
-  const listings = await getFeaturedListings();
+  const listings = await getListings();
 
   return (
     <main className="min-h-screen bg-slate-50 text-slate-900">
@@ -183,8 +198,13 @@ export default async function RentalsPage() {
   );
 }
 
-function VillaCard({ listing }: { listing: FeaturedListing }) {
-  const imageSrc = listing.image || "/media/rentals/placeholder.jpg";
+function VillaCard({ listing }: { listing: Listing }) {
+  const imageSrc = listing.heroUrl || "/media/rentals/placeholder.jpg";
+  const subtitle =
+    clampText(listing.description, 110) ||
+    (listing.city
+      ? `${listing.city}${listing.state ? `, ${listing.state}` : ""}`
+      : "Turtle Bay · North Shore, Oahu");
 
   return (
     <div className="group flex flex-col overflow-hidden rounded-2xl bg-white shadow-[0_6px_26px_rgba(15,23,42,0.06)] border border-slate-100 transition-all duration-300 hover:shadow-[0_18px_60px_rgba(15,23,42,0.14)] hover:-translate-y-1">
@@ -210,13 +230,13 @@ function VillaCard({ listing }: { listing: FeaturedListing }) {
         </h3>
 
         <p className="mt-2 text-sm text-slate-500">
-          {listing.tagline || "Turtle Bay · North Shore, Oahu"}
+          {subtitle}
         </p>
 
         <div className="mt-6 grid grid-cols-3 gap-3">
-          <Stat label="Sleeps" value={`${listing.sleeps ?? 0}`} />
-          <Stat label="Beds" value={`${listing.beds ?? 0}`} />
-          <Stat label="Baths" value={`${listing.baths ?? 0}`} />
+          <Stat label="Sleeps" value={`${listing.maxGuests ?? 0}`} />
+          <Stat label="Beds" value={`${listing.bedrooms ?? 0}`} />
+          <Stat label="Baths" value={`${listing.bathrooms ?? 0}`} />
         </div>
 
         <div className="mt-6 grid grid-cols-2 gap-3">
