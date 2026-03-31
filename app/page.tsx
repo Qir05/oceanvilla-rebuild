@@ -278,9 +278,6 @@ function ListingCard({ l }: { l: HostawayListing }) {
   );
 }
 
-/**
- * Desktop video seam fix
- */
 const videoStyle: React.CSSProperties = { transform: "translateZ(0) scale(1.01)" };
 
 export default function Home() {
@@ -428,7 +425,6 @@ export default function Home() {
         dangerouslySetInnerHTML={{ __html: JSON.stringify(faqJsonLd) }}
       />
 
-      {/* HEADER */}
       <header className="sticky top-0 z-50 border-b border-slate-200 bg-white/90 backdrop-blur-md">
         <div className="relative mx-auto flex h-16 md:h-20 max-w-7xl items-center justify-between px-4 sm:px-6 lg:px-8">
           <a href="#top" className="flex items-center gap-3 z-10 shrink-0">
@@ -513,7 +509,6 @@ export default function Home() {
         )}
       </header>
 
-      {/* MOBILE */}
       <div className="block md:hidden">
         <div className="relative w-full h-[35vh] min-h-[250px] overflow-hidden bg-black isolate">
           <video
@@ -533,74 +528,73 @@ export default function Home() {
           <div className="absolute inset-0 bg-slate-900/20" />
         </div>
 
-        <div id="availability-mobile" className="bg-slate-100 border-b border-slate-200 px-4 py-6 shadow-inner">
-          <div className="grid grid-cols-2 gap-3 mb-3">
-            <div>
-              <label className="block text-[10px] font-bold uppercase tracking-wide text-slate-500 mb-1">Arrival</label>
-              <input
-                type="date"
-                min={today}
-                value={checkIn}
-                onChange={(e) => {
-                  const v = e.target.value;
-                  setCheckIn(v);
-                  if (checkOut && (v === checkOut || isAfter(v, checkOut))) setCheckOut(addDays(v, 2));
-                }}
-                className="w-full rounded-xl border border-slate-200 bg-white px-3 py-2.5 text-sm focus:border-slate-900 focus:outline-none focus:ring-1 focus:ring-slate-900"
-              />
+        <section className="bg-white px-4 pt-8 pb-3">
+          <div
+            id="availability-mobile"
+            className="rounded-2xl border border-slate-200 bg-slate-100 px-4 py-6 shadow-sm"
+          >
+            <div className="grid grid-cols-2 gap-3 mb-3">
+              <div>
+                <label className="block text-[10px] font-bold uppercase tracking-wide text-slate-500 mb-1">Arrival</label>
+                <input
+                  type="date"
+                  min={today}
+                  value={checkIn}
+                  onChange={(e) => {
+                    const v = e.target.value;
+                    setCheckIn(v);
+                    if (checkOut && (v === checkOut || isAfter(v, checkOut))) setCheckOut(addDays(v, 2));
+                  }}
+                  className="w-full rounded-xl border border-slate-200 bg-white px-3 py-2.5 text-sm focus:border-slate-900 focus:outline-none focus:ring-1 focus:ring-slate-900"
+                />
+              </div>
+              <div>
+                <label className="block text-[10px] font-bold uppercase tracking-wide text-slate-500 mb-1">Departure</label>
+                <input
+                  type="date"
+                  min={checkIn || today}
+                  value={checkOut}
+                  onChange={(e) => setCheckOut(e.target.value)}
+                  className="w-full rounded-xl border border-slate-200 bg-white px-3 py-2.5 text-sm focus:border-slate-900 focus:outline-none focus:ring-1 focus:ring-slate-900"
+                />
+              </div>
             </div>
-            <div>
-              <label className="block text-[10px] font-bold uppercase tracking-wide text-slate-500 mb-1">Departure</label>
-              <input
-                type="date"
-                min={checkIn || today}
-                value={checkOut}
-                onChange={(e) => setCheckOut(e.target.value)}
-                className="w-full rounded-xl border border-slate-200 bg-white px-3 py-2.5 text-sm focus:border-slate-900 focus:outline-none focus:ring-1 focus:ring-slate-900"
-              />
+
+            <div className="grid grid-cols-2 gap-3 mb-4">
+              <div>
+                <label className="block text-[10px] font-bold uppercase tracking-wide text-slate-500 mb-1">Guests</label>
+                <select
+                  value={guests}
+                  onChange={(e) => setGuests(Number(e.target.value))}
+                  className="w-full rounded-xl border border-slate-200 bg-white px-3 py-2.5 text-sm focus:border-slate-900 focus:outline-none focus:ring-1 focus:ring-slate-900"
+                >
+                  {Array.from({ length: 14 }).map((_, i) => (
+                    <option key={i + 1} value={i + 1}>
+                      {i + 1} Guests
+                    </option>
+                  ))}
+                </select>
+              </div>
+              <div>
+                <label className="block text-[10px] font-bold uppercase tracking-wide text-slate-500 mb-1">Promo</label>
+                <input
+                  value={promo}
+                  onChange={(e) => setPromo(e.target.value)}
+                  placeholder="Optional code"
+                  className="w-full rounded-xl border border-slate-200 bg-white px-3 py-2.5 text-sm focus:border-slate-900 focus:outline-none focus:ring-1 focus:ring-slate-900"
+                />
+              </div>
             </div>
+
+            <PrimaryButton type="button" onClick={onSearch} disabled={loading} className="w-full py-3">
+              {loading ? "Searching…" : "Search Availability"}
+            </PrimaryButton>
+
+            {error && <div className="mt-3 text-center text-xs text-red-600 font-medium">{error}</div>}
           </div>
-
-          <div className="grid grid-cols-2 gap-3 mb-4">
-            <div>
-              <label className="block text-[10px] font-bold uppercase tracking-wide text-slate-500 mb-1">Guests</label>
-              <select
-                value={guests}
-                onChange={(e) => setGuests(Number(e.target.value))}
-                className="w-full rounded-xl border border-slate-200 bg-white px-3 py-2.5 text-sm focus:border-slate-900 focus:outline-none focus:ring-1 focus:ring-slate-900"
-              >
-                {Array.from({ length: 14 }).map((_, i) => (
-                  <option key={i + 1} value={i + 1}>
-                    {i + 1} Guests
-                  </option>
-                ))}
-              </select>
-            </div>
-            <div>
-              <label className="block text-[10px] font-bold uppercase tracking-wide text-slate-500 mb-1">Promo</label>
-              <input
-                value={promo}
-                onChange={(e) => setPromo(e.target.value)}
-                placeholder="Optional code"
-                className="w-full rounded-xl border border-slate-200 bg-white px-3 py-2.5 text-sm focus:border-slate-900 focus:outline-none focus:ring-1 focus:ring-slate-900"
-              />
-            </div>
-          </div>
-
-          <PrimaryButton type="button" onClick={onSearch} disabled={loading} className="w-full py-3">
-            {loading ? "Searching…" : "Search Availability"}
-          </PrimaryButton>
-
-          {error && <div className="mt-3 text-center text-xs text-red-600 font-medium">{error}</div>}
-        </div>
+        </section>
 
         <section className="bg-white px-6 py-10 flex flex-col items-center text-center">
-          <div className="flex gap-2 mb-4 flex-wrap justify-center">
-            <Pill darkText>Turtle Bay</Pill>
-            <Pill tone="gold">North Shore Oahu</Pill>
-            <Pill darkText>Direct Booking</Pill>
-          </div>
-
           <h1 className="text-4xl font-serif font-medium tracking-tight text-slate-900 leading-tight">
             Luxury Villas at Turtle Bay
           </h1>
@@ -608,25 +602,9 @@ export default function Home() {
           <p className="mt-4 text-base text-slate-600 leading-relaxed max-w-xl">
             Explore premium vacation rentals on Oahu’s North Shore, browse featured villas, and check live availability for your next Turtle Bay stay.
           </p>
-
-          <div className="mt-6 flex flex-wrap justify-center gap-3">
-            <a
-              href="#featured"
-              className="inline-flex items-center justify-center rounded-xl px-5 py-3 text-sm font-bold text-slate-900 border border-slate-200 bg-white hover:bg-slate-50 transition-colors"
-            >
-              View Villas
-            </a>
-            <Link
-              href="/location"
-              className="inline-flex items-center justify-center rounded-xl px-5 py-3 text-sm font-bold text-white bg-slate-900 hover:bg-slate-800 transition-colors"
-            >
-              Explore Location
-            </Link>
-          </div>
         </section>
       </div>
 
-      {/* DESKTOP */}
       <div className="hidden md:block">
         <section id="top" className="relative h-[80vh] w-full overflow-hidden bg-black isolate">
           <video
@@ -643,12 +621,6 @@ export default function Home() {
           <div className="absolute inset-0 flex flex-col justify-center pt-16 pb-24">
             <div className="mx-auto w-full max-w-7xl px-5 sm:px-6 lg:px-8">
               <div className="max-w-4xl">
-                <div className="flex flex-wrap items-center gap-3 mb-6">
-                  <Pill>Turtle Bay</Pill>
-                  <Pill tone="gold">North Shore Oahu</Pill>
-                  <Pill>Direct Booking</Pill>
-                </div>
-
                 <h1 className="text-5xl md:text-7xl font-serif font-medium tracking-tight text-white leading-tight">
                   Luxury Vacation Rentals at Turtle Bay
                 </h1>
@@ -656,34 +628,12 @@ export default function Home() {
                 <p className="mt-6 max-w-2xl text-lg text-white/90 leading-relaxed">
                   Ocean Villas at Turtle Bay offers a premium North Shore Oahu stay with featured villas, live availability search, and a direct booking path designed for travelers who want a cleaner luxury booking experience.
                 </p>
-
-                <div className="mt-10 flex flex-row flex-wrap gap-4">
-                  <button
-                    type="button"
-                    onClick={() => scrollToAvailability("availability")}
-                    className="inline-flex items-center justify-center rounded-xl px-8 py-3.5 text-sm font-bold text-slate-900 bg-white shadow-lg hover:bg-slate-100 transition-all text-center"
-                  >
-                    Check Availability
-                  </button>
-                  <a
-                    href="#featured"
-                    className="inline-flex items-center justify-center rounded-xl px-8 py-3.5 text-sm font-bold text-white border border-white/50 bg-black/20 backdrop-blur-md hover:bg-black/40 hover:border-white transition-all text-center"
-                  >
-                    View Villas
-                  </a>
-                  <Link
-                    href="/location"
-                    className="inline-flex items-center justify-center rounded-xl px-8 py-3.5 text-sm font-bold text-white border border-white/50 bg-black/20 backdrop-blur-md hover:bg-black/40 hover:border-white transition-all text-center"
-                  >
-                    Explore Turtle Bay
-                  </Link>
-                </div>
               </div>
             </div>
           </div>
         </section>
 
-        <section id="availability" className="relative z-10 -mt-12 mb-20">
+        <section id="availability" className="bg-white pt-14 md:pt-20 pb-16 md:pb-20">
           <div className="mx-auto max-w-5xl px-6">
             <GlassCard className="p-8">
               <div className="flex flex-row items-end gap-4">
@@ -749,7 +699,6 @@ export default function Home() {
             </GlassCard>
           </div>
         </section>
-      </div>
 
       {/* TRUST / POSITIONING */}
       <section className="py-16 md:py-20 bg-white">
@@ -879,6 +828,7 @@ export default function Home() {
           </div>
         </div>
       </footer>
+      </div>
     </main>
   );
 }
