@@ -1,52 +1,52 @@
-import type { MetadataRoute } from 'next'
+// app/sitemap.ts
+import type { MetadataRoute } from "next";
 
-const siteUrl = 'https://oceanvillasturtlebay.com'
+const siteUrl = "https://oceanvillasturtlebay.com";
 
 export default function sitemap(): MetadataRoute.Sitemap {
-  const now = new Date()
-
+  const now = new Date();
   return [
     {
       url: `${siteUrl}/`,
       lastModified: now,
-      changeFrequency: 'weekly',
+      changeFrequency: "weekly",
       priority: 1,
     },
     {
-      url: `${siteUrl}/about`,
+      url: `${siteUrl}/rentals`,
       lastModified: now,
-      changeFrequency: 'monthly',
+      changeFrequency: "weekly",
+      priority: 0.9,
+    },
+    {
+      url: `${siteUrl}/availability`,
+      lastModified: now,
+      changeFrequency: "daily",
+      priority: 0.85,
+    },
+    {
+      url: `${siteUrl}/location`,
+      lastModified: now,
+      changeFrequency: "monthly",
       priority: 0.8,
     },
     {
       url: `${siteUrl}/amenities`,
       lastModified: now,
-      changeFrequency: 'monthly',
+      changeFrequency: "monthly",
       priority: 0.8,
     },
     {
-      url: `${siteUrl}/availability`,
+      url: `${siteUrl}/about`,
       lastModified: now,
-      changeFrequency: 'daily',
-      priority: 0.9,
+      changeFrequency: "monthly",
+      priority: 0.6,
     },
     {
       url: `${siteUrl}/contact`,
       lastModified: now,
-      changeFrequency: 'monthly',
-      priority: 0.7,
+      changeFrequency: "monthly",
+      priority: 0.6,
     },
-    {
-      url: `${siteUrl}/location`,
-      lastModified: now,
-      changeFrequency: 'monthly',
-      priority: 0.8,
-    },
-    {
-      url: `${siteUrl}/rentals`,
-      lastModified: now,
-      changeFrequency: 'weekly',
-      priority: 0.9,
-    },
-  ]
+  ];
 }
