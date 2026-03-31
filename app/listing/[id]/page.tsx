@@ -1,241 +1,238 @@
-// app/listing/[id]/page.tsx
-import Link from "next/link";
-import Image from "next/image";
-import { headers } from "next/headers";
-import type { Metadata } from "next";
+"use client";
 
-type SearchParams = {
-  startDate?: string;
-  endDate?: string;
-  guests?: string;
+import Image from "next/image";
+import Link from "next/link";
+import React, { useEffect, useMemo, useState } from "react";
+import { useParams, useSearchParams } from "next/navigation";
+
+type HostawayListing = {
+  id: string;
+  name: string;
+  description?: string;
+  city?: string;
+  state?: string;
+  country?: string;
+  maxGuests?: number;
+  bedrooms?: number;
+  bathrooms?: number;
+  heroUrl?: string;
+  bookingEngineBase?: string;
 };
 
-async function getBaseUrlFromHeaders() {
-  const h = await headers();
-  const proto = h.get("x-forwarded-proto") || "https";
-  const host = h.get("x-forwarded-host") || h.get("host");
-  return host ? `${proto}://${host}` : "http://localhost:3000";
+function clampText(s?: string, max = 500) {
+  const clean = (s || "").replace(/\s+/g, " ").trim();
+  if (!clean) return "";
+  if (clean.length <= max) return clean;
+  return clean.slice(0, max).trimEnd() + "…";
 }
 
-export async function generateMetadata({
-  params,
-}: {
-  params: { id: string } | Promise<{ id: string }>;
-}): Promise<Metadata> {
-  const p = await Promise.resolve(params);
-  return {
-    title: `Villa ${p.id} | Ocean Villas at Turtle Bay`,
-    description: `View details, availability, and direct booking for Ocean Villa ${p.id} at Turtle Bay on Oahu's North Shore.`,
-    robots: { index: true, follow: true },
-  };
+function Stat({ label, value }: { label: string; value: string }) {
+  return (
+    <div className="rounded-xl bg-slate-50 border border-slate-100 px-4 py-4 text-center">
+      <div className="text-[10px] uppercase tracking-wider text-slate-500 font-medium">
+        {label}
+      </div>
+      <div className="mt-1 text-base font-semibold text-slate-900">{value}</div>
+    </div>
+  );
 }
 
-export default async function ListingDetailsPage({
-  params,
-  searchParams,
-}: {
-  params: { id: string } | Promise<{ id: string }>;
-  searchParams: SearchParams | Promise<SearchParams>;
-}) {
-  const p = await Promise.resolve(params);
-  const sp = await Promise.resolve(searchParams);
-  const id = p?.id;
-  const startDate = sp?.startDate || "";
-  const endDate = sp?.endDate || "";
-  const guests = sp?.guests || "2";
+export default function ListingDetailsPage() {
+  const params = useParams();
+  const searchParams = useSearchParams();
 
-  if (!id) {
+  const id = useMemo(() => {
+    const raw = params?.id;
+    return Array.isArray(raw) ? raw[0] : raw;
+  }, [params]);
+
+  const startDate = searchParams.get("startDate") || "";
+  const endDate = searchParams.get("endDate") || "";
+  const guests = searchParams.get("guests") || "2";
+
+  const [listing, setListing] = useState<HostawayListing | null>(null);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState("");
+
+  useEffect(() => {
+    let alive = true;
+
+    async function load() {
+      if (!id) {
+        setError("Missing listing ID.");
+        setLoading(false);
+        return;
+      }
+
+      setLoading(true);
+      setError("");
+
+      try {
+        const res = await fetch(`/api/hostaway/listings?id=${encodeURIComponent(id)}`, {
+          cache: "no-store",
+        });
+
+        const json = await res.json().catch(() => null);
+
+        if (!res.ok || !json?.success || !json?.listing) {
+          throw new Error("Listing not found.");
+        }
+
+        if (!alive) return;
+        setListing(json.listing as HostawayListing);
+      } catch (e: any) {
+        if (!alive) return;
+        setError(e?.message || "Failed to load listing.");
+      } finally {
+        if (!alive) return;
+        setLoading(false);
+      }
+    }
+
+    load();
+
+    return () => {
+      alive = false;
+    };
+  }, [id]);
+
+  const backHref =
+    startDate && endDate
+      ? `/availability?startDate=${encodeURIComponent(startDate)}&endDate=${encodeURIComponent(
+          endDate
+        )}&guests=${encodeURIComponent(guests)}`
+      : "/rentals";
+
+  const bookUrl = listing
+    ? `${(listing.bookingEngineBase || "https://182003_1.holidayfuture.com").replace(/\/$/, "")}/listings/${encodeURIComponent(
+        listing.id
+      )}`
+    : "#";
+
+  if (loading) {
     return (
-      <main className="min-h-screen bg-slate-50 flex items-center justify-center">
-        <div className="text-center">
-          <p className="text-slate-500">No listing ID provided.</p>
-          <Link href="/" className="mt-4 inline-block text-sm font-semibold text-slate-900 underline">
-            Return Home
-          </Link>
+      <main className="min-h-screen bg-slate-50 text-slate-900">
+        <div className="mx-auto max-w-7xl px-6 py-16">
+          <div className="text-center text-slate-500">Loading villa details...</div>
         </div>
       </main>
     );
   }
 
-  const baseUrl = await getBaseUrlFromHeaders();
-  // FIXED: was /api/hostaway/listings/${id} (path param) — correct route uses ?id= query param
-  const apiUrl = `${baseUrl}/api/hostaway/listings?id=${encodeURIComponent(id)}`;
-  const res = await fetch(apiUrl, { cache: "no-store" });
-  const data = await res.json().catch(() => null);
-  const listing = data?.listing;
-
-  if (!listing) {
+  if (error || !listing) {
     return (
-      <main className="min-h-screen bg-slate-50">
-        <header className="sticky top-0 z-50 border-b border-slate-200 bg-white/80 backdrop-blur-md">
-          <div className="mx-auto flex h-20 max-w-7xl items-center px-6 lg:px-8">
-            <Link href="/rentals" className="text-sm font-semibold text-slate-600 hover:text-slate-900 transition">
-              ← Back to Rentals
-            </Link>
+      <main className="min-h-screen bg-slate-50 text-slate-900">
+        <div className="mx-auto max-w-4xl px-6 py-16">
+          <div className="rounded-2xl border border-red-200 bg-red-50 p-8 text-center">
+            <h1 className="text-2xl font-serif text-red-800">Unable to load villa</h1>
+            <p className="mt-4 text-red-700">{error || "Listing not found."}</p>
+            <div className="mt-6">
+              <Link
+                href={backHref}
+                className="inline-flex items-center justify-center rounded-xl bg-slate-900 px-6 py-3 text-sm font-semibold text-white hover:bg-slate-800 transition"
+              >
+                Go Back
+              </Link>
+            </div>
           </div>
-        </header>
-        <div className="mx-auto max-w-3xl px-6 py-24 text-center">
-          <h1 className="text-3xl font-serif text-slate-900">Villa not found</h1>
-          <p className="mt-4 text-slate-500">This villa could not be loaded. It may have been removed or the ID is incorrect.</p>
-          <Link
-            href="/rentals"
-            className="mt-8 inline-flex items-center justify-center rounded-xl bg-slate-900 px-6 py-3 text-sm font-semibold text-white hover:bg-slate-800 transition"
-          >
-            Browse All Villas
-          </Link>
         </div>
       </main>
     );
   }
 
-  const bookingEngineBase = String(listing.bookingEngineBase || "https://182003_1.holidayfuture.com").replace(/\/$/, "");
-  const bookingUrl = buildBookingUrl(bookingEngineBase, id, startDate, endDate, guests);
+  const title = listing.name || `Villa ${listing.id}`;
+  const subtitle = listing.city
+    ? `${listing.city}${listing.state ? `, ${listing.state}` : ""}`
+    : "Turtle Bay · North Shore, Oahu";
 
-  // Build back-link: only include date params if they are valid
-  const hasValidDates = startDate && endDate && startDate !== endDate;
-  const backHref = hasValidDates
-    ? `/availability?startDate=${encodeURIComponent(startDate)}&endDate=${encodeURIComponent(endDate)}&guests=${encodeURIComponent(guests)}`
-    : "/rentals";
-  const backLabel = hasValidDates ? "← Back to availability results" : "← Back to rentals";
+  const description =
+    clampText(listing.description, 1200) ||
+    "Explore this Ocean Villas property at Turtle Bay and continue directly into booking.";
 
   const hero = listing.heroUrl || "/media/rentals/placeholder.jpg";
-  const location = [listing.city, listing.state].filter(Boolean).join(", ") || "Turtle Bay, HI";
 
   return (
     <main className="min-h-screen bg-slate-50 text-slate-900">
       <header className="sticky top-0 z-50 border-b border-slate-200 bg-white/80 backdrop-blur-md">
         <div className="mx-auto flex h-20 max-w-7xl items-center justify-between px-6 lg:px-8">
-          <Link href={backHref} className="text-sm font-semibold text-slate-600 hover:text-slate-900 transition">
-            {backLabel}
+          <Link
+            href={backHref}
+            className="text-sm font-semibold text-slate-600 hover:text-slate-900 transition"
+          >
+            ← Back
           </Link>
-          <span className="hidden md:block text-sm font-medium text-slate-400">
-            Ocean Villas at Turtle Bay
-          </span>
+          <span className="text-sm font-medium text-slate-500">Ocean Villas at Turtle Bay</span>
         </div>
       </header>
 
-      <article className="mx-auto max-w-5xl px-6 lg:px-8 py-12">
-        {/* Hero image */}
-        <div className="relative w-full aspect-[16/9] rounded-2xl overflow-hidden bg-slate-100 shadow-[0_8px_40px_rgba(15,23,42,0.1)] mb-10">
-          <Image
-            src={hero}
-            alt={`${listing.name} at Turtle Bay`}
-            fill
-            unoptimized={true}
-            className="object-cover"
-            priority
-          />
-        </div>
-
-        <div className="grid lg:grid-cols-3 gap-10">
-          {/* Main content */}
-          <div className="lg:col-span-2">
-            <div className="inline-flex items-center rounded-full bg-slate-100 px-3 py-1 text-xs font-semibold uppercase tracking-widest text-slate-500 mb-4">
-              Ocean Villas · Turtle Bay
-            </div>
-            <h1 className="text-3xl md:text-4xl font-serif font-medium tracking-tight text-slate-900 leading-tight">
-              {listing.name}
-            </h1>
-            <p className="mt-2 text-sm text-slate-500">{location}</p>
-
-            {/* Stats */}
-            <div className="mt-8 grid grid-cols-3 gap-4">
-              {[
-                { label: "Sleeps", value: listing.maxGuests ?? "–" },
-                { label: "Bedrooms", value: listing.bedrooms ?? "–" },
-                { label: "Bathrooms", value: listing.bathrooms ?? "–" },
-              ].map((s) => (
-                <div key={s.label} className="rounded-xl bg-white border border-slate-100 px-4 py-4 text-center shadow-sm">
-                  <div className="text-2xl font-serif font-semibold text-slate-900">{String(s.value)}</div>
-                  <div className="mt-1 text-xs font-medium uppercase tracking-wider text-slate-400">{s.label}</div>
-                </div>
-              ))}
-            </div>
-
-            {/* Description */}
-            {listing.description ? (
-              <div className="mt-10">
-                <h2 className="text-xl font-semibold text-slate-900 mb-4">About this villa</h2>
-                <p className="text-sm leading-8 text-slate-600 whitespace-pre-line">
-                  {listing.description.slice(0, 800)}{listing.description.length > 800 ? "…" : ""}
-                </p>
+      <section className="py-10 md:py-14">
+        <div className="mx-auto max-w-7xl px-6 lg:px-8">
+          <div className="grid gap-10 lg:grid-cols-[1.1fr_0.9fr] lg:items-start">
+            <div className="overflow-hidden rounded-3xl border border-slate-200 bg-white shadow-[0_10px_40px_rgba(15,23,42,0.08)]">
+              <div className="relative aspect-[4/3] bg-slate-100">
+                <Image
+                  src={hero}
+                  alt={`${title} at Turtle Bay`}
+                  fill
+                  unoptimized
+                  className="object-cover"
+                />
               </div>
-            ) : null}
-
-            {/* Context */}
-            <div className="mt-10 rounded-2xl bg-white border border-slate-100 p-6">
-              <h2 className="text-lg font-semibold text-slate-900 mb-3">Turtle Bay, Oahu's North Shore</h2>
-              <p className="text-sm leading-7 text-slate-600">
-                Turtle Bay is one of Oahu's most iconic destinations, offering world-class surf breaks, secluded beaches, and the relaxed luxury of the North Shore lifestyle. Ocean Villas places you in the heart of it all — minutes from historic Haleiwa, the legendary Banzai Pipeline, and pristine snorkeling coves.
-              </p>
             </div>
-          </div>
 
-          {/* Booking sidebar */}
-          <div className="lg:col-span-1">
-            <div className="sticky top-28 rounded-2xl border border-slate-200 bg-white p-6 shadow-[0_8px_40px_rgba(15,23,42,0.07)]">
-              <div className="text-xs font-bold uppercase tracking-widest text-slate-400 mb-3">
-                Direct Booking
+            <div>
+              <div className="inline-flex items-center rounded-full bg-slate-100 px-4 py-1.5 text-xs font-semibold uppercase tracking-widest text-slate-500">
+                Villa #{listing.id}
               </div>
-              <h3 className="text-lg font-semibold text-slate-900">{listing.name}</h3>
-              {hasValidDates && (
-                <div className="mt-4 rounded-xl bg-slate-50 border border-slate-100 px-4 py-3 text-sm text-slate-600">
-                  <div className="flex justify-between mb-1">
-                    <span className="text-slate-400">Check-in</span>
-                    <span className="font-semibold text-slate-900">{startDate}</span>
-                  </div>
-                  <div className="flex justify-between mb-1">
-                    <span className="text-slate-400">Check-out</span>
-                    <span className="font-semibold text-slate-900">{endDate}</span>
-                  </div>
-                  <div className="flex justify-between">
-                    <span className="text-slate-400">Guests</span>
-                    <span className="font-semibold text-slate-900">{guests}</span>
-                  </div>
+
+              <h1 className="mt-5 text-4xl md:text-5xl font-serif font-medium tracking-tight text-slate-900">
+                {title}
+              </h1>
+
+              <p className="mt-3 text-base text-slate-500">{subtitle}</p>
+
+              {(startDate && endDate) ? (
+                <div className="mt-4 text-sm text-slate-600">
+                  Selected stay:{" "}
+                  <span className="font-semibold text-slate-900">{startDate}</span> →{" "}
+                  <span className="font-semibold text-slate-900">{endDate}</span>{" "}
+                  <span className="text-slate-300">•</span>{" "}
+                  <span className="font-semibold text-slate-900">{guests} guests</span>
                 </div>
-              )}
-              <a
-                href={bookingUrl}
-                target="_blank"
-                rel="noopener noreferrer"
-                className="mt-5 flex w-full items-center justify-center rounded-xl bg-slate-900 py-3.5 text-sm font-bold text-white hover:bg-slate-800 transition"
-              >
-                {hasValidDates ? "Continue to Booking" : "Check Availability & Book"}
-              </a>
-              <p className="mt-3 text-center text-xs text-slate-400">
-                Powered by Hostaway · Secure checkout
-              </p>
-              {!hasValidDates && (
+              ) : null}
+
+              <div className="mt-8 grid grid-cols-3 gap-3">
+                <Stat label="Sleeps" value={`${listing.maxGuests ?? "-"}`} />
+                <Stat label="Beds" value={`${listing.bedrooms ?? "-"}`} />
+                <Stat label="Baths" value={`${listing.bathrooms ?? "-"}`} />
+              </div>
+
+              <div className="mt-8 rounded-2xl border border-slate-200 bg-white p-6">
+                <h2 className="text-lg font-semibold text-slate-900">About this villa</h2>
+                <p className="mt-4 text-sm leading-7 text-slate-600">{description}</p>
+              </div>
+
+              <div className="mt-8 grid grid-cols-1 sm:grid-cols-2 gap-4">
                 <Link
-                  href="/#availability"
-                  className="mt-4 flex w-full items-center justify-center rounded-xl border border-slate-200 py-3 text-sm font-semibold text-slate-700 hover:bg-slate-50 transition"
+                  href={backHref}
+                  className="inline-flex items-center justify-center rounded-xl border border-slate-200 px-6 py-3 text-sm font-semibold text-slate-900 hover:bg-slate-50 transition"
                 >
-                  Search dates first
+                  Back to Browse
                 </Link>
-              )}
+
+                <a
+                  href={bookUrl}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="inline-flex items-center justify-center rounded-xl bg-slate-900 px-6 py-3 text-sm font-semibold text-white hover:bg-slate-800 transition"
+                >
+                  Book Direct
+                </a>
+              </div>
             </div>
           </div>
         </div>
-      </article>
+      </section>
     </main>
   );
-}
-
-function buildBookingUrl(
-  base: string,
-  listingId: string,
-  startDate: string,
-  endDate: string,
-  guests: string
-) {
-  try {
-    const u = new URL(base.startsWith("http") ? base : `https://${base}`);
-    u.pathname = `/property/${listingId}`;
-    if (startDate) u.searchParams.set("startDate", startDate);
-    if (endDate) u.searchParams.set("endDate", endDate);
-    if (guests) u.searchParams.set("adults", guests);
-    return u.toString();
-  } catch {
-    return `${base}/property/${listingId}`;
-  }
 }
