@@ -2,7 +2,7 @@
 
 import Image from "next/image";
 import Link from "next/link";
-import React, { useEffect, useMemo, useState } from "react";
+import React, { Suspense, useEffect, useMemo, useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 
 type HostawayListing = {
@@ -135,7 +135,7 @@ function AvailabilityCard({
   );
 }
 
-export default function AvailabilityPage() {
+function AvailabilityPageContent() {
   const router = useRouter();
   const searchParams = useSearchParams();
 
@@ -410,5 +410,21 @@ export default function AvailabilityPage() {
         </div>
       </section>
     </main>
+  );
+}
+
+export default function AvailabilityPage() {
+  return (
+    <Suspense
+      fallback={
+        <main className="min-h-screen bg-slate-50 text-slate-900">
+          <div className="mx-auto max-w-7xl px-6 py-20 text-center text-slate-500">
+            Loading availability...
+          </div>
+        </main>
+      }
+    >
+      <AvailabilityPageContent />
+    </Suspense>
   );
 }
