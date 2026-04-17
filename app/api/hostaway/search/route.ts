@@ -1,8 +1,8 @@
 // app/api/hostaway/search/route.ts
-// Moved from app/hostaway/search/route.ts to correct /api/ path
 import { NextResponse } from "next/server";
+import { OCEAN_VILLA_LISTING_IDS, buildBookingUrl } from "@/lib/ocean-villas";
 
-const LISTING_IDS = ["489089", "489093", "489095", "489097", "489092", "489094"] as const;
+const LISTING_IDS = OCEAN_VILLA_LISTING_IDS;
 
 const BOOKING_ENGINE_BASE_URL =
   process.env.HOSTAWAY_BOOKING_ENGINE_BASE_URL ||

@@ -5,6 +5,7 @@ import Link from "next/link";
 import Script from "next/script";
 import React, { useEffect, useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
+import { buildBookingUrl } from "@/lib/ocean-villas";
 
 type HostawayListing = {
   id: string;
@@ -28,7 +29,7 @@ const BRAND = {
   phone: "(858) 345-2082",
 };
 
-const LISTING_IDS = ["489089", "489093", "489095", "489097", "489092", "489094"] as const;
+const LISTING_IDS = ["489089", "489092", "489093", "489094", "489095", "489097", "505671"] as const;
 
 function cx(...classes: Array<string | false | undefined | null>) {
   return classes.filter(Boolean).join(" ");
@@ -54,12 +55,6 @@ function isAfter(aISO: string, bISO: string) {
   return new Date(aISO).getTime() > new Date(bISO).getTime();
 }
 
-function clampText(s: string, max = 140) {
-  const clean = (s || "").replace(/\s+/g, " ").trim();
-  if (!clean) return "";
-  if (clean.length <= max) return clean;
-  return clean.slice(0, max).trimEnd() + "…";
-}
 
 function sanitizeTel(phone: string) {
   const cleaned = (phone || "").replace(/[^\d+]/g, "");
@@ -216,18 +211,19 @@ function FAQItem({
 
 function ListingCard({ l }: { l: HostawayListing }) {
   const title = l.name || `Villa ${l.id}`;
+  // Let CSS line-clamp handle visual truncation; supply full text
   const subtitle =
-    clampText(l.description || "", 110) ||
+    (l.description || "").replace(/\s+/g, " ").trim() ||
     `Browse this Turtle Bay villa on Oahu’s North Shore and explore live availability, stay details, and direct booking options.`;
 
   const hero = l.heroUrl || "/media/rentals/placeholder.jpg";
-  const base = (l.bookingEngineBase || "https://182003_1.holidayfuture.com").replace(/\/$/, "");
-  const bookUrl = `${base}/listings/${encodeURIComponent(l.id)}`;
   const detailUrl = `/listing/${encodeURIComponent(l.id)}`;
+  const bookUrl = buildBookingUrl(l.id, l.bookingEngineBase);
 
   return (
     <article className="flex flex-col overflow-hidden rounded-2xl bg-white shadow-[0_6px_26px_rgba(15,23,42,0.06)] border border-slate-100 transition-all duration-300 hover:shadow-[0_18px_60px_rgba(15,23,42,0.14)]">
-      <div className="relative aspect-[4/3] overflow-hidden bg-slate-100">
+      {/* Fixed aspect-ratio image — keeps all cards level */}
+      <div className="relative aspect-[4/3] overflow-hidden bg-slate-100 shrink-0">
         <Image
           src={hero}
           alt={`${title} at Turtle Bay`}
@@ -242,24 +238,33 @@ function ListingCard({ l }: { l: HostawayListing }) {
         </div>
       </div>
 
-      <div className="flex flex-col flex-grow p-5 md:p-6">
-        <div className="flex-grow">
-          <h3 className="text-lg font-semibold text-slate-900">{title}</h3>
-          <p className="mt-2 text-sm text-slate-500">
-            {subtitle}
-          </p>
+      {/* flex-1 content column — spacer pins stats+CTAs to the bottom */}
+      <div className="flex flex-col flex-1 p-5 md:p-6">
+        {/* Title: clamp-2 ensures max 2 lines across all cards */}
+        <h3 className="text-base font-semibold text-slate-900 line-clamp-2 leading-snug">
+          {title}
+        </h3>
+
+        {/* Description: clamp-3 keeps consistent height */}
+        <p className="mt-2 text-sm text-slate-500 leading-relaxed line-clamp-3">
+          {subtitle}
+        </p>
+
+        {/* Flexible spacer — pushes stats + CTAs to the bottom of every card */}
+        <div className="flex-1" />
+
+        {/* Stats — always at a consistent vertical position */}
+        <div className="mt-5 pt-4 border-t border-slate-100 grid grid-cols-3 gap-2">
+          <Stat label="Sleeps" value={`${l.maxGuests ?? "—"}`} />
+          <Stat label="Beds" value={`${l.bedrooms ?? "—"}`} />
+          <Stat label="Baths" value={`${l.bathrooms ?? "—"}`} />
         </div>
 
-        <div className="mt-6 pt-4 border-t border-slate-100 grid grid-cols-3 gap-2">
-          <Stat label="Sleeps" value={`${l.maxGuests ?? "-"}`} />
-          <Stat label="Beds" value={`${l.bedrooms ?? "-"}`} />
-          <Stat label="Baths" value={`${l.bathrooms ?? "-"}`} />
-        </div>
-
-        <div className="mt-5 grid grid-cols-1 sm:grid-cols-2 gap-3">
+        {/* CTAs — always pinned to card bottom */}
+        <div className="mt-4 grid grid-cols-1 sm:grid-cols-2 gap-3">
           <Link
             href={detailUrl}
-            className="inline-flex items-center justify-center rounded-xl border border-slate-200 px-4 py-3 text-sm font-semibold text-slate-900 transition hover:bg-slate-50"
+            className="inline-flex items-center justify-center rounded-xl bg-[#0f172a] px-4 py-3 text-sm font-semibold text-white shadow-[0_3px_12px_rgba(15,23,42,0.18)] hover:-translate-y-px hover:bg-[#1e293b] hover:shadow-[0_6px_20px_rgba(15,23,42,0.24)] active:translate-y-0 active:scale-[0.97] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-slate-700 focus-visible:ring-offset-2 transition-all duration-[220ms] ease-[cubic-bezier(0.16,1,0.3,1)]"
           >
             View Villa
           </Link>
@@ -268,7 +273,7 @@ function ListingCard({ l }: { l: HostawayListing }) {
             href={bookUrl}
             target="_blank"
             rel="noopener noreferrer"
-            className="inline-flex items-center justify-center rounded-xl bg-slate-900 px-4 py-3 text-sm font-semibold text-white transition hover:bg-slate-800"
+            className="inline-flex items-center justify-center rounded-xl border border-slate-200 bg-white px-4 py-3 text-sm font-semibold text-slate-700 hover:bg-slate-50 hover:border-slate-300 hover:-translate-y-px active:translate-y-0 active:scale-[0.97] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-slate-300 focus-visible:ring-offset-2 transition-all duration-[220ms] ease-[cubic-bezier(0.16,1,0.3,1)]"
           >
             Book Direct
           </a>

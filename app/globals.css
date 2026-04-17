@@ -3,10 +3,125 @@
 :root {
   --background: #ffffff;
   --foreground: #0f172a;
+  /* Ocean Villas brand palette */
+  --ov-navy: #0f172a;
+  --ov-olive: #3f5f4a;
+  --ov-olive-dark: #334e3c;
+  --ov-olive-shadow: rgba(63, 95, 74, 0.22);
+  --ov-navy-shadow: rgba(15, 23, 42, 0.22);
 }
 
 body {
   background: var(--background);
   color: var(--foreground);
   font-family: Arial, Helvetica, sans-serif;
+}
+
+/* ── Scroll-reveal (IntersectionObserver driven) ──────────────
+   Elements gain .ov-reveal via JS after mount (no SSR flash),
+   then .ov-visible when they enter the viewport.              */
+.ov-reveal {
+  opacity: 0;
+  transform: translateY(22px);
+  transition:
+    opacity 0.65s cubic-bezier(0.16, 1, 0.3, 1),
+    transform 0.65s cubic-bezier(0.16, 1, 0.3, 1);
+}
+.ov-reveal.ov-visible {
+  opacity: 1;
+  transform: translateY(0);
+}
+
+/* Stagger helpers for scroll-reveal siblings */
+.ov-delay-80  { transition-delay:  80ms; }
+.ov-delay-160 { transition-delay: 160ms; }
+.ov-delay-240 { transition-delay: 240ms; }
+.ov-delay-320 { transition-delay: 320ms; }
+
+/* ── Gallery entrance (CSS animation, no JS required) ─────────
+   Applied to the gallery wrapper on initial page render.       */
+@keyframes ov-gallery-entrance {
+  from {
+    opacity: 0;
+    transform: scale(1.018) translateY(14px);
+  }
+  to {
+    opacity: 1;
+    transform: scale(1) translateY(0);
+  }
+}
+.ov-gallery-enter {
+  animation: ov-gallery-entrance 0.9s cubic-bezier(0.16, 1, 0.3, 1) both;
+}
+
+/* ── Image crossfade (applied to each new gallery image) ──────
+   key={src} on <Image> forces remount; this animates the mount. */
+@keyframes ov-img-fade {
+  from { opacity: 0; }
+  to   { opacity: 1; }
+}
+.ov-img-crossfade {
+  animation: ov-img-fade 0.32s ease-out both;
+}
+
+/* ── Section fade-up (page-load, CSS-only, no JS needed) ──────
+   Used for villa title / stats that are above-the-fold.        */
+@keyframes ov-fade-up {
+  from {
+    opacity: 0;
+    transform: translateY(18px);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+.ov-fade-up   { animation: ov-fade-up 0.7s cubic-bezier(0.16, 1, 0.3, 1) both; }
+.ov-fade-up-1 { animation-delay:  90ms; }
+.ov-fade-up-2 { animation-delay: 180ms; }
+.ov-fade-up-3 { animation-delay: 270ms; }
+.ov-fade-up-4 { animation-delay: 360ms; }
+
+/* ── Accessibility: respect reduced-motion preference ─────────  */
+@media (prefers-reduced-motion: reduce) {
+  .ov-reveal,
+  .ov-gallery-enter,
+  .ov-img-crossfade,
+  .ov-fade-up {
+    animation: none !important;
+    transition: opacity 0.01ms !important;
+    opacity: 1 !important;
+    transform: none !important;
+  }
+}
+
+/* ── GHL Chat Widget — Mobile Positioning ─────────────────────
+   Lifts the chat launcher above the 72px sticky mobile CTA bar
+   on viewports below the lg breakpoint (< 1024px).
+
+   GHL injects the widget dynamically; selectors may vary.
+   If the widget is not repositioned correctly, open DevTools,
+   inspect the widget button, and add its selector here.        */
+@media (max-width: 1023px) {
+  #chat-widget-container,
+  .chat-widget-container,
+  [id^="leadconnector-chat"],
+  [class*="chat-launcher"],
+  [class*="lc-chat"],
+  [class*="chat-widget-launcher"] {
+    bottom: 80px !important;
+    transition: bottom 0.2s ease !important;
+  }
+}
+
+/* ── GHL widget z-index suppression during modal ─────────────
+   When .ov-modal-open is on <body>, lower the GHL launcher's
+   z-index so our inquiry modal backdrop covers it cleanly.     */
+body.ov-modal-open #chat-widget-container,
+body.ov-modal-open .chat-widget-container,
+body.ov-modal-open [id^="leadconnector-chat"],
+body.ov-modal-open [class*="chat-launcher"],
+body.ov-modal-open [class*="lc-chat"],
+body.ov-modal-open [class*="chat-widget-launcher"] {
+  z-index: 90 !important;
 }

@@ -2,7 +2,7 @@
 
 import Image from "next/image";
 import Link from "next/link";
-import React, { useEffect, useState } from "react";
+import { useEffect, useState } from "react";
 
 type HostawayListing = {
   id: string;
@@ -18,14 +18,8 @@ type HostawayListing = {
   bookingEngineBase?: string;
 };
 
-const LISTING_IDS = ["489089", "489093", "489095", "489097", "489092", "489094"] as const;
+const LISTING_IDS = ["489089", "489092", "489093", "489094", "489095", "489097", "505671"] as const;
 
-function clampText(s: string, max = 110) {
-  const clean = (s || "").replace(/\s+/g, " ").trim();
-  if (!clean) return "";
-  if (clean.length <= max) return clean;
-  return clean.slice(0, max).trimEnd() + "…";
-}
 
 function Stat({ label, value }: { label: string; value: string }) {
   return (
@@ -41,16 +35,17 @@ function Stat({ label, value }: { label: string; value: string }) {
 function VillaCard({ listing }: { listing: HostawayListing }) {
   const title = listing.name || `Villa ${listing.id}`;
   const subtitle =
-    clampText(listing.description || "", 110) ||
+    (listing.description || "").replace(/\s+/g, " ").trim() ||
     (listing.city
-      ? `${listing.city}${listing.state ? `, ${listing.state}` : ""}`
+      ? `${listing.city}${listing.state ? `, ${listing.state}` : ""} — Turtle Bay, North Shore Oahu`
       : "Turtle Bay · North Shore, Oahu");
 
   const hero = listing.heroUrl || "/media/rentals/placeholder.jpg";
 
   return (
-    <article className="group flex flex-col overflow-hidden rounded-2xl bg-white shadow-[0_6px_26px_rgba(15,23,42,0.06)] border border-slate-100 transition-all duration-300 hover:shadow-[0_18px_60px_rgba(15,23,42,0.14)] hover:-translate-y-1">
-      <div className="relative aspect-[4/3] overflow-hidden bg-slate-100">
+    <article className="group flex flex-col overflow-hidden rounded-2xl bg-white shadow-[0_6px_26px_rgba(15,23,42,0.06)] border border-slate-100 transition-all duration-300 hover:shadow-[0_18px_60px_rgba(15,23,42,0.14)]">
+      {/* Fixed aspect-ratio image */}
+      <div className="relative aspect-[4/3] overflow-hidden bg-slate-100 shrink-0">
         <Image
           src={hero}
           alt={`${title} at Turtle Bay`}
@@ -58,7 +53,6 @@ function VillaCard({ listing }: { listing: HostawayListing }) {
           unoptimized
           className="object-cover transition-transform duration-700 group-hover:scale-105"
         />
-
         <div className="absolute top-4 right-4 z-10">
           <span className="inline-flex items-center rounded-full bg-white/90 backdrop-blur-sm px-3 py-1 text-xs font-semibold tracking-wide text-slate-800 shadow-sm">
             Villa #{listing.id}
@@ -66,28 +60,34 @@ function VillaCard({ listing }: { listing: HostawayListing }) {
         </div>
       </div>
 
-      <div className="flex flex-col flex-grow p-6">
-        <h3 className="text-lg font-semibold text-slate-900">{title}</h3>
+      {/* flex-1 column — spacer keeps stats+CTAs pinned to card bottom */}
+      <div className="flex flex-col flex-1 p-6">
+        <h3 className="text-base font-semibold text-slate-900 line-clamp-2 leading-snug">
+          {title}
+        </h3>
+        <p className="mt-2 text-sm text-slate-500 leading-relaxed line-clamp-3">
+          {subtitle}
+        </p>
 
-        <p className="mt-2 text-sm text-slate-500">{subtitle}</p>
+        {/* Spacer — fills remaining space so stats align across cards */}
+        <div className="flex-1" />
 
-        <div className="mt-6 grid grid-cols-3 gap-3">
-          <Stat label="Sleeps" value={`${listing.maxGuests ?? "-"}`} />
-          <Stat label="Beds" value={`${listing.bedrooms ?? "-"}`} />
-          <Stat label="Baths" value={`${listing.bathrooms ?? "-"}`} />
+        <div className="mt-5 pt-4 border-t border-slate-100 grid grid-cols-3 gap-3">
+          <Stat label="Sleeps" value={`${listing.maxGuests ?? "—"}`} />
+          <Stat label="Beds" value={`${listing.bedrooms ?? "—"}`} />
+          <Stat label="Baths" value={`${listing.bathrooms ?? "—"}`} />
         </div>
 
-        <div className="mt-6 grid grid-cols-2 gap-3">
+        <div className="mt-4 grid grid-cols-2 gap-3">
           <Link
             href={`/listing/${encodeURIComponent(listing.id)}`}
-            className="inline-flex items-center justify-center rounded-xl border border-slate-200 px-4 py-2.5 text-sm font-semibold text-slate-900 hover:bg-slate-50 transition"
+            className="inline-flex items-center justify-center rounded-xl bg-[#0f172a] px-4 py-2.5 text-sm font-semibold text-white shadow-[0_3px_12px_rgba(15,23,42,0.18)] hover:-translate-y-px hover:bg-[#1e293b] hover:shadow-[0_6px_18px_rgba(15,23,42,0.24)] active:translate-y-0 active:scale-[0.97] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-slate-700 focus-visible:ring-offset-2 transition-all duration-[220ms] ease-[cubic-bezier(0.16,1,0.3,1)]"
           >
             View Villa
           </Link>
-
           <Link
             href="/#availability"
-            className="inline-flex items-center justify-center rounded-xl bg-slate-900 px-4 py-2.5 text-sm font-semibold text-white hover:bg-slate-800 transition"
+            className="inline-flex items-center justify-center rounded-xl border border-slate-200 bg-white px-4 py-2.5 text-sm font-semibold text-slate-700 hover:bg-slate-50 hover:border-slate-300 hover:-translate-y-px active:translate-y-0 active:scale-[0.97] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-slate-300 focus-visible:ring-offset-2 transition-all duration-[220ms] ease-[cubic-bezier(0.16,1,0.3,1)]"
           >
             Check Dates
           </Link>

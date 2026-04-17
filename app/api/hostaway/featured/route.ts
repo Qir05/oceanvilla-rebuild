@@ -1,6 +1,6 @@
 // app/api/hostaway/featured/route.ts
-// Moved from app/hostaway/featured/route.ts to correct /api/ path
 import { NextResponse } from "next/server";
+import { OCEAN_VILLA_LISTING_IDS } from "@/lib/ocean-villas";
 
 async function getHostawayAccessToken() {
   const accountId = process.env.HOSTAWAY_ACCOUNT_ID;
@@ -36,14 +36,12 @@ async function getHostawayAccessToken() {
 
 export async function GET() {
   try {
-    const ids = process.env.OCEANVILLAS_LISTING_IDS;
-    if (!ids) {
-      return NextResponse.json(
-        { success: false, error: "Missing OCEANVILLAS_LISTING_IDS" },
-        { status: 500 }
-      );
-    }
-    const listingIds = ids.split(",").map((s) => s.trim()).filter(Boolean);
+    // Prefer env var so IDs can be updated without a redeploy.
+    // Falls back to the canonical lib array so the site works even if the env var is stale.
+    const envIds = process.env.OCEANVILLAS_LISTING_IDS;
+    const listingIds = envIds
+      ? envIds.split(",").map((s) => s.trim()).filter(Boolean)
+      : [...OCEAN_VILLA_LISTING_IDS];
     const token = await getHostawayAccessToken();
     const res = await fetch(
       "https://api.hostaway.com/v1/listings?limit=1000&perPage=1000",
