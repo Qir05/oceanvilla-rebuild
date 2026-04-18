@@ -588,7 +588,7 @@ function BookingCard({
               onChange={(e) => setLocalGuests(Number(e.target.value))}
               className="w-full rounded-xl border border-slate-200 bg-slate-50 px-3 py-2 text-sm text-slate-900 focus:border-slate-900 focus:outline-none focus:ring-1 focus:ring-slate-900"
             >
-              {Array.from({ length: 14 }).map((_, i) => (
+              {Array.from({ length: 10 }).map((_, i) => (
                 <option key={i + 1} value={i + 1}>
                   {i + 1} {i === 0 ? "Guest" : "Guests"}
                 </option>

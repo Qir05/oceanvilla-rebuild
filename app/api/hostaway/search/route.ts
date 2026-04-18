@@ -1,6 +1,6 @@
 // app/api/hostaway/search/route.ts
 import { NextResponse } from "next/server";
-import { OCEAN_VILLA_LISTING_IDS, buildBookingUrl } from "@/lib/ocean-villas";
+import { OCEAN_VILLA_LISTING_IDS } from "@/lib/ocean-villas";
 
 const LISTING_IDS = OCEAN_VILLA_LISTING_IDS;
 
@@ -46,7 +46,7 @@ function isValidISODate(s: string) {
 function parseGuests(s: string | null) {
   const n = Number(s || "2");
   if (!Number.isFinite(n) || n < 1) return 2;
-  return Math.floor(n);
+  return Math.min(Math.floor(n), 10);
 }
 
 function daysBetween(startISO: string, endISO: string) {
@@ -90,16 +90,20 @@ export async function GET(req: Request) {
           }
         );
         const calJson = await calRes.json().catch(() => ({} as any));
-        const days = Array.isArray(calJson?.result) ? calJson.result : [];
+        const days: any[] = Array.isArray(calJson?.result) ? calJson.result : [];
         if (!calRes.ok || days.length === 0) return null;
 
-        const allAvailable = days.every((d: any) => {
-          if (Number(d?.isAvailable) !== 1) return false;
-          if (d?.closedOnArrival === 1) return false;
-          if (d?.closedOnDeparture === 1) return false;
-          return true;
-        });
-        if (!allAvailable) return null;
+        // Every night in the stay must be available (not blocked by an existing booking).
+        const allNightsAvailable = days.every((d) => Number(d?.isAvailable) === 1);
+        if (!allNightsAvailable) return null;
+
+        // closedOnArrival only blocks the check-in date, not the entire stay.
+        // Applying it to every day incorrectly rejects villas with day-of-week
+        // check-in restrictions (e.g. no arrivals on Sundays).
+        if (Number(days[0]?.closedOnArrival) === 1) return null;
+
+        // closedOnDeparture only applies to the last calendar day returned.
+        if (Number(days[days.length - 1]?.closedOnDeparture) === 1) return null;
 
         const listingRes = await fetch(
           `https://api.hostaway.com/v1/listings/${encodeURIComponent(id)}?includeResources=1`,
@@ -119,12 +123,9 @@ export async function GET(req: Request) {
         const capacity = l.personCapacity ?? l.maxGuests ?? null;
         if (capacity != null && Number(capacity) < guests) return null;
 
-        const minStayTooHigh = days.some((d: any) => {
-          const ms = d?.minimumStay;
-          if (ms == null) return false;
-          return Number(ms) > nights;
-        });
-        if (minStayTooHigh) return null;
+        // minimumStay is a booking-start rule — only the check-in day's value matters.
+        const checkInMinStay = days[0]?.minimumStay;
+        if (checkInMinStay != null && Number(checkInMinStay) > nights) return null;
 
         const images = Array.isArray(l?.listingImages) ? l.listingImages : [];
         const hero = images.find((img: any) => img?.url) || images[0];
@@ -143,7 +144,16 @@ export async function GET(req: Request) {
       })
     );
 
-    const cleaned = availableListings.filter(Boolean);
+    // Deduplicate by villa ID in case the Hostaway API returns the same listing
+    // for multiple queried IDs (e.g. unit/property ID aliasing).
+    const seen = new Set<string>();
+    const cleaned = availableListings.filter((l): l is NonNullable<typeof l> => {
+      if (!l) return false;
+      if (seen.has(l.id)) return false;
+      seen.add(l.id);
+      return true;
+    });
+
     return NextResponse.json(
       { success: true, startDate, endDate, guests, availableListings: cleaned },
       { status: 200 }

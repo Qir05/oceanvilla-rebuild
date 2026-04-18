@@ -573,7 +573,7 @@ export default function Home() {
                   onChange={(e) => setGuests(Number(e.target.value))}
                   className="w-full rounded-xl border border-slate-200 bg-white px-3 py-2.5 text-sm focus:border-slate-900 focus:outline-none focus:ring-1 focus:ring-slate-900"
                 >
-                  {Array.from({ length: 14 }).map((_, i) => (
+                  {Array.from({ length: 10 }).map((_, i) => (
                     <option key={i + 1} value={i + 1}>
                       {i + 1} Guests
                     </option>
@@ -675,7 +675,7 @@ export default function Home() {
                     onChange={(e) => setGuests(Number(e.target.value))}
                     className="w-full rounded-xl border border-slate-200 bg-slate-50 px-4 py-3 text-sm focus:border-slate-900 focus:outline-none focus:ring-1 focus:ring-slate-900"
                   >
-                    {Array.from({ length: 14 }).map((_, i) => (
+                    {Array.from({ length: 10 }).map((_, i) => (
                       <option key={i + 1} value={i + 1}>
                         {i + 1} Guests
                       </option>

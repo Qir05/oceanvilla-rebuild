@@ -185,6 +185,10 @@ function AvailabilityPageContent() {
         return;
       }
 
+      // Use the URL param directly so the search fires exactly once per URL
+      // change and is never double-triggered by local guests state updates.
+      const guestsNum = Math.min(Number(guestsParam) || 2, 10);
+
       setLoading(true);
       setError("");
       setFallbackNotice("");
@@ -193,7 +197,7 @@ function AvailabilityPageContent() {
         const res = await fetch(
           `/api/hostaway/search?startDate=${encodeURIComponent(startDate)}&endDate=${encodeURIComponent(
             endDate
-          )}&guests=${encodeURIComponent(String(guests))}`,
+          )}&guests=${encodeURIComponent(String(guestsNum))}`,
           { cache: "no-store" }
         );
 
@@ -241,7 +245,9 @@ function AvailabilityPageContent() {
     return () => {
       alive = false;
     };
-  }, [startDate, endDate, guests]);
+    // Depend only on URL params — not on local `guests` state which syncs
+    // from these same params and would cause a redundant second search.
+  }, [startDate, endDate, guestsParam]);
 
   function onSearch() {
     setError("");
@@ -318,7 +324,7 @@ function AvailabilityPageContent() {
                   onChange={(e) => setGuests(Number(e.target.value))}
                   className="w-full rounded-xl border border-slate-200 bg-white px-4 py-3 text-sm focus:border-slate-900 focus:outline-none focus:ring-1 focus:ring-slate-900"
                 >
-                  {Array.from({ length: 14 }).map((_, i) => (
+                  {Array.from({ length: 10 }).map((_, i) => (
                     <option key={i + 1} value={i + 1}>
                       {i + 1} Guests
                     </option>
@@ -362,7 +368,7 @@ function AvailabilityPageContent() {
                 <span className="font-semibold text-slate-900">{startDate}</span> →{" "}
                 <span className="font-semibold text-slate-900">{endDate}</span>{" "}
                 <span className="text-slate-300">•</span>{" "}
-                <span className="font-semibold text-slate-900">{guests} guests</span>
+                <span className="font-semibold text-slate-900">{Number(guestsParam) || 2} guests</span>
               </div>
             </div>
           ) : null}
@@ -397,7 +403,7 @@ function AvailabilityPageContent() {
                   listing={listing}
                   startDate={startDate}
                   endDate={endDate}
-                  guests={String(guests)}
+                  guests={guestsParam}
                 />
               ))}
             </div>
