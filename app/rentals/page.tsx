@@ -15,11 +15,33 @@ type HostawayListing = {
   bedrooms?: number;
   bathrooms?: number;
   heroUrl?: string;
+  images?: string[];
   bookingEngineBase?: string;
 };
 
 const LISTING_IDS = ["489089", "489092", "489093", "489094", "489095", "489097", "505671"] as const;
 
+const LISTING_DISPLAY_NAMES: Record<string, string> = {
+  "505671": "The Penthouse Villa",
+};
+
+const HERO_IMAGE_OVERRIDES: Record<string, number> = {
+  "505671": 1,
+};
+
+function getDisplayName(id: string, rawName: string): string {
+  if (LISTING_DISPLAY_NAMES[id]) return LISTING_DISPLAY_NAMES[id];
+  if (/unit\s*304\b/i.test(rawName)) return "The Penthouse Villa";
+  return rawName || `Villa ${id}`;
+}
+
+function getPreferredHero(id: string, heroUrl: string | undefined, images?: string[]): string {
+  const overrideIdx = HERO_IMAGE_OVERRIDES[id];
+  if (overrideIdx !== undefined && images && images.length > overrideIdx) {
+    return images[overrideIdx];
+  }
+  return heroUrl || "/media/rentals/placeholder.jpg";
+}
 
 function Stat({ label, value }: { label: string; value: string }) {
   return (
@@ -33,14 +55,14 @@ function Stat({ label, value }: { label: string; value: string }) {
 }
 
 function VillaCard({ listing }: { listing: HostawayListing }) {
-  const title = listing.name || `Villa ${listing.id}`;
+  const title = getDisplayName(listing.id, listing.name || "");
   const subtitle =
     (listing.description || "").replace(/\s+/g, " ").trim() ||
     (listing.city
       ? `${listing.city}${listing.state ? `, ${listing.state}` : ""} — Turtle Bay, North Shore Oahu`
       : "Turtle Bay · North Shore, Oahu");
 
-  const hero = listing.heroUrl || "/media/rentals/placeholder.jpg";
+  const hero = getPreferredHero(listing.id, listing.heroUrl, listing.images);
 
   return (
     <article className="group flex flex-col overflow-hidden rounded-2xl bg-white shadow-[0_6px_26px_rgba(15,23,42,0.06)] border border-slate-100 transition-all duration-300 hover:shadow-[0_18px_60px_rgba(15,23,42,0.14)]">
@@ -153,7 +175,7 @@ export default function RentalsPage() {
             href="/"
             className="text-sm font-semibold text-slate-600 hover:text-slate-900 transition"
           >
-            ← Back to Home
+            Back to Home
           </Link>
           <span className="text-sm font-medium text-slate-500">
             Ocean Villas at Turtle Bay
@@ -169,13 +191,13 @@ export default function RentalsPage() {
           </div>
 
           <h1 className="text-4xl md:text-5xl font-serif font-medium tracking-tight text-slate-900 max-w-3xl leading-tight">
-            Luxury Vacation Rentals at Turtle Bay, Oahu
+            Luxury Vacation Rentals on Oahu's North Shore
           </h1>
 
           <p className="mt-5 text-lg text-slate-600 leading-relaxed max-w-2xl">
-            Ocean Villas at Turtle Bay offers six premium vacation rental villas on Oahu&apos;s
-            North Shore. Each property is managed through Hostaway, ensuring live
-            availability, accurate pricing, and a smooth direct booking experience.
+            Ocean Villas at Turtle Bay offers premium private villa rentals on Oahu&apos;s
+            North Shore — each managed through Hostaway for live availability, accurate pricing,
+            and a direct booking experience without platform markups.
           </p>
 
           <div className="mt-8 flex flex-wrap gap-4">

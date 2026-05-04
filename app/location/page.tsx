@@ -12,10 +12,11 @@ export const metadata: Metadata = {
 
 const NEARBY = [
   { name: "Turtle Bay Resort Beach", distance: "2 min walk", desc: "Private resort beach with calm water on one side, surf breaks on the other." },
+  { name: "Kokololio Beach Park", distance: "10 min drive", desc: "A quieter North Shore beach in Hauula with soft sand, grassy picnic areas, and an easy, family-friendly local feel — one of the more relaxed and less-crowded stretches on this side of the island." },
   { name: "Banzai Pipeline", distance: "12 min drive", desc: "One of the most famous surf breaks on earth. Spectating season runs November–February." },
-  { name: "Haleiwa Town", distance: "15 min drive", desc: "Historic surf town with farm-to-table dining, art galleries, shave ice, and boutique shopping." },
   { name: "Waimea Bay", distance: "10 min drive", desc: "Iconic jump-rock beach with big-wave surf in winter and calm snorkeling in summer." },
   { name: "Shark's Cove", distance: "11 min drive", desc: "One of Oahu's best snorkeling spots, perfect for families and underwater photography." },
+  { name: "Haleiwa Town", distance: "15 min drive", desc: "Historic surf town with farm-to-table dining, art galleries, shave ice, and boutique shopping." },
   { name: "Kahuku Farms", distance: "5 min drive", desc: "Award-winning farm stand serving fresh acai bowls, local produce, and tropical smoothies." },
 ];
 
@@ -25,14 +26,14 @@ export default function LocationPage() {
       <header className="sticky top-0 z-50 border-b border-slate-200 bg-white/80 backdrop-blur-md">
         <div className="mx-auto flex h-20 max-w-7xl items-center justify-between px-6 lg:px-8">
           <Link href="/" className="text-sm font-semibold text-slate-600 hover:text-slate-900 transition">
-            ← Back to Home
+            Back to Home
           </Link>
           <span className="text-sm font-medium text-slate-500">Ocean Villas at Turtle Bay</span>
         </div>
       </header>
 
       {/* Hero */}
-      <section className="bg-white border-b border-slate-100 py-16 md:py-24">
+      <section className="bg-white border-b border-slate-100 py-12 md:py-16">
         <div className="mx-auto max-w-7xl px-6 lg:px-8">
           <div className="inline-flex items-center rounded-full bg-slate-100 px-4 py-1.5 text-xs font-semibold uppercase tracking-widest text-slate-500 mb-5">
             North Shore · Oahu · Hawaii
@@ -57,7 +58,7 @@ export default function LocationPage() {
       {/* Context blocks */}
       <section className="py-16 md:py-20">
         <div className="mx-auto max-w-7xl px-6 lg:px-8">
-          <div className="grid gap-8 md:grid-cols-3 mb-16">
+          <div className="grid gap-8 md:grid-cols-3 mb-10">
             {[
               {
                 title: "World-Class Surf",

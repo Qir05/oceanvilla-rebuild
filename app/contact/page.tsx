@@ -16,27 +16,27 @@ export default function ContactPage() {
       <header className="sticky top-0 z-50 border-b border-slate-200 bg-white/80 backdrop-blur-md">
         <div className="mx-auto flex h-20 max-w-7xl items-center justify-between px-6 lg:px-8">
           <Link href="/" className="text-sm font-semibold text-slate-600 hover:text-slate-900 transition">
-            ← Back to Home
+            Back to Home
           </Link>
           <span className="text-sm font-medium text-slate-500">Ocean Villas at Turtle Bay</span>
         </div>
       </header>
 
-      <section className="bg-white border-b border-slate-100 py-16 md:py-20">
+      <section className="bg-white border-b border-slate-100 py-8 md:py-10">
         <div className="mx-auto max-w-4xl px-6 lg:px-8">
-          <div className="inline-flex items-center rounded-full bg-slate-100 px-4 py-1.5 text-xs font-semibold uppercase tracking-widest text-slate-500 mb-5">
+          <div className="inline-flex items-center rounded-full bg-slate-100 px-4 py-1.5 text-xs font-semibold uppercase tracking-widest text-slate-500 mb-4">
             Get in Touch
           </div>
           <h1 className="text-4xl md:text-5xl font-serif font-medium tracking-tight text-slate-900 leading-tight">
             Contact Ocean Villas
           </h1>
-          <p className="mt-5 text-lg text-slate-600 leading-relaxed max-w-xl">
+          <p className="mt-4 text-lg text-slate-600 leading-relaxed max-w-xl">
             Have a question about a villa, your booking, or planning your North Shore stay? Use the chat widget on this page or reach us by phone.
           </p>
         </div>
       </section>
 
-      <section className="py-16 md:py-20">
+      <section className="py-10 md:py-14">
         <div className="mx-auto max-w-4xl px-6 lg:px-8">
           <div className="grid gap-6 md:grid-cols-2">
             <div className="rounded-2xl border border-slate-200 bg-white p-8 shadow-sm">
@@ -82,9 +82,9 @@ export default function ContactPage() {
               </p>
               <Link
                 href="/location"
-                className="mt-4 inline-flex items-center text-sm font-semibold text-slate-900 hover:text-slate-700"
+                className="mt-4 inline-flex items-center justify-center rounded-xl border border-slate-200 px-5 py-2.5 text-sm font-semibold text-slate-700 hover:bg-slate-50 transition"
               >
-                View location details →
+                View Location Details
               </Link>
             </div>
           </div>

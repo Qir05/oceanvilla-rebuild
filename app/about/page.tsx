@@ -16,7 +16,7 @@ export default function AboutPage() {
       <header className="sticky top-0 z-50 border-b border-slate-200 bg-white/80 backdrop-blur-md">
         <div className="mx-auto flex h-20 max-w-7xl items-center justify-between px-6 lg:px-8">
           <Link href="/" className="text-sm font-semibold text-slate-600 hover:text-slate-900 transition">
-            ← Back to Home
+            Back to Home
           </Link>
           <span className="text-sm font-medium text-slate-500">Ocean Villas at Turtle Bay</span>
         </div>

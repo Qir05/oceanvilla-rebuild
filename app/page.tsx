@@ -18,6 +18,7 @@ type HostawayListing = {
   bedrooms?: number;
   bathrooms?: number;
   heroUrl?: string;
+  images?: string[];
   bookingEngineBase?: string;
 };
 
@@ -30,6 +31,28 @@ const BRAND = {
 };
 
 const LISTING_IDS = ["489089", "489092", "489093", "489094", "489095", "489097", "505671"] as const;
+
+const LISTING_DISPLAY_NAMES: Record<string, string> = {
+  "505671": "The Penthouse Villa",
+};
+
+const HERO_IMAGE_OVERRIDES: Record<string, number> = {
+  "505671": 1,
+};
+
+function getDisplayName(id: string, rawName: string): string {
+  if (LISTING_DISPLAY_NAMES[id]) return LISTING_DISPLAY_NAMES[id];
+  if (/unit\s*304\b/i.test(rawName)) return "The Penthouse Villa";
+  return rawName || `Villa ${id}`;
+}
+
+function getPreferredHero(id: string, heroUrl: string | undefined, images?: string[]): string {
+  const overrideIdx = HERO_IMAGE_OVERRIDES[id];
+  if (overrideIdx !== undefined && images && images.length > overrideIdx) {
+    return images[overrideIdx];
+  }
+  return heroUrl || "/media/rentals/placeholder.jpg";
+}
 
 function cx(...classes: Array<string | false | undefined | null>) {
   return classes.filter(Boolean).join(" ");
@@ -175,7 +198,7 @@ function GuideCard({
         <h3 className="text-lg font-semibold text-slate-900 group-hover:text-slate-700">{title}</h3>
         <p className="mt-3 text-sm leading-7 text-slate-600">{desc}</p>
         <span className="mt-5 inline-flex text-sm font-semibold text-slate-900">
-          Explore →
+          Explore
         </span>
       </button>
     );
@@ -186,7 +209,7 @@ function GuideCard({
       <h3 className="text-lg font-semibold text-slate-900 group-hover:text-slate-700">{title}</h3>
       <p className="mt-3 text-sm leading-7 text-slate-600">{desc}</p>
       <span className="mt-5 inline-flex text-sm font-semibold text-slate-900">
-        Explore →
+        Explore
       </span>
     </Link>
   );
@@ -210,13 +233,13 @@ function FAQItem({
 }
 
 function ListingCard({ l }: { l: HostawayListing }) {
-  const title = l.name || `Villa ${l.id}`;
+  const title = getDisplayName(l.id, l.name || "");
   // Let CSS line-clamp handle visual truncation; supply full text
   const subtitle =
     (l.description || "").replace(/\s+/g, " ").trim() ||
-    `Browse this Turtle Bay villa on Oahu’s North Shore and explore live availability, stay details, and direct booking options.`;
+    `Browse this North Shore villa at Turtle Bay and explore live availability, stay details, and direct booking options.`;
 
-  const hero = l.heroUrl || "/media/rentals/placeholder.jpg";
+  const hero = getPreferredHero(l.id, l.heroUrl, l.images);
   const detailUrl = `/listing/${encodeURIComponent(l.id)}`;
   const bookUrl = buildBookingUrl(l.id, l.bookingEngineBase);
 
@@ -601,11 +624,11 @@ export default function Home() {
 
         <section className="bg-white px-6 py-10 flex flex-col items-center text-center">
           <h1 className="text-4xl font-serif font-medium tracking-tight text-slate-900 leading-tight">
-            Luxury Villas at Turtle Bay
+            Luxury Villas on Oahu’s North Shore
           </h1>
 
           <p className="mt-4 text-base text-slate-600 leading-relaxed max-w-xl">
-            Explore premium vacation rentals on Oahu’s North Shore, browse featured villas, and check live availability for your next Turtle Bay stay.
+            Private villas at Turtle Bay — on the quieter, more local side of Oahu. Browse the collection, check live availability, and book direct.
           </p>
         </section>
       </div>
@@ -627,11 +650,11 @@ export default function Home() {
             <div className="mx-auto w-full max-w-7xl px-5 sm:px-6 lg:px-8">
               <div className="max-w-4xl">
                 <h1 className="text-5xl md:text-7xl font-serif font-medium tracking-tight text-white leading-tight">
-                  Luxury Vacation Rentals at Turtle Bay
+                  Luxury Villas on Oahu's North Shore
                 </h1>
 
                 <p className="mt-6 max-w-2xl text-lg text-white/90 leading-relaxed">
-                  Ocean Villas at Turtle Bay offers a premium North Shore Oahu stay with featured villas, live availability search, and a direct booking path designed for travelers who want a cleaner luxury booking experience.
+                  Ocean Villas sits in the heart of Turtle Bay — on the quieter, wilder side of the island that North Shore regulars keep coming back to. Browse featured villas, check live availability, and book direct.
                 </p>
               </div>
             </div>
@@ -709,30 +732,52 @@ export default function Home() {
       <section className="py-16 md:py-20 bg-white">
         <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
           <SectionTitle
-            eyebrow="Why Ocean Villas"
-            title="A stronger luxury booking experience at Turtle Bay"
-            desc="This homepage is designed to help guests understand where they are staying, what kind of experience to expect, and how to move from discovery into a direct booking path."
+            eyebrow="Why Book Direct"
+            title="The North Shore, without the platform markup"
+            desc="Ocean Villas at Turtle Bay is built for guests who want a genuine North Shore experience — private villas, live rates, and a clean direct booking path."
           />
 
           <div className="mt-10 grid gap-6 md:grid-cols-3">
             <InfoCard
-              title="Luxury North Shore positioning"
-              desc="Ocean Villas at Turtle Bay is framed around premium vacation rental intent for guests searching for a higher-end stay on Oahu’s North Shore."
+              title="North Shore access"
+              desc="Turtle Bay sits at the far northeast of Oahu, away from the resort crowds — close to legendary surf breaks, local beaches, and the unhurried pace the North Shore is known for."
             />
             <InfoCard
-              title="Direct booking path"
-              desc="Guests can search live availability, review featured villas, and continue into a clean direct booking experience without unnecessary friction."
+              title="Book direct and save"
+              desc="Search live availability, review the full villa, and move directly into booking — without the service fees that third-party travel platforms add on top."
             />
             <InfoCard
-              title="Property-first browsing"
-              desc="Featured villas now support stronger internal browsing so visitors and search engines can move deeper into the site before booking."
+              title="Private villa stays"
+              desc="These aren’t hotel rooms. Each villa is a full private space — managed through Hostaway for accurate availability and pricing, every time you search."
+            />
+          </div>
+        </div>
+      </section>
+
+      {/* BEACHES */}
+      <section className="py-16 md:py-20 bg-slate-50">
+        <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
+          <SectionTitle
+            eyebrow="North Shore Beaches"
+            title="Where you'll spend your days"
+            desc="The North Shore of Oahu moves at its own pace — less crowded, more local, and a long way from Waikiki. The beaches here don't need much explaining."
+          />
+
+          <div className="mt-10 grid gap-6 md:grid-cols-2">
+            <InfoCard
+              title="Kokololio Beach Park, Hauula"
+              desc="A quieter stretch of North Shore coastline with soft sand, shaded grassy areas, and picnic tables. It draws a local crowd and has an easy, family-friendly feel that's hard to find in busier parts of Oahu. The kind of place you stay all day without the rush."
+            />
+            <InfoCard
+              title="The North Shore beach experience"
+              desc="Fewer crowds, more space, scenic shorelines, and that genuinely relaxed local rhythm. Whether you're watching a winter swell roll in or just setting up for a quiet afternoon, this coastline offers something more authentic than most visitors to Oahu ever find."
             />
           </div>
         </div>
       </section>
 
       {/* FEATURED LISTINGS */}
-      <section id="featured" className="py-16 md:py-20 bg-slate-50">
+      <section id="featured" className="py-16 md:py-20 bg-white">
         <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
           <SectionTitle
             eyebrow="The Collection"
@@ -762,28 +807,28 @@ export default function Home() {
           <SectionTitle
             eyebrow="Plan Your Stay"
             title="Explore more of Ocean Villas at Turtle Bay"
-            desc="These pages help guests and search engines understand the stay, the setting, and the direct booking journey more clearly."
+            desc="Everything you need to plan your North Shore stay — from villa details and local beaches to live availability and direct booking."
           />
 
           <div className="mt-10 grid gap-6 md:grid-cols-2 xl:grid-cols-4">
             <GuideCard
               href="/rentals"
               title="Browse Rentals"
-              desc="See the broader rental collection and compare available villa options."
+              desc="See the full collection of North Shore villas and compare layouts, guest capacity, and options."
             />
             <GuideCard
               href="/location"
               title="Explore the Location"
-              desc="Strengthen the Turtle Bay and North Shore context for guests planning their stay."
+              desc="Discover what's around Turtle Bay — surf breaks, local beaches, and the best of the North Shore."
             />
             <GuideCard
               href="/amenities"
               title="View Amenities"
-              desc="Review the comfort, convenience, and lifestyle details that matter before booking."
+              desc="Review what's included in each villa — comfort, access, and lifestyle details before you book."
             />
             <GuideCard
               title="Check Availability"
-              desc="Move directly into the live availability search without hitting an empty results page."
+              desc="Search live dates, see which villas are open, and continue straight into booking."
               onClick={() => scrollToAvailability()}
             />
           </div>
@@ -810,7 +855,7 @@ export default function Home() {
             />
             <FAQItem
               question="Where are the villas located?"
-              answer="The villas are positioned in the Turtle Bay area on Oahu’s North Shore, making this site especially relevant for guests searching that destination."
+              answer="The villas are in Turtle Bay on Oahu’s North Shore — about 35 miles from Honolulu, and close to some of the most iconic surf beaches and local scenery on the island."
             />
             <FAQItem
               question="Can I review individual villas before I book?"

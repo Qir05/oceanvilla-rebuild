@@ -32,6 +32,55 @@ const GHL_FORM_BASE = "https://api.leadconnectorhq.com/widget/form/ZSl4b5HMWIr8U
 const BRAND_PHONE = "(858) 345-2082";
 const BRAND_NAME = "Ocean Villas at Turtle Bay";
 
+const LISTING_DISPLAY_NAMES: Record<string, string> = {
+  "505671": "The Penthouse Villa",
+};
+
+const HERO_IMAGE_OVERRIDES: Record<string, number> = {
+  "505671": 1,
+};
+
+function getDisplayName(id: string, rawName: string): string {
+  if (LISTING_DISPLAY_NAMES[id]) return LISTING_DISPLAY_NAMES[id];
+  if (/unit\s*304\b/i.test(rawName)) return "The Penthouse Villa";
+  return rawName || `Villa ${id}`;
+}
+
+function reorderImages(listingId: string, images: string[]): string[] {
+  const preferredIdx = HERO_IMAGE_OVERRIDES[listingId];
+  if (preferredIdx === undefined || preferredIdx === 0 || images.length <= preferredIdx) {
+    return images;
+  }
+  const reordered = [...images];
+  const [preferred] = reordered.splice(preferredIdx, 1);
+  return [preferred, ...reordered];
+}
+
+type DescriptionOverride = {
+  paragraphs: string[];
+  highlights: string[];
+};
+
+const LISTING_DESCRIPTION_OVERRIDES: Record<string, DescriptionOverride> = {
+  "505671": {
+    paragraphs: [
+      "Welcome to The Penthouse Villa at Ocean Villas at Turtle Bay — a rare top-floor four-bedroom retreat designed for families, groups, and guests who want a more elevated North Shore stay. Set within the Turtle Bay resort area, this villa pairs ocean-view living with refined comfort, generous indoor space, and easy access to the beaches, resort paths, pool, tennis, oceanfront fitness, dining, and the relaxed rhythm of Oahu's North Shore.",
+      "From the private lanai, guests can take in sweeping coastal views, fresh trade winds, and the peaceful setting that makes Turtle Bay one of the most desirable stays on the island. Inside, the villa offers high ceilings, central air conditioning, a well-equipped kitchen, comfortable gathering spaces, premium bedroom setups, and thoughtful beach-day essentials for a seamless stay.",
+      "The Penthouse Villa is ideal for guests who want more than a standard Oahu rental. It gives you space to settle in, privacy to unwind, and a true North Shore base close to quiet beaches, scenic shoreline, family-friendly beach parks, surf breaks, local farms, Haleiwa, and the natural beauty that makes this side of Oahu feel special.",
+    ],
+    highlights: [
+      "Rare four-bedroom top-floor layout",
+      "Ocean-view lanai and elevated coastal perspective",
+      "Comfortable living areas for families and groups",
+      "Central air conditioning and refined interior finishes",
+      "Well-equipped kitchen for easy meals and longer stays",
+      "Beach essentials for relaxed North Shore days",
+      "Access to Turtle Bay resort-area amenities",
+      "Close to quiet beaches, surf spots, local dining, and North Shore attractions",
+    ],
+  },
+};
+
 // ─── Helpers ─────────────────────────────────────────────────
 
 function sanitizeTel(phone: string) {
@@ -406,6 +455,48 @@ function DescriptionSection({ description }: { description: string }) {
   );
 }
 
+// ─── Override description (curated listings) ─────────────────
+
+function OverrideDescriptionSection({ override }: { override: DescriptionOverride }) {
+  return (
+    <RevealSection className="mt-10">
+      <h2 className="text-xl font-semibold text-slate-900 mb-5">About this villa</h2>
+
+      <div className="space-y-5">
+        {override.paragraphs.map((para, i) => (
+          <p key={i} className="text-[15px] leading-8 text-slate-600 font-light max-w-[72ch]">
+            {para}
+          </p>
+        ))}
+      </div>
+
+      {override.highlights.length > 0 && (
+        <div className="mt-7">
+          <div className="text-[10px] font-bold uppercase tracking-widest text-slate-400 mb-4">
+            Why guests love this villa
+          </div>
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-x-8 gap-y-2.5">
+            {override.highlights.map((item, i) => (
+              <div key={i} className="flex items-start gap-2.5 text-sm text-slate-700 leading-6">
+                <svg
+                  className="h-4 w-4 shrink-0 mt-[3px] text-[#3f5f4a]"
+                  fill="none"
+                  viewBox="0 0 24 24"
+                  stroke="currentColor"
+                  strokeWidth={2.5}
+                >
+                  <path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" />
+                </svg>
+                <span>{item}</span>
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
+    </RevealSection>
+  );
+}
+
 // ─── Amenities ────────────────────────────────────────────────
 
 function AmenitiesSection({ amenities }: { amenities: string[] }) {
@@ -645,9 +736,6 @@ function BookingCard({
         ].join(" ")}
       >
         {hasDates ? "Continue to Book" : "Check Availability & Book"}
-        <svg className="ml-2 h-4 w-4 opacity-55" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-          <path strokeLinecap="round" strokeLinejoin="round" d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14" />
-        </svg>
       </a>
 
       {/* ── Secondary CTA — Inquiry (GHL) ─────────────────── */}
@@ -902,7 +990,7 @@ function ListingDetailsContent() {
                 href={backHref}
                 className="inline-flex items-center justify-center rounded-xl bg-slate-900 px-6 py-3 text-sm font-semibold text-white hover:bg-slate-800 transition-colors"
               >
-                ← Go Back
+                Go Back
               </Link>
             </div>
           </div>
@@ -912,17 +1000,18 @@ function ListingDetailsContent() {
   }
 
   // ── Derived values ────────────────────────────────
-  const title = listing.name || `Villa ${listing.id}`;
+  const title = getDisplayName(listing.id, listing.name || "");
   const locationLabel = listing.city
     ? `${listing.city}${listing.state ? `, ${listing.state}` : ""}`
     : "Turtle Bay · North Shore, Oahu";
   const description = (listing.description || "").replace(/\s+/g, " ").trim()
     || "Explore this Ocean Villas property at Turtle Bay on Oahu's North Shore. Check availability and continue directly into booking.";
-  const images = listing.images?.length
+  const rawImages = listing.images?.length
     ? listing.images
     : listing.heroUrl
     ? [listing.heroUrl]
     : [];
+  const images = reorderImages(listing.id, rawImages);
   const amenities = listing.amenities || [];
 
   return (
@@ -943,11 +1032,8 @@ function ListingDetailsContent() {
             <Link
               href={backHref}
               onClick={() => trackEvent("back_to_browse", { from: `listing_${listing.id}` })}
-              className="flex items-center gap-1.5 text-sm font-semibold text-slate-600 hover:text-slate-900 transition-colors duration-200"
+              className="text-sm font-semibold text-slate-600 hover:text-slate-900 transition-colors duration-200"
             >
-              <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-                <path strokeLinecap="round" strokeLinejoin="round" d="M15 19l-7-7 7-7" />
-              </svg>
               <span className="hidden sm:inline">Back to Browse</span>
               <span className="sm:hidden">Back</span>
             </Link>
@@ -1036,7 +1122,10 @@ function ListingDetailsContent() {
               )}
 
               {/* Description — scroll reveal */}
-              <DescriptionSection description={description} />
+              {LISTING_DESCRIPTION_OVERRIDES[listing.id]
+                ? <OverrideDescriptionSection override={LISTING_DESCRIPTION_OVERRIDES[listing.id]!} />
+                : <DescriptionSection description={description} />
+              }
 
               {/* Amenities — scroll reveal */}
               <AmenitiesSection amenities={amenities} />
