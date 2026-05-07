@@ -33,7 +33,7 @@ const BRAND = {
 const LISTING_IDS = ["489089", "489092", "489093", "489094", "489095", "489097", "505671"] as const;
 
 const LISTING_DISPLAY_NAMES: Record<string, string> = {
-  "505671": "The Penthouse Villa",
+  "505671": "The View Villa",
 };
 
 const HERO_IMAGE_OVERRIDES: Record<string, number> = {
@@ -42,7 +42,8 @@ const HERO_IMAGE_OVERRIDES: Record<string, number> = {
 
 function getDisplayName(id: string, rawName: string): string {
   if (LISTING_DISPLAY_NAMES[id]) return LISTING_DISPLAY_NAMES[id];
-  if (/unit\s*304\b/i.test(rawName)) return "The Penthouse Villa";
+  if (/unit\s*318\b/i.test(rawName)) return "The Penthouse Villa";
+  if (/unit\s*304\b/i.test(rawName)) return "The View Villa";
   return rawName || `Villa ${id}`;
 }
 
@@ -331,34 +332,42 @@ export default function Home() {
     mainEntity: [
       {
         "@type": "Question",
-        name: "How do I check availability for Ocean Villas at Turtle Bay?",
+        name: "How do I book a villa at Ocean Villas at Turtle Bay?",
         acceptedAnswer: {
           "@type": "Answer",
-          text: "Use the availability search on this page to view live dates and start your direct booking flow.",
+          text: "Use the availability search on the homepage to select your dates and number of guests, then continue directly into the booking path — no third-party platform required.",
         },
       },
       {
         "@type": "Question",
-        name: "Can I book direct from the Ocean Villas website?",
+        name: "How far are Ocean Villas from Honolulu International Airport?",
         acceptedAnswer: {
           "@type": "Answer",
-          text: "Yes. You can browse villa details, check availability, and continue into the direct booking path from the website.",
+          text: "Ocean Villas at Turtle Bay is approximately 35 miles north of Honolulu International Airport (HNL), about a 45–60 minute drive via H-2 and Kamehameha Highway.",
         },
       },
       {
         "@type": "Question",
-        name: "Where are Ocean Villas located?",
+        name: "What beaches and surf spots are near Turtle Bay on Oahu’s North Shore?",
         acceptedAnswer: {
           "@type": "Answer",
-          text: "Ocean Villas are positioned in the Turtle Bay area on Oahu’s North Shore, giving guests a premium base for a luxury island stay.",
+          text: "Banzai Pipeline is 12 minutes away, Waimea Bay 10 minutes, Shark’s Cove 11 minutes, and Haleiwa Town 15 minutes. Turtle Bay Resort beach is a 2-minute walk from the villas.",
         },
       },
       {
         "@type": "Question",
-        name: "Can I browse individual villas before booking?",
+        name: "What is included in the Ocean Villas nightly rate?",
         acceptedAnswer: {
           "@type": "Answer",
-          text: "Yes. Featured villas can be explored individually so you can compare layouts, guest capacity, and booking options before you reserve.",
+          text: "Each villa includes a fully equipped gourmet kitchen, high-speed WiFi, resort pool access, private lanai, beach gear (chairs, umbrellas, snorkel sets), and dedicated parking. Rates are sourced directly from Hostaway with no platform markups.",
+        },
+      },
+      {
+        "@type": "Question",
+        name: "Is Turtle Bay better than staying in Waikiki for an Oahu vacation?",
+        acceptedAnswer: {
+          "@type": "Answer",
+          text: "Turtle Bay offers a private-villa experience far from the crowds of Waikiki, on Oahu’s quieter, more scenic North Shore. Guests enjoy direct beach access, world-class surf nearby, and a more authentic island lifestyle with all the comforts of a luxury villa.",
         },
       },
     ],
@@ -370,7 +379,45 @@ export default function Home() {
     name: BRAND.name,
     url: SITE_URL,
     description:
-      "Luxury vacation rentals at Turtle Bay on Oahu’s North Shore with direct booking and live availability support.",
+      "Luxury private villa rentals at Turtle Bay on Oahu’s North Shore with direct booking and live availability.",
+  };
+
+  const lodgingJsonLd = {
+    "@context": "https://schema.org",
+    "@type": "LodgingBusiness",
+    name: BRAND.name,
+    url: SITE_URL,
+    description:
+      "Luxury private villa rentals at Turtle Bay on Oahu’s North Shore. Book direct for live availability and transparent pricing — no platform fees.",
+    telephone: "+18583452082",
+    address: {
+      "@type": "PostalAddress",
+      streetAddress: "Turtle Bay",
+      addressLocality: "Kahuku",
+      addressRegion: "HI",
+      postalCode: "96731",
+      addressCountry: "US",
+    },
+    geo: {
+      "@type": "GeoCoordinates",
+      latitude: 21.6977,
+      longitude: -157.9952,
+    },
+    areaServed: {
+      "@type": "Place",
+      name: "Turtle Bay, Oahu, Hawaii",
+    },
+    numberOfRooms: 7,
+    amenityFeature: [
+      { "@type": "LocationFeatureSpecification", name: "Ocean view", value: true },
+      { "@type": "LocationFeatureSpecification", name: "Pool", value: true },
+      { "@type": "LocationFeatureSpecification", name: "Free WiFi", value: true },
+      { "@type": "LocationFeatureSpecification", name: "Air conditioning", value: true },
+      { "@type": "LocationFeatureSpecification", name: "Full kitchen", value: true },
+      { "@type": "LocationFeatureSpecification", name: "Private lanai", value: true },
+      { "@type": "LocationFeatureSpecification", name: "Beach gear included", value: true },
+    ],
+    priceRange: "$$$$",
   };
 
   useEffect(() => {
@@ -452,6 +499,11 @@ export default function Home() {
         type="application/ld+json"
         dangerouslySetInnerHTML={{ __html: JSON.stringify(faqJsonLd) }}
       />
+      <Script
+        id="ov-lodging-schema"
+        type="application/ld+json"
+        dangerouslySetInnerHTML={{ __html: JSON.stringify(lodgingJsonLd) }}
+      />
 
       <header className="sticky top-0 z-50 border-b border-slate-200 bg-white/90 backdrop-blur-md">
         <div className="relative mx-auto flex h-16 md:h-20 max-w-7xl items-center justify-between px-4 sm:px-6 lg:px-8">
@@ -480,7 +532,7 @@ export default function Home() {
               Availability
             </button>
             <Link className="hover:text-slate-900 transition-colors" href="/rentals">
-              Rentals
+              Villas
             </Link>
             <Link className="hover:text-slate-900 transition-colors" href="/location">
               Location
@@ -521,7 +573,7 @@ export default function Home() {
                 Check Availability
               </button>
               <Link onClick={() => setMobileMenuOpen(false)} href="/rentals" className="py-2 hover:text-slate-900">
-                Rentals
+                Villas
               </Link>
               <Link onClick={() => setMobileMenuOpen(false)} href="/location" className="py-2 hover:text-slate-900">
                 Location
@@ -624,11 +676,11 @@ export default function Home() {
 
         <section className="bg-white px-6 py-10 flex flex-col items-center text-center">
           <h1 className="text-4xl font-serif font-medium tracking-tight text-slate-900 leading-tight">
-            Luxury Villas on Oahu’s North Shore
+            Luxury Vacation Rentals at Turtle Bay, Oahu’s North Shore
           </h1>
 
           <p className="mt-4 text-base text-slate-600 leading-relaxed max-w-xl">
-            Private villas at Turtle Bay — on the quieter, more local side of Oahu. Browse the collection, check live availability, and book direct.
+            Ocean Villas sits in the heart of Turtle Bay, near the Ritz Carlton. North Shore regulars keep coming back to our villas. Browse featured villas, check live availability, and book direct.
           </p>
         </section>
       </div>
@@ -650,11 +702,11 @@ export default function Home() {
             <div className="mx-auto w-full max-w-7xl px-5 sm:px-6 lg:px-8">
               <div className="max-w-4xl">
                 <h1 className="text-5xl md:text-7xl font-serif font-medium tracking-tight text-white leading-tight">
-                  Luxury Villas on Oahu's North Shore
+                  Luxury Vacation Rentals at Turtle Bay, Oahu's North Shore
                 </h1>
 
                 <p className="mt-6 max-w-2xl text-lg text-white/90 leading-relaxed">
-                  Ocean Villas sits in the heart of Turtle Bay — on the quieter, wilder side of the island that North Shore regulars keep coming back to. Browse featured villas, check live availability, and book direct.
+                  Ocean Villas sits in the heart of Turtle Bay, near the Ritz Carlton. North Shore regulars keep coming back to our villas. Browse featured villas, check live availability, and book direct.
                 </p>
               </div>
             </div>
@@ -846,20 +898,24 @@ export default function Home() {
 
           <div className="mt-10 space-y-4">
             <FAQItem
-              question="How do I check availability for Ocean Villas at Turtle Bay?"
-              answer="Use the availability search on this page to view live dates and continue into the booking path."
+              question="How do I book a villa at Ocean Villas at Turtle Bay?"
+              answer="Use the availability search above to select your dates and number of guests, then continue directly into the booking path — no third-party platform required."
             />
             <FAQItem
-              question="Can I book direct from the website?"
-              answer="Yes. The site supports a direct booking journey so guests can browse villas, check availability, and move toward reservation from the website."
+              question="How far are Ocean Villas from Honolulu International Airport?"
+              answer="The villas are approximately 35 miles north of HNL — about a 45–60 minute drive via H-2 and Kamehameha Highway, with scenic views once you reach the North Shore."
             />
             <FAQItem
-              question="Where are the villas located?"
-              answer="The villas are in Turtle Bay on Oahu’s North Shore — about 35 miles from Honolulu, and close to some of the most iconic surf beaches and local scenery on the island."
+              question="What beaches and surf spots are near Turtle Bay?"
+              answer="Banzai Pipeline is 12 minutes away, Waimea Bay 10 minutes, Shark’s Cove 11 minutes, and Haleiwa Town 15 minutes. Turtle Bay Resort beach is a 2-minute walk from the villas."
             />
             <FAQItem
-              question="Can I review individual villas before I book?"
-              answer="Yes. You can browse featured villas and open individual villa pages to compare the stay before continuing to book."
+              question="What is included in the nightly rate?"
+              answer="Each villa includes a fully equipped gourmet kitchen, high-speed WiFi, resort pool access, private lanai, beach gear (chairs, umbrellas, snorkel sets), and dedicated parking. Rates are sourced directly from Hostaway with no platform markups."
+            />
+            <FAQItem
+              question="Is Turtle Bay better than staying in Waikiki?"
+              answer="Turtle Bay offers a private-villa experience far from the crowds of Waikiki. Guests enjoy direct beach access, world-class surf nearby, and a more authentic island pace — with all the comfort of a luxury villa."
             />
           </div>
         </div>

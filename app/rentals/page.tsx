@@ -2,6 +2,7 @@
 
 import Image from "next/image";
 import Link from "next/link";
+import Script from "next/script";
 import { useEffect, useState } from "react";
 
 type HostawayListing = {
@@ -22,16 +23,29 @@ type HostawayListing = {
 const LISTING_IDS = ["489089", "489092", "489093", "489094", "489095", "489097", "505671"] as const;
 
 const LISTING_DISPLAY_NAMES: Record<string, string> = {
-  "505671": "The Penthouse Villa",
+  "505671": "The View Villa",
 };
 
 const HERO_IMAGE_OVERRIDES: Record<string, number> = {
   "505671": 1,
 };
 
+const SITE_URL = "https://oceanvillasturtlebay.com";
+
+const rentalsJsonLd = {
+  "@context": "https://schema.org",
+  "@type": "ItemList",
+  name: "Ocean Villas at Turtle Bay — Vacation Rental Collection",
+  description:
+    "7 luxury private villa rentals at Turtle Bay on Oahu's North Shore. Book direct with live availability and no platform markups.",
+  url: `${SITE_URL}/rentals`,
+  numberOfItems: 7,
+};
+
 function getDisplayName(id: string, rawName: string): string {
   if (LISTING_DISPLAY_NAMES[id]) return LISTING_DISPLAY_NAMES[id];
-  if (/unit\s*304\b/i.test(rawName)) return "The Penthouse Villa";
+  if (/unit\s*318\b/i.test(rawName)) return "The Penthouse Villa";
+  if (/unit\s*304\b/i.test(rawName)) return "The View Villa";
   return rawName || `Villa ${id}`;
 }
 
@@ -168,6 +182,12 @@ export default function RentalsPage() {
 
   return (
     <main className="min-h-screen bg-slate-50 text-slate-900">
+      <Script
+        id="ov-rentals-schema"
+        type="application/ld+json"
+        dangerouslySetInnerHTML={{ __html: JSON.stringify(rentalsJsonLd) }}
+      />
+
       {/* Header */}
       <header className="sticky top-0 z-50 border-b border-slate-200 bg-white/80 backdrop-blur-md">
         <div className="mx-auto flex h-20 max-w-7xl items-center justify-between px-6 lg:px-8">
@@ -175,11 +195,12 @@ export default function RentalsPage() {
             href="/"
             className="text-sm font-semibold text-slate-600 hover:text-slate-900 transition"
           >
-            Back to Home
+            ← Back to Ocean Villas
           </Link>
-          <span className="text-sm font-medium text-slate-500">
-            Ocean Villas at Turtle Bay
-          </span>
+          <nav className="flex items-center gap-5 text-sm font-medium text-slate-500">
+            <Link href="/location" className="hover:text-slate-900 transition">Location</Link>
+            <Link href="/amenities" className="hover:text-slate-900 transition">Amenities</Link>
+          </nav>
         </div>
       </header>
 
@@ -191,13 +212,11 @@ export default function RentalsPage() {
           </div>
 
           <h1 className="text-4xl md:text-5xl font-serif font-medium tracking-tight text-slate-900 max-w-3xl leading-tight">
-            Luxury Vacation Rentals on Oahu's North Shore
+            Luxury Vacation Rentals at Turtle Bay, North Shore Oahu
           </h1>
 
           <p className="mt-5 text-lg text-slate-600 leading-relaxed max-w-2xl">
-            Ocean Villas at Turtle Bay offers premium private villa rentals on Oahu&apos;s
-            North Shore — each managed through Hostaway for live availability, accurate pricing,
-            and a direct booking experience without platform markups.
+            Ocean Villas at Turtle Bay offers premium private villas on Oahu&apos;s North Shore — each managed with a direct booking experience without platform markups.
           </p>
 
           <div className="mt-8 flex flex-wrap gap-4">
@@ -247,15 +266,15 @@ export default function RentalsPage() {
             {[
               {
                 title: "Live pricing via Hostaway",
-                desc: "All rates are sourced directly from Hostaway — the same platform that manages the properties — so you always see accurate, up-to-date pricing.",
+                desc: "All rates are sourced directly from Hostaway — the same platform that manages the properties — so you always see accurate, up-to-date pricing without surprises at checkout.",
               },
               {
                 title: "No platform markups",
-                desc: "Booking direct means you avoid the service fees added by third-party travel platforms, keeping more value in your pocket.",
+                desc: "Booking direct means you avoid the service fees added by Airbnb, VRBO, and other third-party travel platforms — keeping more value in your pocket.",
               },
               {
                 title: "North Shore, Oahu access",
-                desc: "Turtle Bay is one of Oahu's most coveted destinations. Ocean Villas puts you in the heart of the North Shore experience.",
+                desc: "Turtle Bay is one of Oahu's most coveted destinations — close to Pipeline, Waimea Bay, Haleiwa, and some of the island's best beaches. Ocean Villas puts you right at the heart of it.",
               },
             ].map((c) => (
               <div
@@ -270,12 +289,65 @@ export default function RentalsPage() {
         </div>
       </section>
 
+      {/* Plan your stay — internal links */}
+      <section className="py-16 md:py-20 bg-slate-50 border-t border-slate-100">
+        <div className="mx-auto max-w-7xl px-6 lg:px-8">
+          <div className="text-xs font-bold uppercase tracking-widest text-slate-400 mb-2">Plan Your Stay</div>
+          <h2 className="text-3xl font-serif tracking-tight text-slate-900 mb-3">
+            Everything you need to know before you book
+          </h2>
+          <p className="text-slate-500 text-sm leading-relaxed mb-10 max-w-2xl">
+            Explore the details that matter — what&apos;s included in each villa, what surrounds Turtle Bay, and how to check availability and book direct.
+          </p>
+
+          <div className="grid gap-6 md:grid-cols-3">
+            <Link
+              href="/amenities"
+              className="group rounded-2xl border border-slate-200 bg-white p-6 shadow-[0_8px_30px_rgba(15,23,42,0.05)] transition hover:-translate-y-1 hover:shadow-[0_16px_50px_rgba(15,23,42,0.1)]"
+            >
+              <h3 className="text-lg font-semibold text-slate-900 group-hover:text-slate-700">Villa Amenities</h3>
+              <p className="mt-3 text-sm leading-7 text-slate-600">
+                See what&apos;s included — gourmet kitchens, resort pool access, private lanais, ocean views, and beach gear.
+              </p>
+              <span className="mt-5 inline-flex text-sm font-semibold text-slate-900">View Amenities</span>
+            </Link>
+
+            <Link
+              href="/location"
+              className="group rounded-2xl border border-slate-200 bg-white p-6 shadow-[0_8px_30px_rgba(15,23,42,0.05)] transition hover:-translate-y-1 hover:shadow-[0_16px_50px_rgba(15,23,42,0.1)]"
+            >
+              <h3 className="text-lg font-semibold text-slate-900 group-hover:text-slate-700">Location &amp; Nearby</h3>
+              <p className="mt-3 text-sm leading-7 text-slate-600">
+                Discover what surrounds Turtle Bay — Pipeline, Waimea Bay, Haleiwa Town, Shark&apos;s Cove, and more.
+              </p>
+              <span className="mt-5 inline-flex text-sm font-semibold text-slate-900">Explore Location</span>
+            </Link>
+
+            <Link
+              href="/#availability"
+              className="group rounded-2xl border border-slate-200 bg-white p-6 shadow-[0_8px_30px_rgba(15,23,42,0.05)] transition hover:-translate-y-1 hover:shadow-[0_16px_50px_rgba(15,23,42,0.1)]"
+            >
+              <h3 className="text-lg font-semibold text-slate-900 group-hover:text-slate-700">Check Availability</h3>
+              <p className="mt-3 text-sm leading-7 text-slate-600">
+                Search live dates across all villas, see open nights, and continue straight into booking — no extra steps.
+              </p>
+              <span className="mt-5 inline-flex text-sm font-semibold text-slate-900">Search Dates</span>
+            </Link>
+          </div>
+        </div>
+      </section>
+
       {/* Footer */}
       <footer className="border-t border-slate-200 bg-slate-50 py-10">
         <div className="mx-auto max-w-7xl px-6 lg:px-8 flex flex-col md:flex-row justify-between items-center gap-4">
           <div className="text-lg font-serif font-bold text-slate-900">
             Ocean Villas at Turtle Bay
           </div>
+          <nav className="flex items-center gap-5 text-sm text-slate-500">
+            <Link href="/amenities" className="hover:text-slate-700 transition">Amenities</Link>
+            <Link href="/location" className="hover:text-slate-700 transition">Location</Link>
+            <Link href="/" className="hover:text-slate-700 transition">Book Direct</Link>
+          </nav>
           <div className="text-sm text-slate-500">
             © {new Date().getFullYear()} Ocean Villas at Turtle Bay. All rights reserved.
           </div>

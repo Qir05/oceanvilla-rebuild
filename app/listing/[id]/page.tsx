@@ -33,7 +33,7 @@ const BRAND_PHONE = "(858) 345-2082";
 const BRAND_NAME = "Ocean Villas at Turtle Bay";
 
 const LISTING_DISPLAY_NAMES: Record<string, string> = {
-  "505671": "The Penthouse Villa",
+  "505671": "The View Villa",
 };
 
 const HERO_IMAGE_OVERRIDES: Record<string, number> = {
@@ -42,7 +42,8 @@ const HERO_IMAGE_OVERRIDES: Record<string, number> = {
 
 function getDisplayName(id: string, rawName: string): string {
   if (LISTING_DISPLAY_NAMES[id]) return LISTING_DISPLAY_NAMES[id];
-  if (/unit\s*304\b/i.test(rawName)) return "The Penthouse Villa";
+  if (/unit\s*318\b/i.test(rawName)) return "The Penthouse Villa";
+  if (/unit\s*304\b/i.test(rawName)) return "The View Villa";
   return rawName || `Villa ${id}`;
 }
 
@@ -64,9 +65,9 @@ type DescriptionOverride = {
 const LISTING_DESCRIPTION_OVERRIDES: Record<string, DescriptionOverride> = {
   "505671": {
     paragraphs: [
-      "Welcome to The Penthouse Villa at Ocean Villas at Turtle Bay — a rare top-floor four-bedroom retreat designed for families, groups, and guests who want a more elevated North Shore stay. Set within the Turtle Bay resort area, this villa pairs ocean-view living with refined comfort, generous indoor space, and easy access to the beaches, resort paths, pool, tennis, oceanfront fitness, dining, and the relaxed rhythm of Oahu's North Shore.",
+      "Welcome to The View Villa at Ocean Villas at Turtle Bay — a top-floor four-bedroom retreat designed for families, groups, and guests who want a more elevated North Shore stay. Set within the Turtle Bay resort area, this villa pairs ocean-view living with refined comfort, generous indoor space, and easy access to the beaches, resort paths, pool, tennis, oceanfront fitness, dining, and the relaxed rhythm of Oahu's North Shore.",
       "From the private lanai, guests can take in sweeping coastal views, fresh trade winds, and the peaceful setting that makes Turtle Bay one of the most desirable stays on the island. Inside, the villa offers high ceilings, central air conditioning, a well-equipped kitchen, comfortable gathering spaces, premium bedroom setups, and thoughtful beach-day essentials for a seamless stay.",
-      "The Penthouse Villa is ideal for guests who want more than a standard Oahu rental. It gives you space to settle in, privacy to unwind, and a true North Shore base close to quiet beaches, scenic shoreline, family-friendly beach parks, surf breaks, local farms, Haleiwa, and the natural beauty that makes this side of Oahu feel special.",
+      "The View Villa is ideal for guests who want more than a standard Oahu rental. It gives you space to settle in, privacy to unwind, and a true North Shore base close to quiet beaches, scenic shoreline, family-friendly beach parks, surf breaks, local farms, Haleiwa, and the natural beauty that makes this side of Oahu feel special.",
     ],
     highlights: [
       "Rare four-bedroom top-floor layout",

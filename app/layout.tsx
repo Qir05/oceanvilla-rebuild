@@ -18,11 +18,11 @@ const siteUrl = "https://oceanvillasturtlebay.com";
 export const metadata: Metadata = {
   metadataBase: new URL(siteUrl),
   title: {
-    default: "Ocean Villas at Turtle Bay | Luxury Vacation Rentals on Oahu’s North Shore",
+    default: "Ocean Villas at Turtle Bay — Luxury Vacation Rentals, North Shore Oahu",
     template: "%s | Ocean Villas at Turtle Bay",
   },
   description:
-    "Discover luxury vacation rentals at Turtle Bay on Oahu’s North Shore. Browse featured villas, check availability, and book direct.",
+    "Private luxury villa rentals at Turtle Bay on Oahu’s North Shore. Book direct for live availability and transparent pricing — no platform fees. 7 curated villas.",
   alternates: {
     canonical: "/",
   },
@@ -31,9 +31,9 @@ export const metadata: Metadata = {
     follow: true,
   },
   openGraph: {
-    title: "Ocean Villas at Turtle Bay | Luxury Vacation Rentals on Oahu’s North Shore",
+    title: "Ocean Villas at Turtle Bay — Luxury Vacation Rentals, North Shore Oahu",
     description:
-      "Browse premium Turtle Bay villas, explore amenities, check availability, and book direct from Ocean Villas at Turtle Bay.",
+      "Stay in a private luxury villa at Turtle Bay, Oahu’s North Shore. Browse 7 curated villas, check live availability, and book direct — no platform fees.",
     url: siteUrl,
     siteName: "Ocean Villas at Turtle Bay",
     type: "website",
@@ -42,15 +42,15 @@ export const metadata: Metadata = {
         url: "/brand/TTB-Logo.png",
         width: 1200,
         height: 630,
-        alt: "Ocean Villas at Turtle Bay",
+        alt: "Ocean Villas at Turtle Bay — Luxury North Shore Oahu Vacation Rentals",
       },
     ],
   },
   twitter: {
     card: "summary_large_image",
-    title: "Ocean Villas at Turtle Bay | Luxury Vacation Rentals on Oahu’s North Shore",
+    title: "Ocean Villas at Turtle Bay — Luxury Vacation Rentals, North Shore Oahu",
     description:
-      "Luxury Turtle Bay vacation rentals with direct booking and live availability.",
+      "Private luxury villas at Turtle Bay, North Shore Oahu. Book direct with live availability — no platform markups.",
     images: ["/brand/TTB-Logo.png"],
   },
   icons: {
