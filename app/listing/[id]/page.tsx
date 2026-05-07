@@ -33,7 +33,8 @@ const BRAND_PHONE = "(858) 345-2082";
 const BRAND_NAME = "Ocean Villas at Turtle Bay";
 
 const LISTING_DISPLAY_NAMES: Record<string, string> = {
-  "505671": "The View Villa",
+  "489095": "The Penthouse Villa", // Villa 318
+  "505671": "The View Villa",      // Villa 304
 };
 
 const HERO_IMAGE_OVERRIDES: Record<string, number> = {
@@ -42,8 +43,8 @@ const HERO_IMAGE_OVERRIDES: Record<string, number> = {
 
 function getDisplayName(id: string, rawName: string): string {
   if (LISTING_DISPLAY_NAMES[id]) return LISTING_DISPLAY_NAMES[id];
-  if (/unit\s*318\b/i.test(rawName)) return "The Penthouse Villa";
-  if (/unit\s*304\b/i.test(rawName)) return "The View Villa";
+  if (/\b(?:ov|villa|unit)?\s*318\b/i.test(rawName)) return "The Penthouse Villa";
+  if (/\b(?:ov|villa|unit)?\s*304\b/i.test(rawName)) return "The View Villa";
   return rawName || `Villa ${id}`;
 }
 

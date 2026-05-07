@@ -23,6 +23,18 @@ type HostawayListing = {
 
 const LISTING_IDS = ["489089", "489092", "489093", "489094", "489095", "489097", "505671"] as const;
 
+const LISTING_DISPLAY_NAMES: Record<string, string> = {
+  "489095": "The Penthouse Villa", // Villa 318
+  "505671": "The View Villa",      // Villa 304
+};
+
+function getDisplayName(id: string, rawName: string): string {
+  if (LISTING_DISPLAY_NAMES[id]) return LISTING_DISPLAY_NAMES[id];
+  if (/\b(?:ov|villa|unit)?\s*318\b/i.test(rawName)) return "The Penthouse Villa";
+  if (/\b(?:ov|villa|unit)?\s*304\b/i.test(rawName)) return "The View Villa";
+  return rawName || `Villa ${id}`;
+}
+
 function formatISO(d: Date) {
   const y = d.getFullYear();
   const m = String(d.getMonth() + 1).padStart(2, "0");
@@ -64,7 +76,7 @@ function AvailabilityCard({
   guests: string;
 }) {
   const hero = listing.heroUrl || listing.thumbnailUrl || "/media/rentals/placeholder.jpg";
-  const title = listing.name || `Villa ${listing.id}`;
+  const title = getDisplayName(listing.id, listing.name || "");
   const subtitle =
     (listing.description || "").replace(/\s+/g, " ").trim() ||
     (listing.city
