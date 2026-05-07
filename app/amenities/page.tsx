@@ -153,7 +153,7 @@ export default function AmenitiesPage() {
           </p>
           <div className="mt-8 flex flex-wrap gap-4">
             <Link
-              href="/"
+              href="/availability"
               className="inline-flex items-center justify-center rounded-xl bg-slate-900 px-6 py-3 text-sm font-semibold text-white hover:bg-slate-800 transition"
             >
               Check Availability
@@ -265,7 +265,7 @@ export default function AmenitiesPage() {
           </p>
           <div className="mt-8 flex flex-wrap justify-center gap-4">
             <Link
-              href="/"
+              href="/availability"
               className="inline-flex items-center justify-center rounded-xl bg-white px-8 py-3 text-sm font-semibold text-slate-900 hover:bg-slate-100 transition"
             >
               Search Availability

@@ -522,9 +522,9 @@ export default function Home() {
           </div>
 
           <nav className="hidden md:flex items-center gap-6 text-sm font-medium text-slate-600 z-10">
-            <a className="hover:text-slate-900 transition-colors" href="#featured">
-              Featured
-            </a>
+            <Link className="hover:text-slate-900 transition-colors" href="/rentals">
+              Villas
+            </Link>
             <button
               type="button"
               onClick={() => scrollToAvailability("availability")}
@@ -560,9 +560,9 @@ export default function Home() {
         {mobileMenuOpen && (
           <div className="md:hidden border-t border-slate-200 bg-white px-4 py-4 shadow-lg absolute w-full z-20">
             <div className="flex flex-col gap-4 text-sm font-medium text-slate-600">
-              <a onClick={() => setMobileMenuOpen(false)} href="#featured" className="py-2 hover:text-slate-900">
-                Featured Villas
-              </a>
+              <Link onClick={() => setMobileMenuOpen(false)} href="/rentals" className="py-2 hover:text-slate-900">
+                Villas
+              </Link>
               <button
                 type="button"
                 onClick={() => {
@@ -880,9 +880,9 @@ export default function Home() {
               desc="Review what's included in each villa — comfort, access, and lifestyle details before you book."
             />
             <GuideCard
+              href="/availability"
               title="Check Availability"
               desc="Search live dates, see which villas are open, and continue straight into booking."
-              onClick={() => scrollToAvailability()}
             />
           </div>
         </div>

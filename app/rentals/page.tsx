@@ -123,7 +123,7 @@ function VillaCard({ listing }: { listing: HostawayListing }) {
             View Villa
           </Link>
           <Link
-            href="/#availability"
+            href="/availability"
             className="inline-flex items-center justify-center rounded-xl border border-slate-200 bg-white px-4 py-2.5 text-sm font-semibold text-slate-700 hover:bg-slate-50 hover:border-slate-300 hover:-translate-y-px active:translate-y-0 active:scale-[0.97] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-slate-300 focus-visible:ring-offset-2 transition-all duration-[220ms] ease-[cubic-bezier(0.16,1,0.3,1)]"
           >
             Check Dates
@@ -222,7 +222,7 @@ export default function RentalsPage() {
 
           <div className="mt-8 flex flex-wrap gap-4">
             <Link
-              href="/#availability"
+              href="/availability"
               className="inline-flex items-center justify-center rounded-xl bg-slate-900 px-6 py-3 text-sm font-semibold text-white hover:bg-slate-800 transition"
             >
               Check Availability
@@ -325,7 +325,7 @@ export default function RentalsPage() {
             </Link>
 
             <Link
-              href="/#availability"
+              href="/availability"
               className="group rounded-2xl border border-slate-200 bg-white p-6 shadow-[0_8px_30px_rgba(15,23,42,0.05)] transition hover:-translate-y-1 hover:shadow-[0_16px_50px_rgba(15,23,42,0.1)]"
             >
               <h3 className="text-lg font-semibold text-slate-900 group-hover:text-slate-700">Check Availability</h3>

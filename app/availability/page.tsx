@@ -377,7 +377,7 @@ function AvailabilityPageContent() {
             <div className="mb-8">
               <div className="text-sm text-slate-500">
                 Showing results for{" "}
-                <span className="font-semibold text-slate-900">{startDate}</span> →{" "}
+                <span className="font-semibold text-slate-900">{startDate}</span>{" "}–{" "}
                 <span className="font-semibold text-slate-900">{endDate}</span>{" "}
                 <span className="text-slate-300">•</span>{" "}
                 <span className="font-semibold text-slate-900">{Number(guestsParam) || 2} guests</span>
