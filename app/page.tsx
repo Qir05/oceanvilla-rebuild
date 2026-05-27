@@ -588,7 +588,7 @@ export default function Home() {
       <div className="block md:hidden">
         <div className="relative w-full h-[35vh] min-h-[250px] overflow-hidden bg-[#020611] isolate">
           <video
-            className="absolute inset-0 h-full w-full object-cover object-center"
+            className="absolute inset-0 h-full w-full object-cover object-center scale-[1.035]"
             style={{
               transform: "translate3d(-0.5px, 0, 0) scale(1.03)",
               backfaceVisibility: "hidden",
@@ -605,7 +605,6 @@ export default function Home() {
             <source src="/media/hero.mp4" type="video/mp4" />
           </video>
           <div className="absolute inset-0 bg-slate-900/20" />
-          <div className="pointer-events-none absolute left-1/2 top-0 z-[2] h-full w-[5px] -translate-x-1/2 bg-gradient-to-r from-transparent via-[#020611]/25 to-transparent" />
         </div>
 
         <section className="bg-white px-4 pt-8 pb-3">
@@ -688,7 +687,7 @@ export default function Home() {
       <div className="hidden md:block">
         <section id="top" className="relative h-[80vh] w-full overflow-hidden bg-[#020611] isolate">
           <video
-            className={`absolute inset-0 h-full w-full object-cover object-center transition-opacity duration-1000 ${
+            className={`absolute inset-0 h-full w-full object-cover object-center scale-[1.035] transition-opacity duration-1000 ${
               videoReady ? "opacity-100" : "opacity-0"
             }`}
             style={videoStyle}
@@ -703,8 +702,7 @@ export default function Home() {
           >
             <source src="/media/hero.mp4" type="video/mp4" />
           </video>
-          <div className="absolute inset-0 z-[1] bg-[#020611]/65" />
-          <div className="pointer-events-none absolute left-1/2 top-0 z-[2] h-full w-[5px] -translate-x-1/2 bg-gradient-to-r from-transparent via-[#020611]/25 to-transparent" />
+          <div className="absolute inset-0 z-[1] bg-[#020611]/68" />
 
           <div className="absolute inset-0 z-10 flex flex-col justify-center pt-16 pb-24">
             <div className="mx-auto w-full max-w-7xl px-5 sm:px-6 lg:px-8">
