@@ -95,6 +95,52 @@ body {
   }
 }
 
+/* ── Suppress all native video controls ──────────────────────*/
+video::-webkit-media-controls {
+  display: none !important;
+}
+video::-webkit-media-controls-enclosure {
+  display: none !important;
+}
+video::-webkit-media-controls-panel {
+  display: none !important;
+}
+video::-webkit-media-controls-play-button {
+  display: none !important;
+}
+video::-webkit-media-controls-start-playback-button {
+  display: none !important;
+}
+video::-webkit-media-controls-timeline {
+  display: none !important;
+}
+video::-webkit-media-controls-current-time-display {
+  display: none !important;
+}
+video::-webkit-media-controls-time-remaining-display {
+  display: none !important;
+}
+video::-webkit-media-controls-volume-slider {
+  display: none !important;
+}
+video::-webkit-media-controls-mute-button {
+  display: none !important;
+}
+video::-webkit-media-controls-fullscreen-button {
+  display: none !important;
+}
+
+/* ── Hide carousel/slider UI ──────────────────────────────────*/
+.slick-arrow,
+.slick-dots,
+.swiper-button-next,
+.swiper-button-prev,
+.swiper-pagination,
+.carousel-arrow,
+.carousel-dots {
+  display: none !important;
+}
+
 /* ── GHL Chat Widget — Mobile Positioning ─────────────────────
    Lifts the chat launcher above the 72px sticky mobile CTA bar
    on viewports below the lg breakpoint (< 1024px).

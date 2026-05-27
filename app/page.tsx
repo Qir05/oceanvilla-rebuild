@@ -314,6 +314,7 @@ export default function Home() {
   const router = useRouter();
   const today = useMemo(() => formatISO(new Date()), []);
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
+  const [videoReady, setVideoReady] = useState(false);
 
   const [checkIn, setCheckIn] = useState<string>("");
   const [checkOut, setCheckOut] = useState<string>("");
@@ -532,9 +533,6 @@ export default function Home() {
             >
               Availability
             </button>
-            <Link className="hover:text-slate-900 transition-colors" href="/rentals">
-              Villas
-            </Link>
             <Link className="hover:text-slate-900 transition-colors" href="/location">
               Location
             </Link>
@@ -573,9 +571,6 @@ export default function Home() {
               >
                 Check Availability
               </button>
-              <Link onClick={() => setMobileMenuOpen(false)} href="/rentals" className="py-2 hover:text-slate-900">
-                Villas
-              </Link>
               <Link onClick={() => setMobileMenuOpen(false)} href="/location" className="py-2 hover:text-slate-900">
                 Location
               </Link>
@@ -591,7 +586,7 @@ export default function Home() {
       </header>
 
       <div className="block md:hidden">
-        <div className="relative w-full h-[35vh] min-h-[250px] overflow-hidden bg-black isolate">
+        <div className="relative w-full h-[35vh] min-h-[250px] overflow-hidden bg-[#020611] isolate">
           <video
             className="absolute inset-0 h-full w-full object-cover object-center"
             style={{
@@ -599,14 +594,18 @@ export default function Home() {
               backfaceVisibility: "hidden",
               WebkitBackfaceVisibility: "hidden",
             }}
-            src="/media/hero.mp4"
             autoPlay
             muted
             loop
             playsInline
             preload="auto"
-          />
+            controls={false}
+            disablePictureInPicture
+          >
+            <source src="/media/hero.mp4" type="video/mp4" />
+          </video>
           <div className="absolute inset-0 bg-slate-900/20" />
+          <div className="pointer-events-none absolute left-1/2 top-0 z-[2] h-full w-[5px] -translate-x-1/2 bg-gradient-to-r from-transparent via-[#020611]/25 to-transparent" />
         </div>
 
         <section className="bg-white px-4 pt-8 pb-3">
@@ -687,19 +686,27 @@ export default function Home() {
       </div>
 
       <div className="hidden md:block">
-        <section id="top" className="relative h-[80vh] w-full overflow-hidden bg-black isolate">
+        <section id="top" className="relative h-[80vh] w-full overflow-hidden bg-[#020611] isolate">
           <video
-            className="absolute inset-0 h-full w-full object-cover object-center"
+            className={`absolute inset-0 h-full w-full object-cover object-center transition-opacity duration-1000 ${
+              videoReady ? "opacity-100" : "opacity-0"
+            }`}
             style={videoStyle}
-            src="/media/hero.mp4"
             autoPlay
             muted
             loop
             playsInline
-          />
-          <div className="absolute inset-0 bg-slate-900/45" />
+            preload="auto"
+            controls={false}
+            disablePictureInPicture
+            onCanPlay={() => setVideoReady(true)}
+          >
+            <source src="/media/hero.mp4" type="video/mp4" />
+          </video>
+          <div className="absolute inset-0 z-[1] bg-[#020611]/65" />
+          <div className="pointer-events-none absolute left-1/2 top-0 z-[2] h-full w-[5px] -translate-x-1/2 bg-gradient-to-r from-transparent via-[#020611]/25 to-transparent" />
 
-          <div className="absolute inset-0 flex flex-col justify-center pt-16 pb-24">
+          <div className="absolute inset-0 z-10 flex flex-col justify-center pt-16 pb-24">
             <div className="mx-auto w-full max-w-7xl px-5 sm:px-6 lg:px-8">
               <div className="max-w-4xl">
                 <h1 className="text-5xl md:text-7xl font-serif font-medium tracking-tight text-white leading-tight">
