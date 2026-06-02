@@ -32,6 +32,22 @@ export const OCEAN_VILLA_LISTING_IDS = [
 export type OceanVillaListingId = (typeof OCEAN_VILLA_LISTING_IDS)[number];
 
 /**
+ * Correct guest capacity, bedroom, and bathroom counts for listings where
+ * Hostaway's stored values differ from the actual property configuration.
+ *
+ * "489097" — Combined 2-in-1 (Honeymoon + Ohana): Hostaway has 2 baths / 8 guests;
+ *             actual configuration is 3 bathrooms, sleeps 12.
+ * "505671" — The View Villa: Hostaway has 8 guests; actual capacity is 10.
+ */
+export const VILLA_STAT_OVERRIDES: Record<
+  string,
+  { maxGuests?: number; bedrooms?: number; bathrooms?: number }
+> = {
+  "489097": { maxGuests: 12, bathrooms: 3 },
+  "505671": { maxGuests: 10 },
+};
+
+/**
  * Build a Hostaway booking engine URL for a specific listing.
  *
  * `base` is the value returned by /api/hostaway/listings as `bookingEngineBase`,
