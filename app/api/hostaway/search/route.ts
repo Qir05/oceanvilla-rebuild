@@ -1,6 +1,6 @@
 // app/api/hostaway/search/route.ts
 import { NextResponse } from "next/server";
-import { OCEAN_VILLA_LISTING_IDS } from "@/lib/ocean-villas";
+import { OCEAN_VILLA_LISTING_IDS, VILLA_STAT_OVERRIDES } from "@/lib/ocean-villas";
 
 const LISTING_IDS = OCEAN_VILLA_LISTING_IDS;
 
@@ -120,7 +120,8 @@ export async function GET(req: Request) {
         const l = listingJson?.result;
         if (!listingRes.ok || !l) return null;
 
-        const capacity = l.personCapacity ?? l.maxGuests ?? null;
+        const rawCapacity = l.personCapacity ?? l.maxGuests ?? null;
+        const capacity = VILLA_STAT_OVERRIDES[String(l.id)]?.maxGuests ?? rawCapacity;
         if (capacity != null && Number(capacity) < guests) return null;
 
         // minimumStay is a booking-start rule — only the check-in day's value matters.
@@ -130,14 +131,16 @@ export async function GET(req: Request) {
         const images = Array.isArray(l?.listingImages) ? l.listingImages : [];
         const hero = images.find((img: any) => img?.url) || images[0];
 
+        const statOverride = VILLA_STAT_OVERRIDES[String(l.id)] ?? {};
+
         return {
           id: String(l.id),
           name: l.name || l.externalListingName || `Listing ${id}`,
           city: l.city || null,
           state: l.state || null,
-          maxGuests: capacity,
-          bedrooms: l.bedroomsNumber ?? null,
-          bathrooms: l.bathroomsNumber ?? null,
+          maxGuests: statOverride.maxGuests ?? capacity,
+          bedrooms: statOverride.bedrooms ?? l.bedroomsNumber ?? null,
+          bathrooms: statOverride.bathrooms ?? l.bathroomsNumber ?? null,
           thumbnailUrl: hero?.url || hero?.airbnbUrl || null,
           bookingEngineBase: BOOKING_ENGINE_BASE_URL,
         };

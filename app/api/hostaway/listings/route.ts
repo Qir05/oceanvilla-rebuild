@@ -1,5 +1,6 @@
 // app/api/hostaway/listings/route.ts
 import { NextResponse } from "next/server";
+import { VILLA_STAT_OVERRIDES } from "@/lib/ocean-villas";
 
 const BOOKING_ENGINE_BASE_URL =
   process.env.HOSTAWAY_BOOKING_ENGINE_BASE_URL ||
@@ -106,6 +107,8 @@ export async function GET(req: Request) {
 
     const heroUrl = imageUrls[0] || null;
 
+    const statOverride = VILLA_STAT_OVERRIDES[String(found.id)] ?? {};
+
     return NextResponse.json(
       {
         success: true,
@@ -116,9 +119,9 @@ export async function GET(req: Request) {
           city: found.city || null,
           state: found.state || null,
           country: found.country || null,
-          maxGuests: found.personCapacity ?? found.maxGuests ?? null,
-          bedrooms: found.bedroomsNumber ?? null,
-          bathrooms: found.bathroomsNumber ?? null,
+          maxGuests: statOverride.maxGuests ?? found.personCapacity ?? found.maxGuests ?? null,
+          bedrooms: statOverride.bedrooms ?? found.bedroomsNumber ?? null,
+          bathrooms: statOverride.bathrooms ?? found.bathroomsNumber ?? null,
           heroUrl,
           images: imageUrls,
           amenities: extractAmenities(found),
