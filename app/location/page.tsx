@@ -312,7 +312,6 @@ export default function LocationPage() {
           <nav className="flex items-center gap-5 text-sm text-slate-500">
             <Link href="/rentals" className="hover:text-slate-700 transition">Rentals</Link>
             <Link href="/amenities" className="hover:text-slate-700 transition">Amenities</Link>
-            <Link href="/" className="hover:text-slate-700 transition">Book Direct</Link>
           </nav>
           <div className="text-sm text-slate-500">© {new Date().getFullYear()} Ocean Villas at Turtle Bay. All rights reserved.</div>
         </div>

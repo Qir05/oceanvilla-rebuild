@@ -4,7 +4,6 @@ import Image from "next/image";
 import Link from "next/link";
 import { Suspense, useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useParams, useSearchParams } from "next/navigation";
-import { buildBookingUrl } from "@/lib/ocean-villas";
 
 // ─── Types ────────────────────────────────────────────────────
 
@@ -29,7 +28,7 @@ type HostawayListing = {
 // ─── Constants ────────────────────────────────────────────────
 
 const GHL_FORM_BASE = "https://api.leadconnectorhq.com/widget/form/ZSl4b5HMWIr8ULY5bAGa";
-const BRAND_PHONE = "(858) 345-2082";
+const BRAND_PHONE = "(858) 727-2427";
 const BRAND_NAME = "Ocean Villas at Turtle Bay";
 
 const LISTING_DISPLAY_NAMES: Record<string, string> = {
@@ -545,34 +544,24 @@ function AmenitiesSection({ amenities }: { amenities: string[] }) {
 }
 
 // ─── Booking Card ─────────────────────────────────────────────
-//
-// Self-contained: manages its own date/guest state (initialised from URL
-// params), computes the booking URL dynamically, and fetches availability +
-// pricing from /api/hostaway/pricing whenever dates are set.
-// The final "Continue to Book" hands off to Hostaway with dates pre-filled.
 
-type PricingResult = {
-  isAvailable: boolean;
-  hasPricing: boolean;
-  avgNightlyPrice: number;
+type AvailabilityMsg = {
+  type: "warn" | "available" | "unavailable";
+  text: string;
 };
 
 function BookingCard({
-  onInquire,
   startDate,
   endDate,
   guests,
   villaName,
   listingId,
-  bookingEngineBase,
 }: {
-  onInquire: () => void;
   startDate: string;
   endDate: string;
   guests: string;
   villaName: string;
   listingId: string;
-  bookingEngineBase?: string | null;
 }) {
   const today = useMemo(() => {
     const d = new Date();
@@ -597,27 +586,20 @@ function BookingCard({
 
   const hasDates = nights > 0;
 
-  const dynamicBookUrl = useMemo(
-    () =>
-      buildBookingUrl(listingId, bookingEngineBase, {
-        startDate: localCheckIn || undefined,
-        endDate: localCheckOut || undefined,
-        guests: localGuests,
-      }),
-    [listingId, bookingEngineBase, localCheckIn, localCheckOut, localGuests]
-  );
+  const [checking, setChecking] = useState(false);
+  const [availMsg, setAvailMsg] = useState<AvailabilityMsg | null>(null);
+  const formRef = useRef<HTMLDivElement>(null);
 
-  const [pricing, setPricing] = useState<PricingResult | null>(null);
-  const [pricingLoading, setPricingLoading] = useState(false);
+  // Clear result when dates change so stale messages don't linger
+  useEffect(() => { setAvailMsg(null); }, [localCheckIn, localCheckOut]);
 
-  useEffect(() => {
-    if (!localCheckIn || !localCheckOut || localCheckIn >= localCheckOut) {
-      setPricing(null);
+  function handleCheckAvailability() {
+    if (!hasDates) {
+      setAvailMsg({ type: "warn", text: "Please select your check-in and check-out dates first." });
       return;
     }
-    let alive = true;
-    setPricingLoading(true);
-    setPricing(null);
+    setChecking(true);
+    setAvailMsg(null);
     fetch(
       `/api/hostaway/pricing?listingId=${encodeURIComponent(listingId)}` +
         `&startDate=${encodeURIComponent(localCheckIn)}&endDate=${encodeURIComponent(localCheckOut)}`,
@@ -625,17 +607,32 @@ function BookingCard({
     )
       .then((r) => r.json())
       .then((json) => {
-        if (!alive || !json?.success) return;
-        setPricing({
-          isAvailable: !!json.isAvailable,
-          hasPricing: !!json.hasPricing,
-          avgNightlyPrice: json.avgNightlyPrice ?? 0,
-        });
+        if (!json?.success) {
+          setAvailMsg({ type: "unavailable", text: "Unable to check availability right now. Please contact Mira directly." });
+          return;
+        }
+        if (json.isAvailable) {
+          const priceStr =
+            json.hasPricing && json.avgNightlyPrice
+              ? ` (~$${Math.round(json.avgNightlyPrice).toLocaleString()}/night)`
+              : "";
+          setAvailMsg({
+            type: "available",
+            text: `This villa may be available for your selected dates${priceStr}. Please complete the form below or call Mira at +1 (858) 727-2427 for faster assistance.`,
+          });
+          setTimeout(() => formRef.current?.scrollIntoView({ behavior: "smooth", block: "nearest" }), 80);
+        } else {
+          setAvailMsg({
+            type: "unavailable",
+            text: "This villa is not available for those dates. Try different dates, or contact Mira for other options.",
+          });
+        }
       })
-      .catch(() => {})
-      .finally(() => { if (alive) setPricingLoading(false); });
-    return () => { alive = false; };
-  }, [listingId, localCheckIn, localCheckOut]);
+      .catch(() => {
+        setAvailMsg({ type: "unavailable", text: "Unable to check availability right now. Please contact Mira directly." });
+      })
+      .finally(() => setChecking(false));
+  }
 
   return (
     <div className="rounded-3xl border border-slate-200 bg-white p-5 sm:p-6 shadow-[0_12px_48px_rgba(15,23,42,0.09)]">
@@ -695,38 +692,13 @@ function BookingCard({
             </div>
           )}
         </div>
-
-        {/* Availability + pricing badge */}
-        {pricingLoading && (
-          <div className="rounded-xl bg-slate-50 border border-slate-200 px-3 py-2 text-xs text-slate-400 animate-pulse">
-            Checking availability…
-          </div>
-        )}
-        {!pricingLoading && pricing && (
-          <div
-            className={`rounded-xl px-3 py-2 text-xs font-medium ${
-              pricing.isAvailable
-                ? "bg-emerald-50 text-emerald-800 border border-emerald-100"
-                : "bg-red-50 text-red-700 border border-red-100"
-            }`}
-          >
-            {pricing.isAvailable
-              ? pricing.hasPricing
-                ? `Available · ~$${Math.round(pricing.avgNightlyPrice).toLocaleString()}/night`
-                : "Available for these dates"
-              : "Not available — try different dates"}
-          </div>
-        )}
       </div>
 
-      {/* ── Primary CTA — Booking (Hostaway) ──────────────── */}
-      <a
-        href={dynamicBookUrl}
-        target="_blank"
-        rel="noopener noreferrer"
-        onClick={() =>
-          trackEvent("booking_click", { villa: villaName, listing_id: listingId, nights: String(nights) })
-        }
+      {/* ── Check Availability button ──────────────────────── */}
+      <button
+        type="button"
+        onClick={handleCheckAvailability}
+        disabled={checking}
         className={[
           "flex items-center justify-center w-full rounded-2xl px-6 py-4",
           "bg-[#0f172a] text-white text-sm font-semibold",
@@ -735,36 +707,49 @@ function BookingCard({
           "active:translate-y-0 active:scale-[0.98]",
           "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-slate-700 focus-visible:ring-offset-2",
           "transition-all duration-[250ms] ease-[cubic-bezier(0.16,1,0.3,1)]",
+          "disabled:opacity-60 disabled:cursor-not-allowed",
         ].join(" ")}
       >
-        {hasDates ? "Continue to Book" : "Check Availability & Book"}
-      </a>
-
-      {/* ── Secondary CTA — Inquiry (GHL) ─────────────────── */}
-      <button
-        type="button"
-        onClick={() => {
-          trackEvent("inquiry_open", { villa: villaName, listing_id: listingId, source: "sidebar" });
-          onInquire();
-        }}
-        className={[
-          "mt-3 flex items-center justify-center w-full rounded-2xl px-6 py-4",
-          "bg-[#3f5f4a] text-white text-sm font-semibold",
-          "shadow-[0_4px_18px_rgba(63,95,74,0.22)]",
-          "hover:-translate-y-0.5 hover:bg-[#334e3c] hover:shadow-[0_8px_28px_rgba(63,95,74,0.30)]",
-          "active:translate-y-0 active:scale-[0.98]",
-          "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#3f5f4a] focus-visible:ring-offset-2",
-          "transition-all duration-[250ms] ease-[cubic-bezier(0.16,1,0.3,1)]",
-        ].join(" ")}
-      >
-        <svg className="mr-2 h-4 w-4 opacity-80" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.8}>
-          <path strokeLinecap="round" strokeLinejoin="round" d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z" />
-        </svg>
-        Ask About This Villa
+        {checking ? "Checking availability…" : "Check Availability"}
       </button>
 
-      <p className="mt-5 text-center text-[11px] text-slate-400 leading-5">
-        Final booking via Hostaway · Our team responds within hours
+      {/* ── Availability result ────────────────────────────── */}
+      {availMsg && (
+        <div
+          className={[
+            "mt-3 rounded-xl px-4 py-3 text-xs leading-relaxed",
+            availMsg.type === "available"
+              ? "bg-emerald-50 border border-emerald-100 text-emerald-800"
+              : availMsg.type === "warn"
+              ? "bg-amber-50 border border-amber-100 text-amber-800"
+              : "bg-red-50 border border-red-100 text-red-700",
+          ].join(" ")}
+        >
+          {availMsg.text}
+          {availMsg.type === "unavailable" && (
+            <a
+              href="tel:+18587272427"
+              className="mt-2 block font-semibold text-slate-900 hover:underline hover:underline-offset-2"
+            >
+              Call Mira · +1 (858) 727-2427
+            </a>
+          )}
+        </div>
+      )}
+
+      {/* ── GHL Inquiry Form ──────────────────────────────── */}
+      <div ref={formRef} className="mt-5">
+        <p className="text-[10px] font-bold uppercase tracking-widest text-slate-400 mb-3">Send an Inquiry</p>
+        <iframe
+          src={`${GHL_FORM_BASE}?villa=${encodeURIComponent(villaName)}&listing_id=${encodeURIComponent(listingId)}&source=${encodeURIComponent("oceanvillasturtlebay.com")}&Villa_of_Interest=${encodeURIComponent(villaName)}`}
+          style={{ width: "100%", border: "none", minHeight: "520px" }}
+          scrolling="no"
+          title="Inquiry Form"
+        />
+      </div>
+
+      <p className="mt-3 text-center text-[11px] text-slate-400 leading-5">
+        Mira responds within a few hours.
       </p>
     </div>
   );
@@ -974,8 +959,6 @@ function ListingDetailsContent() {
     ? `/availability?startDate=${encodeURIComponent(startDate)}&endDate=${encodeURIComponent(endDate)}&guests=${encodeURIComponent(guests)}`
     : "/rentals";
 
-  const bookUrl = listing ? buildBookingUrl(listing.id, listing.bookingEngineBase) : "#";
-
   // ── Loading ───────────────────────────────────────
   if (loading) return <LoadingSkeleton />;
 
@@ -1048,10 +1031,10 @@ function ListingDetailsContent() {
             </Link>
 
             <a
-              href={`tel:${sanitizeTel(BRAND_PHONE)}`}
+              href={`tel:+1${sanitizeTel(BRAND_PHONE)}`}
               className="hidden sm:block text-sm font-medium text-slate-600 hover:text-slate-900 transition-colors duration-200"
             >
-              {BRAND_PHONE}
+              Mira · {BRAND_PHONE}
             </a>
           </div>
         </header>
@@ -1134,15 +1117,13 @@ function ListingDetailsContent() {
 
               {/* Inline booking card — mobile only, scroll reveal */}
               <RevealSection className="mt-10 lg:hidden" delay={60}>
-                <h2 className="text-xl font-semibold text-slate-900 mb-4">Book or Inquire</h2>
+                <h2 className="text-xl font-semibold text-slate-900 mb-4">Send an Inquiry</h2>
                 <BookingCard
-                  onInquire={openInquiry}
                   startDate={startDate}
                   endDate={endDate}
                   guests={guests}
                   villaName={title}
                   listingId={listing.id}
-                  bookingEngineBase={listing.bookingEngineBase}
                 />
               </RevealSection>
             </div>
@@ -1150,13 +1131,11 @@ function ListingDetailsContent() {
             {/* ── Right column — sticky desktop sidebar ────── */}
             <div className="hidden lg:block lg:sticky lg:top-28 shrink-0">
               <BookingCard
-                onInquire={openInquiry}
                 startDate={startDate}
                 endDate={endDate}
                 guests={guests}
                 villaName={title}
                 listingId={listing.id}
-                bookingEngineBase={listing.bookingEngineBase}
               />
 
               {/* Contact support card */}
@@ -1165,15 +1144,14 @@ function ListingDetailsContent() {
                   Have questions?
                 </p>
                 <p className="text-sm text-slate-600 leading-6">
-                  Call{" "}
+                  Call Mira at{" "}
                   <a
-                    href={`tel:${sanitizeTel(BRAND_PHONE)}`}
+                    href={`tel:+1${sanitizeTel(BRAND_PHONE)}`}
                     className="font-semibold text-slate-900 hover:underline hover:underline-offset-2"
                   >
                     {BRAND_PHONE}
                   </a>{" "}
-                  or click &ldquo;Ask About This Villa&rdquo; above — our team
-                  responds within a few hours.
+                  — she responds within a few hours.
                 </p>
               </div>
             </div>
@@ -1186,8 +1164,7 @@ function ListingDetailsContent() {
           GHL widget is lifted to 80px above bottom via globals.css.
         */}
         <div className="fixed bottom-0 left-0 right-0 z-[60] lg:hidden bg-white/96 backdrop-blur-md border-t border-slate-200 px-4 py-3 shadow-[0_-6px_28px_rgba(15,23,42,0.09)]">
-          <div className="flex gap-2.5 max-w-lg mx-auto">
-            {/* Ask CTA — olive green */}
+          <div className="max-w-lg mx-auto">
             <button
               type="button"
               onClick={() => {
@@ -1195,7 +1172,7 @@ function ListingDetailsContent() {
                 openInquiry();
               }}
               className={[
-                "flex-1 inline-flex items-center justify-center rounded-xl px-3 py-3.5",
+                "w-full inline-flex items-center justify-center rounded-xl px-3 py-3.5",
                 "bg-[#3f5f4a] text-white text-sm font-semibold",
                 "shadow-[0_3px_12px_rgba(63,95,74,0.22)]",
                 "hover:-translate-y-px hover:bg-[#334e3c] hover:shadow-[0_6px_20px_rgba(63,95,74,0.28)]",
@@ -1217,27 +1194,8 @@ function ListingDetailsContent() {
                   d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z"
                 />
               </svg>
-              Ask About Villa
+              Ask About This Villa
             </button>
-
-            {/* Book CTA — navy */}
-            <a
-              href={bookUrl}
-              target="_blank"
-              rel="noopener noreferrer"
-              onClick={() => trackEvent("booking_click", { villa: title, listing_id: listing.id, source: "mobile_bar" })}
-              className={[
-                "flex-1 inline-flex items-center justify-center rounded-xl px-3 py-3.5",
-                "bg-[#0f172a] text-white text-sm font-semibold",
-                "shadow-[0_3px_12px_rgba(15,23,42,0.22)]",
-                "hover:-translate-y-px hover:bg-[#1e293b] hover:shadow-[0_6px_20px_rgba(15,23,42,0.28)]",
-                "active:translate-y-0 active:scale-[0.97]",
-                "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-slate-700 focus-visible:ring-offset-2",
-                "transition-all duration-[220ms] ease-[cubic-bezier(0.16,1,0.3,1)]",
-              ].join(" ")}
-            >
-              Book Now
-            </a>
           </div>
         </div>
       </main>

@@ -42,13 +42,13 @@ export default function ContactPage() {
             <div className="rounded-2xl border border-slate-200 bg-white p-8 shadow-sm">
               <h2 className="text-lg font-semibold text-slate-900 mb-4">Phone</h2>
               <p className="text-sm text-slate-600 mb-4">
-                Call us directly for booking questions, availability, or general inquiries.
+                Call Mira directly for booking questions, availability, or general inquiries.
               </p>
               <a
-                href="tel:+18583452082"
+                href="tel:+18587272427"
                 className="inline-flex items-center justify-center rounded-xl bg-slate-900 px-6 py-3 text-sm font-semibold text-white hover:bg-slate-800 transition"
               >
-                (858) 345-2082
+                Mira · (858) 727-2427
               </a>
             </div>
 

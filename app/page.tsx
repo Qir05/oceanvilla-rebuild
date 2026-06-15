@@ -5,7 +5,6 @@ import Link from "next/link";
 import Script from "next/script";
 import React, { useEffect, useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
-import { buildBookingUrl } from "@/lib/ocean-villas";
 
 type HostawayListing = {
   id: string;
@@ -27,7 +26,7 @@ const SITE_URL = "https://oceanvillasturtlebay.com";
 const BRAND = {
   name: "Ocean Villas at Turtle Bay",
   sub: "Luxury Vacation Rentals on Oahu’s North Shore",
-  phone: "(858) 345-2082",
+  phone: "(858) 727-2427",
 };
 
 const LISTING_IDS = ["489089", "489092", "489093", "489094", "489095", "489097", "505671"] as const;
@@ -243,7 +242,6 @@ function ListingCard({ l }: { l: HostawayListing }) {
 
   const hero = getPreferredHero(l.id, l.heroUrl, l.images);
   const detailUrl = `/listing/${encodeURIComponent(l.id)}`;
-  const bookUrl = buildBookingUrl(l.id, l.bookingEngineBase);
 
   return (
     <article className="flex flex-col overflow-hidden rounded-2xl bg-white shadow-[0_6px_26px_rgba(15,23,42,0.06)] border border-slate-100 transition-all duration-300 hover:shadow-[0_18px_60px_rgba(15,23,42,0.14)]">
@@ -285,23 +283,14 @@ function ListingCard({ l }: { l: HostawayListing }) {
           <Stat label="Baths" value={`${l.bathrooms ?? "—"}`} />
         </div>
 
-        {/* CTAs — always pinned to card bottom */}
-        <div className="mt-4 grid grid-cols-1 sm:grid-cols-2 gap-3">
+        {/* CTA — pinned to card bottom */}
+        <div className="mt-4">
           <Link
             href={detailUrl}
-            className="inline-flex items-center justify-center rounded-xl bg-[#0f172a] px-4 py-3 text-sm font-semibold text-white shadow-[0_3px_12px_rgba(15,23,42,0.18)] hover:-translate-y-px hover:bg-[#1e293b] hover:shadow-[0_6px_20px_rgba(15,23,42,0.24)] active:translate-y-0 active:scale-[0.97] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-slate-700 focus-visible:ring-offset-2 transition-all duration-[220ms] ease-[cubic-bezier(0.16,1,0.3,1)]"
+            className="inline-flex w-full items-center justify-center rounded-xl bg-[#0f172a] px-4 py-3 text-sm font-semibold text-white shadow-[0_3px_12px_rgba(15,23,42,0.18)] hover:-translate-y-px hover:bg-[#1e293b] hover:shadow-[0_6px_20px_rgba(15,23,42,0.24)] active:translate-y-0 active:scale-[0.97] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-slate-700 focus-visible:ring-offset-2 transition-all duration-[220ms] ease-[cubic-bezier(0.16,1,0.3,1)]"
           >
             View Villa
           </Link>
-
-          <a
-            href={bookUrl}
-            target="_blank"
-            rel="noopener noreferrer"
-            className="inline-flex items-center justify-center rounded-xl border border-slate-200 bg-white px-4 py-3 text-sm font-semibold text-slate-700 hover:bg-slate-50 hover:border-slate-300 hover:-translate-y-px active:translate-y-0 active:scale-[0.97] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-slate-300 focus-visible:ring-offset-2 transition-all duration-[220ms] ease-[cubic-bezier(0.16,1,0.3,1)]"
-          >
-            Book Direct
-          </a>
         </div>
       </div>
     </article>
@@ -391,7 +380,7 @@ export default function Home() {
     url: SITE_URL,
     description:
       "Luxury private villa rentals at Turtle Bay on Oahu’s North Shore. Book direct for live availability and transparent pricing — no platform fees.",
-    telephone: "+18583452082",
+    telephone: "+18587272427",
     address: {
       "@type": "PostalAddress",
       streetAddress: "Turtle Bay",
@@ -542,8 +531,8 @@ export default function Home() {
           </nav>
 
           <div className="hidden md:flex items-center gap-6 z-10">
-            <a className="text-sm font-medium text-slate-600 hover:text-slate-900 transition" href={`tel:${sanitizeTel(BRAND.phone)}`}>
-              {BRAND.phone}
+            <a className="text-sm font-medium text-slate-600 hover:text-slate-900 transition" href={`tel:+1${sanitizeTel(BRAND.phone)}`}>
+              Mira · {BRAND.phone}
             </a>
             <PrimaryButton type="button" onClick={() => scrollToAvailability("availability")}>
               Book Now
@@ -577,8 +566,8 @@ export default function Home() {
               <Link onClick={() => setMobileMenuOpen(false)} href="/amenities" className="py-2 hover:text-slate-900">
                 Amenities
               </Link>
-              <a href={`tel:${sanitizeTel(BRAND.phone)}`} className="py-2 hover:text-slate-900">
-                Call {BRAND.phone}
+              <a href={`tel:+1${sanitizeTel(BRAND.phone)}`} className="py-2 hover:text-slate-900">
+                Call Mira · {BRAND.phone}
               </a>
             </div>
           </div>
