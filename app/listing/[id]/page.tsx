@@ -254,10 +254,8 @@ function Gallery({ images, title }: { images: string[]; title: string }) {
 
 // ─── Description helpers ─────────────────────────────────────
 //
-// NOTE: By the time text reaches parseDescription, the caller has already
-// run .replace(/\s+/g, " ") — collapsing all newlines into spaces.
-// The parser must therefore work on flat, single-paragraph text.
-// The primary structure to detect is inline • bullet separators.
+// Preprocessing preserves \n so Path 0 (double-newline) and Path B
+// (line-based bullets) can fire. Horizontal whitespace is still collapsed.
 
 function splitOverview(text: string): { overview: string; remainder: string } {
   if (!text) return { overview: "", remainder: "" };
@@ -378,13 +376,25 @@ function parseDescription(raw: string): ParsedDescription {
     };
   }
 
-  // ── Path C: plain prose — sentence-based split ────────────────
-  const { overview, remainder } = splitOverview(text);
-  return {
-    overview,
-    highlights: [],
-    details: remainder ? [remainder] : [],
-  };
+  // ── Path C: plain prose — chunk into ~3-sentence paragraphs ──
+  const sentenceRe = /[^.!?]*[.!?]+/g;
+  const allSentences: string[] = [];
+  let sm: RegExpExecArray | null;
+  while ((sm = sentenceRe.exec(text)) !== null) allSentences.push(sm[0]);
+  const trailing = text.slice(allSentences.reduce((n, s) => n + s.length, 0)).trim();
+  if (trailing) allSentences.push(trailing);
+
+  if (allSentences.length <= 3) {
+    return { overview: text.trim(), highlights: [], details: [] };
+  }
+
+  const CHUNK = 3;
+  const chunks: string[] = [];
+  for (let i = 0; i < allSentences.length; i += CHUNK) {
+    const c = allSentences.slice(i, i + CHUNK).join("").trim();
+    if (c) chunks.push(c);
+  }
+  return { overview: chunks[0] || text, highlights: [], details: chunks.slice(1) };
 }
 
 // ─── Description ─────────────────────────────────────────────
@@ -401,7 +411,7 @@ function DescriptionSection({ description }: { description: string }) {
 
       <div className="space-y-5 max-w-[72ch]">
         {/* Overview — always visible */}
-        <p className="text-[15px] leading-8 text-slate-600 font-light">
+        <p className="text-[15px] leading-8 text-slate-600 font-light max-w-prose">
           {parsed.overview || description}
         </p>
 
@@ -430,30 +440,32 @@ function DescriptionSection({ description }: { description: string }) {
           </div>
         )}
 
-        {/* Detail paragraphs — show first 2 always, rest behind "Read more" */}
+        {/* Detail paragraphs */}
         {hasDetails && (() => {
-          const alwaysVisible = parsed.details.slice(0, 2);
-          const collapsible = parsed.details.slice(2);
+          // Gate only when there are genuinely many paragraphs
+          const threshold = 3;
+          const always = parsed.details.slice(0, threshold);
+          const extra = parsed.details.slice(threshold);
           return (
-            <div className={hasHighlights ? "pt-1 border-t border-slate-100" : ""}>
+            <div className={hasHighlights ? "pt-4 border-t border-slate-100" : ""}>
               <div className="space-y-4">
-                {alwaysVisible.map((block, i) => (
-                  <p key={i} className="text-sm leading-7 text-slate-500">{block}</p>
+                {always.map((block, i) => (
+                  <p key={i} className="text-[15px] leading-8 text-slate-600 font-light">{block}</p>
                 ))}
               </div>
-              {collapsible.length > 0 && (
+              {extra.length > 0 && (
                 <>
                   {expanded && (
                     <div className="mt-4 space-y-4">
-                      {collapsible.map((block, i) => (
-                        <p key={i} className="text-sm leading-7 text-slate-500">{block}</p>
+                      {extra.map((block, i) => (
+                        <p key={i} className="text-[15px] leading-8 text-slate-600 font-light">{block}</p>
                       ))}
                     </div>
                   )}
                   <button
                     type="button"
                     onClick={() => setExpanded(!expanded)}
-                    className="mt-4 inline-flex items-center gap-1.5 text-sm font-semibold text-slate-700 hover:text-slate-900 transition-colors duration-200"
+                    className="mt-5 inline-flex items-center gap-1.5 text-sm font-semibold text-slate-700 hover:text-slate-900 transition-colors duration-200"
                   >
                     {expanded ? "Show less" : "Read more"}
                     <svg
@@ -861,10 +873,10 @@ function InquiryModal({
         aria-hidden="true"
       />
 
-      {/* Panel: bottom sheet on mobile, wide centered dialog on sm+ */}
-      <div className="relative z-10 w-full sm:max-w-[820px] flex flex-col bg-white rounded-t-3xl sm:rounded-3xl shadow-[0_32px_80px_rgba(15,23,42,0.28)] overflow-hidden max-h-[92vh]">
+      {/* Panel — fixed height so flex-1 iframe fills it exactly (no outer scroll) */}
+      <div className="relative z-10 w-full h-[96dvh] sm:h-[92vh] sm:max-w-[820px] flex flex-col bg-white rounded-t-3xl sm:rounded-3xl shadow-[0_32px_80px_rgba(15,23,42,0.28)] overflow-hidden">
 
-        {/* Modal header */}
+        {/* Modal header — always visible */}
         <div className="flex items-start justify-between px-5 sm:px-6 pt-5 pb-4 border-b border-slate-100 shrink-0">
           <div>
             <h2 className="text-lg font-semibold text-slate-900">Send an Inquiry</h2>
@@ -892,13 +904,12 @@ function InquiryModal({
           </p>
         </div>
 
-        {/* GHL form iframe */}
-        <div className="flex-1 overflow-y-auto min-h-0">
+        {/* GHL iframe — fills remaining height; GHL's own scroll is the only scrollbar */}
+        <div className="flex-1 min-h-0 overflow-hidden">
           <iframe
             src={formUrl}
             title="Villa Inquiry Form"
-            className="w-full"
-            style={{ minHeight: "900px", border: "none", display: "block" }}
+            style={{ width: "100%", height: "100%", border: "none", display: "block" }}
             loading="lazy"
           />
         </div>
