@@ -79,7 +79,7 @@ function AvailabilityCard({
   const subtitle =
     (listing.description || "").replace(/\s+/g, " ").trim() ||
     (listing.city
-      ? `${listing.city}${listing.state ? `, ${listing.state}` : ""} — Turtle Bay, North Shore Oahu`
+      ? `${listing.city}${listing.state ? `, ${listing.state}` : ""}, Turtle Bay, North Shore Oahu`
       : "Turtle Bay · North Shore, Oahu");
 
   const detailHref = `/listing/${encodeURIComponent(listing.id)}?startDate=${encodeURIComponent(

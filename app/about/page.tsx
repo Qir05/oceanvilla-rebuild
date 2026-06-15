@@ -41,21 +41,21 @@ export default function AboutPage() {
           <div className="rounded-2xl border border-slate-200 bg-white p-8">
             <h2 className="text-xl font-semibold text-slate-900 mb-4">The Property Collection</h2>
             <p className="text-sm leading-8 text-slate-600">
-              Our six villas are positioned within the Turtle Bay area on Oahu's North Shore — one of Hawaii's most desirable and unspoiled destinations. Each property is fully managed with professional housekeeping, secure keyless entry, and access to resort amenities. Availability, pricing, and booking are powered by Hostaway to ensure accuracy and reliability.
+              Our six villas are positioned within the Turtle Bay area on Oahu's North Shore, one of Hawaii's most desirable and unspoiled destinations. Each property is fully managed with professional housekeeping, secure keyless entry, and access to resort amenities. Availability, pricing, and booking are powered by Hostaway to ensure accuracy and reliability.
             </p>
           </div>
 
           <div className="rounded-2xl border border-slate-200 bg-white p-8">
             <h2 className="text-xl font-semibold text-slate-900 mb-4">Why Direct Booking</h2>
             <p className="text-sm leading-8 text-slate-600">
-              We built this site to give guests a better alternative to third-party travel platforms. When you book direct through oceanvillasturtlebay.com, you see real pricing sourced from Hostaway — without the platform markups and service fees that inflate costs on aggregator sites. It's a simpler, more honest booking experience.
+              We built this site to give guests a better alternative to third-party travel platforms. When you book direct through oceanvillasturtlebay.com, you see real pricing sourced from Hostaway, without the platform markups and service fees that inflate costs on aggregator sites. It's a simpler, more honest booking experience.
             </p>
           </div>
 
           <div className="rounded-2xl border border-slate-200 bg-white p-8">
             <h2 className="text-xl font-semibold text-slate-900 mb-4">The North Shore</h2>
             <p className="text-sm leading-8 text-slate-600">
-              Turtle Bay is located on the northeastern tip of Oahu — quieter than Waikiki, wilder than Ko Olina, and home to the island's most iconic surf coastline. The 7-Mile Miracle runs from Sunset Beach to Haleiwa and hosts world-renowned competitions each winter. In summer, the same coastline transforms into calm, crystal-clear water perfect for snorkeling and exploration. Ocean Villas puts you at the center of it.
+              Turtle Bay is located on the northeastern tip of Oahu, quieter than Waikiki, wilder than Ko Olina, and home to the island's most iconic surf coastline. The 7-Mile Miracle runs from Sunset Beach to Haleiwa and hosts world-renowned competitions each winter. In summer, the same coastline transforms into calm, crystal-clear water perfect for snorkeling and exploration. Ocean Villas puts you at the center of it.
             </p>
           </div>
         </div>

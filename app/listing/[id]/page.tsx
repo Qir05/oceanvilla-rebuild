@@ -65,7 +65,7 @@ type DescriptionOverride = {
 const LISTING_DESCRIPTION_OVERRIDES: Record<string, DescriptionOverride> = {
   "505671": {
     paragraphs: [
-      "Welcome to The View Villa at Ocean Villas at Turtle Bay — a top-floor four-bedroom retreat designed for families, groups, and guests who want a more elevated North Shore stay. Set within the Turtle Bay resort area, this villa pairs ocean-view living with refined comfort, generous indoor space, and easy access to the beaches, resort paths, pool, tennis, oceanfront fitness, dining, and the relaxed rhythm of Oahu's North Shore.",
+      "Welcome to The View Villa at Ocean Villas at Turtle Bay, a top-floor four-bedroom retreat designed for families, groups, and guests who want a more elevated North Shore stay. Set within the Turtle Bay resort area, this villa pairs ocean-view living with refined comfort, generous indoor space, and easy access to the beaches, resort paths, pool, tennis, oceanfront fitness, dining, and the relaxed rhythm of Oahu's North Shore.",
       "From the private lanai, guests can take in sweeping coastal views, fresh trade winds, and the peaceful setting that makes Turtle Bay one of the most desirable stays on the island. Inside, the villa offers high ceilings, central air conditioning, a well-equipped kitchen, comfortable gathering spaces, premium bedroom setups, and thoughtful beach-day essentials for a seamless stay.",
       "The View Villa is ideal for guests who want more than a standard Oahu rental. It gives you space to settle in, privacy to unwind, and a true North Shore base close to quiet beaches, scenic shoreline, family-friendly beach parks, surf breaks, local farms, Haleiwa, and the natural beauty that makes this side of Oahu feel special.",
     ],
@@ -189,8 +189,15 @@ function CheckTimeBadge({ label, value }: { label: string; value: string }) {
 
 function Gallery({ images, title }: { images: string[]; title: string }) {
   const [activeIdx, setActiveIdx] = useState(0);
+  const [showGrid, setShowGrid] = useState(false);
   const safeImages = images.length > 0 ? images : ["/media/rentals/placeholder.jpg"];
   const active = safeImages[activeIdx] || safeImages[0];
+
+  useEffect(() => {
+    if (!showGrid) return;
+    document.body.style.overflow = "hidden";
+    return () => { document.body.style.overflow = ""; };
+  }, [showGrid]);
 
   return (
     // ov-gallery-enter: CSS animation defined in globals.css for the initial entrance
@@ -204,7 +211,7 @@ function Gallery({ images, title }: { images: string[]; title: string }) {
         <Image
           key={active}
           src={active}
-          alt={`${title} — photo ${activeIdx + 1}`}
+          alt={`${title}, photo ${activeIdx + 1}`}
           fill
           unoptimized
           className="object-cover ov-img-crossfade"
@@ -219,10 +226,10 @@ function Gallery({ images, title }: { images: string[]; title: string }) {
         )}
       </div>
 
-      {/* Thumbnail strip */}
+      {/* Thumbnail strip — all photos, horizontally scrollable */}
       {safeImages.length > 1 && (
         <div className="flex gap-2 overflow-x-auto [scrollbar-width:none] [&::-webkit-scrollbar]:hidden pb-1">
-          {safeImages.slice(0, 12).map((src, i) => (
+          {safeImages.map((src, i) => (
             <button
               key={i}
               type="button"
@@ -246,6 +253,66 @@ function Gallery({ images, title }: { images: string[]; title: string }) {
               />
             </button>
           ))}
+        </div>
+      )}
+
+      {/* View all photos button */}
+      {safeImages.length > 1 && (
+        <button
+          type="button"
+          onClick={() => setShowGrid(true)}
+          className="text-xs font-semibold text-slate-500 hover:text-slate-800 transition underline underline-offset-2 decoration-slate-300"
+        >
+          View all {safeImages.length} photos
+        </button>
+      )}
+
+      {/* Full photo grid overlay */}
+      {showGrid && (
+        <div
+          className="fixed inset-0 z-[500] bg-black/85 backdrop-blur-sm overflow-y-auto"
+          onClick={(e) => { if (e.target === e.currentTarget) setShowGrid(false); }}
+        >
+          <div className="min-h-full flex flex-col">
+            <div className="sticky top-0 z-10 flex items-center justify-between bg-black/90 px-5 py-4">
+              <span className="text-sm font-semibold text-white">
+                {title} · {safeImages.length} photos
+              </span>
+              <button
+                type="button"
+                onClick={() => setShowGrid(false)}
+                className="flex h-8 w-8 items-center justify-center rounded-full bg-white/10 text-white hover:bg-white/20 transition text-xl leading-none"
+                aria-label="Close gallery"
+              >
+                ×
+              </button>
+            </div>
+            <div className="p-3 sm:p-4 grid grid-cols-2 sm:grid-cols-3 gap-2 sm:gap-3">
+              {safeImages.map((src, i) => (
+                <button
+                  key={i}
+                  type="button"
+                  onClick={() => { setActiveIdx(i); setShowGrid(false); }}
+                  className={[
+                    "relative aspect-[4/3] overflow-hidden rounded-xl transition-all duration-150",
+                    i === activeIdx ? "ring-2 ring-white" : "hover:opacity-90",
+                  ].join(" ")}
+                  aria-label={`View photo ${i + 1}`}
+                >
+                  <Image
+                    src={src}
+                    alt={`${title} photo ${i + 1}`}
+                    fill
+                    unoptimized
+                    className="object-cover"
+                  />
+                  <div className="absolute bottom-2 right-2 rounded-full bg-black/50 px-2 py-0.5 text-xs text-white tabular-nums leading-tight">
+                    {i + 1}
+                  </div>
+                </button>
+              ))}
+            </div>
+          </div>
         </div>
       )}
     </div>

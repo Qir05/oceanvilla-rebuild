@@ -49,7 +49,7 @@ const AMENITY_GROUPS = [
       "Resort concierge access",
       "Walkable to Turtle Bay beach",
       "Close to North Shore dining and surf breaks",
-      "Pet policy varies by villa — check listing",
+      "Pet policy varies by villa. Check listing for details.",
     ],
   },
   {
@@ -131,7 +131,7 @@ export default function AmenitiesPage() {
       <header className="sticky top-0 z-50 border-b border-slate-200 bg-white/80 backdrop-blur-md">
         <div className="mx-auto flex h-20 max-w-7xl items-center justify-between px-6 lg:px-8">
           <Link href="/" className="text-sm font-semibold text-slate-600 hover:text-slate-900 transition">
-            ← Back to Ocean Villas
+            Back to Ocean Villas
           </Link>
           <nav className="flex items-center gap-5 text-sm font-medium text-slate-500">
             <Link href="/rentals" className="hover:text-slate-900 transition">Rentals</Link>
@@ -149,7 +149,7 @@ export default function AmenitiesPage() {
             Luxury Villa Amenities at Turtle Bay, North Shore Oahu
           </h1>
           <p className="mt-5 text-lg text-slate-600 leading-relaxed max-w-2xl">
-            Every Ocean Villa is set up for a complete North Shore stay. Gourmet kitchens, resort pool access, private lanais, beach gear, and ocean views — the details are handled so you can focus on Oahu.
+            Every Ocean Villa is set up for a complete North Shore stay. Gourmet kitchens, resort pool access, private lanais, beach gear, and ocean views. The details are handled so you can focus on Oahu.
           </p>
           <div className="mt-8 flex flex-wrap gap-4">
             <Link
@@ -221,7 +221,7 @@ export default function AmenitiesPage() {
                 What kitchen amenities are included?
               </summary>
               <p className="mt-3 text-sm leading-7 text-slate-600">
-                Every villa comes with a fully equipped gourmet kitchen — cookware, appliances, and everything your group needs to cook meals during your stay.
+                Every villa comes with a fully equipped gourmet kitchen: cookware, appliances, and everything your group needs to cook meals during your stay.
               </p>
             </details>
 
@@ -261,7 +261,7 @@ export default function AmenitiesPage() {
             Ready to book your North Shore stay?
           </h2>
           <p className="mt-4 text-slate-300 leading-relaxed">
-            Browse available villas and check live dates. All bookings are handled directly through Hostaway for secure, transparent pricing — no platform fees.
+            Browse available villas and check live dates. All bookings are handled directly through Hostaway for secure, transparent pricing, with no platform fees.
           </p>
           <div className="mt-8 flex flex-wrap justify-center gap-4">
             <Link

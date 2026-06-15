@@ -74,7 +74,7 @@ function VillaCard({ listing }: { listing: HostawayListing }) {
   const subtitle =
     (listing.description || "").replace(/\s+/g, " ").trim() ||
     (listing.city
-      ? `${listing.city}${listing.state ? `, ${listing.state}` : ""} — Turtle Bay, North Shore Oahu`
+      ? `${listing.city}${listing.state ? `, ${listing.state}` : ""}, Turtle Bay, North Shore Oahu`
       : "Turtle Bay · North Shore, Oahu");
 
   const hero = getPreferredHero(listing.id, listing.heroUrl, listing.images);
@@ -196,7 +196,7 @@ export default function RentalsPage() {
             href="/"
             className="text-sm font-semibold text-slate-600 hover:text-slate-900 transition"
           >
-            ← Back to Ocean Villas
+            Back to Ocean Villas
           </Link>
           <nav className="flex items-center gap-5 text-sm font-medium text-slate-500">
             <Link href="/location" className="hover:text-slate-900 transition">Location</Link>

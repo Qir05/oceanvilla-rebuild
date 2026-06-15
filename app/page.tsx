@@ -781,21 +781,21 @@ export default function Home() {
           <SectionTitle
             eyebrow="Why Book Direct"
             title="The North Shore, without the platform markup"
-            desc="Ocean Villas at Turtle Bay is built for guests who want a genuine North Shore experience — private villas, live rates, and a clean direct booking path."
+            desc="Ocean Villas at Turtle Bay is built for guests who want a genuine North Shore experience: private villas, live rates, and a clean direct booking path."
           />
 
           <div className="mt-10 grid gap-6 md:grid-cols-3">
             <InfoCard
               title="North Shore access"
-              desc="Turtle Bay sits at the far northeast of Oahu, away from the resort crowds — close to legendary surf breaks, local beaches, and the unhurried pace the North Shore is known for."
+              desc="Turtle Bay sits at the far northeast of Oahu, away from the resort crowds, close to legendary surf breaks, local beaches, and the unhurried pace the North Shore is known for."
             />
             <InfoCard
               title="Book direct and save"
-              desc="Search live availability, review the full villa, and move directly into booking — without the service fees that third-party travel platforms add on top."
+              desc="Search live availability, review the full villa, and move directly into booking, without the service fees that third-party travel platforms add on top."
             />
             <InfoCard
               title="Private villa stays"
-              desc="These aren’t hotel rooms. Each villa is a full private space — managed through Hostaway for accurate availability and pricing, every time you search."
+              desc="These aren’t hotel rooms. Each villa is a full private space, managed through Hostaway for accurate availability and pricing, every time you search."
             />
           </div>
         </div>
@@ -807,7 +807,7 @@ export default function Home() {
           <SectionTitle
             eyebrow="North Shore Beaches"
             title="Where you'll spend your days"
-            desc="The North Shore of Oahu moves at its own pace — less crowded, more local, and a long way from Waikiki. The beaches here don't need much explaining."
+            desc="The North Shore of Oahu moves at its own pace, less crowded, more local, and a long way from Waikiki. The beaches here don't need much explaining."
           />
 
           <div className="mt-10 grid gap-6 md:grid-cols-2">
@@ -854,7 +854,7 @@ export default function Home() {
           <SectionTitle
             eyebrow="Plan Your Stay"
             title="Explore more of Ocean Villas at Turtle Bay"
-            desc="Everything you need to plan your North Shore stay — from villa details and local beaches to live availability and direct booking."
+            desc="Everything you need to plan your North Shore stay, from villa details and local beaches to live availability and direct booking."
           />
 
           <div className="mt-10 grid gap-6 md:grid-cols-2 xl:grid-cols-4">
@@ -866,12 +866,12 @@ export default function Home() {
             <GuideCard
               href="/location"
               title="Explore the Location"
-              desc="Discover what's around Turtle Bay — surf breaks, local beaches, and the best of the North Shore."
+              desc="Discover what's around Turtle Bay: surf breaks, local beaches, and the best of the North Shore."
             />
             <GuideCard
               href="/amenities"
               title="View Amenities"
-              desc="Review what's included in each villa — comfort, access, and lifestyle details before you book."
+              desc="Review what's included in each villa: comfort, access, and lifestyle details before you book."
             />
             <GuideCard
               href="/availability"
@@ -894,11 +894,11 @@ export default function Home() {
           <div className="mt-10 space-y-4">
             <FAQItem
               question="How do I book a villa at Ocean Villas at Turtle Bay?"
-              answer="Use the availability search above to select your dates and number of guests, then continue directly into the booking path — no third-party platform required."
+              answer="Use the availability search above to select your dates and number of guests, then continue directly into the booking path. No third-party platform required."
             />
             <FAQItem
               question="How far are Ocean Villas from Honolulu International Airport?"
-              answer="The villas are approximately 35 miles north of HNL — about a 45–60 minute drive via H-2 and Kamehameha Highway, with scenic views once you reach the North Shore."
+              answer="The villas are approximately 35 miles north of HNL, about a 45 to 60 minute drive via H-2 and Kamehameha Highway, with scenic views once you reach the North Shore."
             />
             <FAQItem
               question="What beaches and surf spots are near Turtle Bay?"
@@ -910,7 +910,7 @@ export default function Home() {
             />
             <FAQItem
               question="Is Turtle Bay better than staying in Waikiki?"
-              answer="Turtle Bay offers a private-villa experience far from the crowds of Waikiki. Guests enjoy direct beach access, world-class surf nearby, and a more authentic island pace — with all the comfort of a luxury villa."
+              answer="Turtle Bay offers a private-villa experience far from the crowds of Waikiki. Guests enjoy direct beach access, world-class surf nearby, and a more authentic island pace, with all the comfort of a luxury villa."
             />
           </div>
         </div>
