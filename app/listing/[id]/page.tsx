@@ -296,8 +296,24 @@ type ParsedDescription = {
 };
 
 function parseDescription(raw: string): ParsedDescription {
-  const text = raw.trim();
+  // Normalise: strip decorative emoji, unify bullet variants to •, tidy spacing
+  const text = raw
+    .replace(/[\uD800-\uDFFF]/g, "")           // surrogate-pair emoji
+    .replace(/[✓✔►▸▶→➤➜➝➞➔❯❱⇒✦★☑]/g, "•")   // common icon-bullets → •
+    .replace(/[ \t]+/g, " ")                    // collapse horizontal whitespace
+    .replace(/\n{3,}/g, "\n\n")                 // max 2 consecutive newlines
+    .trim();
+
   if (!text) return { overview: "", highlights: [], details: [] };
+
+  // ── Path 0: double-newline paragraph structure ─────────────────
+  const dblNewlineBlocks = text.split(/\n\n+/).map(b => b.replace(/\n/g, " ").trim()).filter(Boolean);
+  const inlineBulletCountFull = (text.match(/[•·▪]/g) || []).length;
+  if (dblNewlineBlocks.length >= 2 && inlineBulletCountFull < 3) {
+    const { overview, remainder } = splitOverview(dblNewlineBlocks[0]);
+    const rest = [...(remainder ? [remainder] : []), ...dblNewlineBlocks.slice(1)];
+    return { overview, highlights: [], details: rest.filter(Boolean) };
+  }
 
   // ── Path A: inline bullet separators (•, ·, ▪) ───────────────
   // Hostaway descriptions commonly use • mid-sentence as list delimiters,
@@ -383,22 +399,15 @@ function DescriptionSection({ description }: { description: string }) {
     <RevealSection className="mt-10">
       <h2 className="text-xl font-semibold text-slate-900 mb-5">About this villa</h2>
 
-      <div className="space-y-6">
-        {/* Overview — always visible, 1–2 sentences max */}
-        {parsed.overview ? (
-          <p className="text-[15px] leading-8 text-slate-600 font-light max-w-[72ch]">
-            {parsed.overview}
-          </p>
-        ) : (
-          /* Safety fallback — should not normally be reached */
-          <p className="text-[15px] leading-8 text-slate-600 font-light max-w-[72ch]">
-            {description}
-          </p>
-        )}
+      <div className="space-y-5 max-w-[72ch]">
+        {/* Overview — always visible */}
+        <p className="text-[15px] leading-8 text-slate-600 font-light">
+          {parsed.overview || description}
+        </p>
 
         {/* Highlights grid — extracted from inline • bullets */}
         {hasHighlights && (
-          <div>
+          <div className="pt-1">
             <div className="text-[10px] font-bold uppercase tracking-widest text-slate-400 mb-3">
               Highlights
             </div>
@@ -421,36 +430,47 @@ function DescriptionSection({ description }: { description: string }) {
           </div>
         )}
 
-        {/* Expandable details — hidden behind "Read more" */}
-        {hasDetails && (
-          <div>
-            {expanded && (
-              <div className="space-y-4 mb-4 pt-1 border-t border-slate-100">
-                {parsed.details.map((block, i) => (
-                  <p key={i} className="text-sm leading-7 text-slate-500">
-                    {block}
-                  </p>
+        {/* Detail paragraphs — show first 2 always, rest behind "Read more" */}
+        {hasDetails && (() => {
+          const alwaysVisible = parsed.details.slice(0, 2);
+          const collapsible = parsed.details.slice(2);
+          return (
+            <div className={hasHighlights ? "pt-1 border-t border-slate-100" : ""}>
+              <div className="space-y-4">
+                {alwaysVisible.map((block, i) => (
+                  <p key={i} className="text-sm leading-7 text-slate-500">{block}</p>
                 ))}
               </div>
-            )}
-            <button
-              type="button"
-              onClick={() => setExpanded(!expanded)}
-              className="inline-flex items-center gap-1.5 text-sm font-semibold text-slate-700 hover:text-slate-900 transition-colors duration-200"
-            >
-              {expanded ? "Show less" : "Read more"}
-              <svg
-                className={`h-4 w-4 transition-transform duration-200 ${expanded ? "rotate-180" : ""}`}
-                fill="none"
-                viewBox="0 0 24 24"
-                stroke="currentColor"
-                strokeWidth={2}
-              >
-                <path strokeLinecap="round" strokeLinejoin="round" d="M19 9l-7 7-7-7" />
-              </svg>
-            </button>
-          </div>
-        )}
+              {collapsible.length > 0 && (
+                <>
+                  {expanded && (
+                    <div className="mt-4 space-y-4">
+                      {collapsible.map((block, i) => (
+                        <p key={i} className="text-sm leading-7 text-slate-500">{block}</p>
+                      ))}
+                    </div>
+                  )}
+                  <button
+                    type="button"
+                    onClick={() => setExpanded(!expanded)}
+                    className="mt-4 inline-flex items-center gap-1.5 text-sm font-semibold text-slate-700 hover:text-slate-900 transition-colors duration-200"
+                  >
+                    {expanded ? "Show less" : "Read more"}
+                    <svg
+                      className={`h-4 w-4 transition-transform duration-200 ${expanded ? "rotate-180" : ""}`}
+                      fill="none"
+                      viewBox="0 0 24 24"
+                      stroke="currentColor"
+                      strokeWidth={2}
+                    >
+                      <path strokeLinecap="round" strokeLinejoin="round" d="M19 9l-7 7-7-7" />
+                    </svg>
+                  </button>
+                </>
+              )}
+            </div>
+          );
+        })()}
       </div>
     </RevealSection>
   );
@@ -551,12 +571,14 @@ type AvailabilityMsg = {
 };
 
 function BookingCard({
+  onInquire,
   startDate,
   endDate,
   guests,
   villaName,
   listingId,
 }: {
+  onInquire: () => void;
   startDate: string;
   endDate: string;
   guests: string;
@@ -588,7 +610,6 @@ function BookingCard({
 
   const [checking, setChecking] = useState(false);
   const [availMsg, setAvailMsg] = useState<AvailabilityMsg | null>(null);
-  const formRef = useRef<HTMLDivElement>(null);
 
   // Clear result when dates change so stale messages don't linger
   useEffect(() => { setAvailMsg(null); }, [localCheckIn, localCheckOut]);
@@ -618,9 +639,8 @@ function BookingCard({
               : "";
           setAvailMsg({
             type: "available",
-            text: `This villa may be available for your selected dates${priceStr}. Please complete the form below or call Mira at +1 (858) 727-2427 for faster assistance.`,
+            text: `This villa may be available for your selected dates${priceStr}. Please send an inquiry or call Mira at +1 (858) 727-2427 for faster assistance.`,
           });
-          setTimeout(() => formRef.current?.scrollIntoView({ behavior: "smooth", block: "nearest" }), 80);
         } else {
           setAvailMsg({
             type: "unavailable",
@@ -737,18 +757,41 @@ function BookingCard({
         </div>
       )}
 
-      {/* ── GHL Inquiry Form ──────────────────────────────── */}
-      <div ref={formRef} className="mt-5">
-        <p className="text-[10px] font-bold uppercase tracking-widest text-slate-400 mb-3">Send an Inquiry</p>
-        <iframe
-          src={`${GHL_FORM_BASE}?villa=${encodeURIComponent(villaName)}&listing_id=${encodeURIComponent(listingId)}&source=${encodeURIComponent("oceanvillasturtlebay.com")}&Villa_of_Interest=${encodeURIComponent(villaName)}`}
-          style={{ width: "100%", border: "none", minHeight: "520px" }}
-          scrolling="no"
-          title="Inquiry Form"
-        />
-      </div>
+      {/* ── Divider ───────────────────────────────────────── */}
+      <div className="my-5 border-t border-slate-100" />
 
-      <p className="mt-3 text-center text-[11px] text-slate-400 leading-5">
+      {/* ── Send Inquiry button ────────────────────────────── */}
+      <button
+        type="button"
+        onClick={onInquire}
+        className={[
+          "flex items-center justify-center w-full rounded-2xl px-6 py-4",
+          "bg-[#3f5f4a] text-white text-sm font-semibold",
+          "shadow-[0_4px_18px_rgba(63,95,74,0.22)]",
+          "hover:-translate-y-0.5 hover:bg-[#334e3c] hover:shadow-[0_8px_28px_rgba(63,95,74,0.30)]",
+          "active:translate-y-0 active:scale-[0.98]",
+          "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#3f5f4a] focus-visible:ring-offset-2",
+          "transition-all duration-[250ms] ease-[cubic-bezier(0.16,1,0.3,1)]",
+        ].join(" ")}
+      >
+        <svg className="mr-2 h-4 w-4 opacity-80" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.8}>
+          <path strokeLinecap="round" strokeLinejoin="round" d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z" />
+        </svg>
+        Send Inquiry
+      </button>
+
+      {/* ── Phone link ────────────────────────────────────── */}
+      <a
+        href="tel:+18587272427"
+        className="mt-3 flex items-center justify-center gap-2 text-sm text-slate-600 hover:text-slate-900 transition-colors duration-200"
+      >
+        <svg className="h-4 w-4 shrink-0 text-slate-400" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.8}>
+          <path strokeLinecap="round" strokeLinejoin="round" d="M3 5a2 2 0 012-2h3.28a1 1 0 01.948.684l1.498 4.493a1 1 0 01-.502 1.21l-2.257 1.13a11.042 11.042 0 005.516 5.516l1.13-2.257a1 1 0 011.21-.502l4.493 1.498a1 1 0 01.684.949V19a2 2 0 01-2 2h-1C9.716 21 3 14.284 3 6V5z" />
+        </svg>
+        Call Mira · +1 (858) 727-2427
+      </a>
+
+      <p className="mt-4 text-center text-[11px] text-slate-400 leading-5">
         Mira responds within a few hours.
       </p>
     </div>
@@ -818,15 +861,15 @@ function InquiryModal({
         aria-hidden="true"
       />
 
-      {/* Panel: bottom sheet on mobile, centered dialog on sm+ */}
-      <div className="relative z-10 w-full sm:max-w-lg flex flex-col bg-white rounded-t-3xl sm:rounded-3xl shadow-[0_32px_80px_rgba(15,23,42,0.28)] overflow-hidden max-h-[92vh]">
+      {/* Panel: bottom sheet on mobile, wide centered dialog on sm+ */}
+      <div className="relative z-10 w-full sm:max-w-[820px] flex flex-col bg-white rounded-t-3xl sm:rounded-3xl shadow-[0_32px_80px_rgba(15,23,42,0.28)] overflow-hidden max-h-[92vh]">
 
         {/* Modal header */}
         <div className="flex items-start justify-between px-5 sm:px-6 pt-5 pb-4 border-b border-slate-100 shrink-0">
           <div>
-            <h2 className="text-lg font-semibold text-slate-900">Ask About This Villa</h2>
+            <h2 className="text-lg font-semibold text-slate-900">Send an Inquiry</h2>
             <p className="text-xs text-slate-500 mt-0.5 leading-relaxed">
-              Our team responds within a few hours
+              Mira responds within a few hours
             </p>
           </div>
           <button
@@ -855,7 +898,7 @@ function InquiryModal({
             src={formUrl}
             title="Villa Inquiry Form"
             className="w-full"
-            style={{ minHeight: "520px", border: "none", display: "block" }}
+            style={{ minHeight: "900px", border: "none", display: "block" }}
             loading="lazy"
           />
         </div>
@@ -989,8 +1032,11 @@ function ListingDetailsContent() {
   const locationLabel = listing.city
     ? `${listing.city}${listing.state ? `, ${listing.state}` : ""}`
     : "Turtle Bay · North Shore, Oahu";
-  const description = (listing.description || "").replace(/\s+/g, " ").trim()
-    || "Explore this Ocean Villas property at Turtle Bay on Oahu's North Shore. Check availability and continue directly into booking.";
+  const description = (listing.description || "")
+    .replace(/[^\S\n]+/g, " ")
+    .replace(/\n{3,}/g, "\n\n")
+    .trim()
+    || "Explore this Ocean Villas property at Turtle Bay on Oahu's North Shore.";
   const rawImages = listing.images?.length
     ? listing.images
     : listing.heroUrl
@@ -1117,8 +1163,9 @@ function ListingDetailsContent() {
 
               {/* Inline booking card — mobile only, scroll reveal */}
               <RevealSection className="mt-10 lg:hidden" delay={60}>
-                <h2 className="text-xl font-semibold text-slate-900 mb-4">Send an Inquiry</h2>
+                <h2 className="text-xl font-semibold text-slate-900 mb-4">Check Availability</h2>
                 <BookingCard
+                  onInquire={openInquiry}
                   startDate={startDate}
                   endDate={endDate}
                   guests={guests}
@@ -1131,6 +1178,7 @@ function ListingDetailsContent() {
             {/* ── Right column — sticky desktop sidebar ────── */}
             <div className="hidden lg:block lg:sticky lg:top-28 shrink-0">
               <BookingCard
+                onInquire={openInquiry}
                 startDate={startDate}
                 endDate={endDate}
                 guests={guests}
