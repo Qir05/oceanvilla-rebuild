@@ -736,6 +736,14 @@ function BookingCard({
   return (
     <div className="rounded-3xl border border-slate-200 bg-white p-5 sm:p-6 shadow-[0_12px_48px_rgba(15,23,42,0.09)]">
 
+      {/* ── Card header ───────────────────────────────────── */}
+      <div className="mb-5">
+        <h3 className="text-base font-semibold text-slate-900">Plan Your Stay</h3>
+        <p className="mt-1 text-xs text-slate-500 leading-relaxed">
+          Share your dates and guest details. Our property manager will confirm availability and next steps.
+        </p>
+      </div>
+
       {/* ── Date + guest selector ──────────────────────────── */}
       <div className="mb-5 space-y-3">
         <div className="text-[10px] font-bold uppercase tracking-widest text-slate-400">
@@ -856,7 +864,7 @@ function BookingCard({
         <svg className="mr-2 h-4 w-4 opacity-80" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.8}>
           <path strokeLinecap="round" strokeLinejoin="round" d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z" />
         </svg>
-        Send Inquiry
+        Send Booking Request
       </button>
 
       {/* ── Phone link ────────────────────────────────────── */}
@@ -871,7 +879,7 @@ function BookingCard({
       </a>
 
       <p className="mt-4 text-center text-[11px] text-slate-400 leading-5">
-        Mira responds within a few hours.
+        No booking commitment yet. Mira or the property manager will confirm availability and guide you through the next step.
       </p>
     </div>
   );
@@ -946,9 +954,9 @@ function InquiryModal({
         {/* Modal header — always visible */}
         <div className="flex items-start justify-between px-5 sm:px-6 pt-5 pb-4 border-b border-slate-100 shrink-0">
           <div>
-            <h2 className="text-lg font-semibold text-slate-900">Send an Inquiry</h2>
+            <h2 className="text-lg font-semibold text-slate-900">Request Availability for This Villa</h2>
             <p className="text-xs text-slate-500 mt-0.5 leading-relaxed">
-              Mira responds within a few hours
+              Share your preferred dates and guest details below. This request goes directly to Mira for faster availability confirmation and next steps.
             </p>
           </div>
           <button
@@ -966,7 +974,7 @@ function InquiryModal({
         {/* Villa context strip */}
         <div className="px-5 sm:px-6 py-3 bg-slate-50 border-b border-slate-100 shrink-0">
           <p className="text-xs text-slate-500">
-            Inquiring about:{" "}
+            Requesting availability for:{" "}
             <span className="font-semibold text-slate-800">{villaName}</span>
           </p>
         </div>
@@ -1290,7 +1298,26 @@ function ListingDetailsContent() {
           GHL widget is lifted to 80px above bottom via globals.css.
         */}
         <div className="fixed bottom-0 left-0 right-0 z-[60] lg:hidden bg-white/96 backdrop-blur-md border-t border-slate-200 px-4 py-3 shadow-[0_-6px_28px_rgba(15,23,42,0.09)]">
-          <div className="max-w-lg mx-auto">
+          <div className="max-w-lg mx-auto flex gap-3">
+            {/* Left: Call button */}
+            <a
+              href={`tel:+1${sanitizeTel(BRAND_PHONE)}`}
+              className={[
+                "flex-1 inline-flex items-center justify-center rounded-xl px-3 py-3.5",
+                "bg-white border border-slate-200 text-slate-700 text-sm font-semibold",
+                "shadow-[0_2px_8px_rgba(15,23,42,0.08)]",
+                "hover:bg-slate-50 hover:border-slate-300 hover:-translate-y-px",
+                "active:translate-y-0 active:scale-[0.97]",
+                "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-slate-300 focus-visible:ring-offset-2",
+                "transition-all duration-[220ms] ease-[cubic-bezier(0.16,1,0.3,1)]",
+              ].join(" ")}
+            >
+              <svg className="mr-1.5 h-4 w-4 opacity-70 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.8}>
+                <path strokeLinecap="round" strokeLinejoin="round" d="M3 5a2 2 0 012-2h3.28a1 1 0 01.948.684l1.498 4.493a1 1 0 01-.502 1.21l-2.257 1.13a11.042 11.042 0 005.516 5.516l1.13-2.257a1 1 0 011.21-.502l4.493 1.498a1 1 0 01.684.949V19a2 2 0 01-2 2h-1C9.716 21 3 14.284 3 6V5z" />
+              </svg>
+              Call Mira
+            </a>
+            {/* Right: Check Availability button */}
             <button
               type="button"
               onClick={() => {
@@ -1298,7 +1325,7 @@ function ListingDetailsContent() {
                 openInquiry();
               }}
               className={[
-                "w-full inline-flex items-center justify-center rounded-xl px-3 py-3.5",
+                "flex-[2] inline-flex items-center justify-center rounded-xl px-3 py-3.5",
                 "bg-[#3f5f4a] text-white text-sm font-semibold",
                 "shadow-[0_3px_12px_rgba(63,95,74,0.22)]",
                 "hover:-translate-y-px hover:bg-[#334e3c] hover:shadow-[0_6px_20px_rgba(63,95,74,0.28)]",
@@ -1307,20 +1334,10 @@ function ListingDetailsContent() {
                 "transition-all duration-[220ms] ease-[cubic-bezier(0.16,1,0.3,1)]",
               ].join(" ")}
             >
-              <svg
-                className="mr-1.5 h-4 w-4 opacity-80 shrink-0"
-                fill="none"
-                viewBox="0 0 24 24"
-                stroke="currentColor"
-                strokeWidth={1.8}
-              >
-                <path
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                  d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z"
-                />
+              <svg className="mr-1.5 h-4 w-4 opacity-80 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.8}>
+                <path strokeLinecap="round" strokeLinejoin="round" d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z" />
               </svg>
-              Ask About This Villa
+              Check Availability
             </button>
           </div>
         </div>
