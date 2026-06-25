@@ -283,13 +283,19 @@ function ListingCard({ l }: { l: HostawayListing }) {
           <Stat label="Baths" value={`${l.bathrooms ?? "—"}`} />
         </div>
 
-        {/* CTA — pinned to card bottom */}
-        <div className="mt-4">
+        {/* CTAs — pinned to card bottom */}
+        <div className="mt-4 grid grid-cols-2 gap-3">
           <Link
             href={detailUrl}
-            className="inline-flex w-full items-center justify-center rounded-xl bg-[#0f172a] px-4 py-3 text-sm font-semibold text-white shadow-[0_3px_12px_rgba(15,23,42,0.18)] hover:-translate-y-px hover:bg-[#1e293b] hover:shadow-[0_6px_20px_rgba(15,23,42,0.24)] active:translate-y-0 active:scale-[0.97] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-slate-700 focus-visible:ring-offset-2 transition-all duration-[220ms] ease-[cubic-bezier(0.16,1,0.3,1)]"
+            className="inline-flex items-center justify-center rounded-xl bg-[#0f172a] px-4 py-3 text-sm font-semibold text-white shadow-[0_3px_12px_rgba(15,23,42,0.18)] hover:-translate-y-px hover:bg-[#1e293b] hover:shadow-[0_6px_20px_rgba(15,23,42,0.24)] active:translate-y-0 active:scale-[0.97] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-slate-700 focus-visible:ring-offset-2 transition-all duration-[220ms] ease-[cubic-bezier(0.16,1,0.3,1)]"
           >
             View Villa
+          </Link>
+          <Link
+            href={detailUrl}
+            className="inline-flex items-center justify-center rounded-xl border border-slate-200 bg-white px-4 py-3 text-sm font-semibold text-slate-700 hover:bg-slate-50 hover:border-slate-300 hover:-translate-y-px active:translate-y-0 active:scale-[0.97] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-slate-300 focus-visible:ring-offset-2 transition-all duration-[220ms] ease-[cubic-bezier(0.16,1,0.3,1)]"
+          >
+            Request This Villa
           </Link>
         </div>
       </div>
@@ -535,7 +541,7 @@ export default function Home() {
               Mira · {BRAND.phone}
             </a>
             <PrimaryButton type="button" onClick={() => scrollToAvailability("availability")}>
-              Book Now
+              Check Availability
             </PrimaryButton>
           </div>
 

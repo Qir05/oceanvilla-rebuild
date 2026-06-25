@@ -123,10 +123,10 @@ function VillaCard({ listing }: { listing: HostawayListing }) {
             View Villa
           </Link>
           <Link
-            href="/availability"
+            href={`/listing/${encodeURIComponent(listing.id)}`}
             className="inline-flex items-center justify-center rounded-xl border border-slate-200 bg-white px-4 py-2.5 text-sm font-semibold text-slate-700 hover:bg-slate-50 hover:border-slate-300 hover:-translate-y-px active:translate-y-0 active:scale-[0.97] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-slate-300 focus-visible:ring-offset-2 transition-all duration-[220ms] ease-[cubic-bezier(0.16,1,0.3,1)]"
           >
-            Check Dates
+            Request This Villa
           </Link>
         </div>
       </div>
