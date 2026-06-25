@@ -746,21 +746,41 @@ function BookingCard({
         </div>
       </div>
 
-      {/* ── Primary CTA — opens GHL inquiry modal directly ── */}
+      {/* ── Primary CTA — ocean blue, opens GHL inquiry modal ── */}
       <button
         type="button"
         onClick={onInquire}
         className={[
           "flex items-center justify-center w-full rounded-2xl px-6 py-4",
-          "bg-[#0f172a] text-white text-sm font-semibold",
-          "shadow-[0_4px_18px_rgba(15,23,42,0.20)]",
-          "hover:-translate-y-0.5 hover:bg-[#1e293b] hover:shadow-[0_8px_28px_rgba(15,23,42,0.28)]",
+          "bg-[#0A6B8A] text-white text-sm font-semibold",
+          "shadow-[0_4px_18px_rgba(10,107,138,0.30)]",
+          "hover:-translate-y-0.5 hover:bg-[#085f7a] hover:shadow-[0_8px_28px_rgba(10,107,138,0.40)]",
           "active:translate-y-0 active:scale-[0.98]",
-          "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-slate-700 focus-visible:ring-offset-2",
+          "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#0A6B8A] focus-visible:ring-offset-2",
           "transition-all duration-[250ms] ease-[cubic-bezier(0.16,1,0.3,1)]",
         ].join(" ")}
       >
         Check Availability
+      </button>
+
+      {/* ── Secondary CTA — green, opens same GHL inquiry modal ── */}
+      <button
+        type="button"
+        onClick={onInquire}
+        className={[
+          "mt-3 flex items-center justify-center w-full rounded-2xl px-6 py-4",
+          "bg-[#3f5f4a] text-white text-sm font-semibold",
+          "shadow-[0_4px_18px_rgba(63,95,74,0.22)]",
+          "hover:-translate-y-0.5 hover:bg-[#334e3c] hover:shadow-[0_8px_28px_rgba(63,95,74,0.30)]",
+          "active:translate-y-0 active:scale-[0.98]",
+          "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#3f5f4a] focus-visible:ring-offset-2",
+          "transition-all duration-[250ms] ease-[cubic-bezier(0.16,1,0.3,1)]",
+        ].join(" ")}
+      >
+        <svg className="mr-2 h-4 w-4 opacity-80" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.8}>
+          <path strokeLinecap="round" strokeLinejoin="round" d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z" />
+        </svg>
+        Ask About This Villa
       </button>
 
       {/* ── Phone link ────────────────────────────────────── */}
