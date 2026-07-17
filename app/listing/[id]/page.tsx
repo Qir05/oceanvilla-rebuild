@@ -162,25 +162,17 @@ function RevealSection({
 }
 
 // ─── StatBadge ───────────────────────────────────────────────
+// Shared card used for every entry in the villa stats grid (Sleeps,
+// Bedrooms, Bathrooms, Check-in/Check-out). One component, one visual
+// style, so the grid never mixes differently-sized cards.
 
 function StatBadge({ label, value }: { label: string; value: string }) {
   return (
-    <div className="flex flex-col items-center gap-1.5 rounded-2xl border border-slate-200 bg-white px-4 py-4 text-center min-w-[80px] flex-1 shadow-[0_2px_8px_rgba(15,23,42,0.04)]">
+    <div className="flex h-full flex-col items-center justify-center gap-1.5 rounded-2xl border border-slate-200 bg-white px-3 py-4 text-center shadow-[0_2px_8px_rgba(15,23,42,0.04)]">
       <span className="text-[10px] font-bold uppercase tracking-widest text-slate-400">
         {label}
       </span>
       <span className="text-sm font-bold text-slate-900">{value}</span>
-    </div>
-  );
-}
-
-function CheckTimeBadge({ label, value }: { label: string; value: string }) {
-  return (
-    <div className="flex flex-col gap-0.5 rounded-2xl border border-slate-200 bg-white px-4 py-3 shadow-[0_2px_8px_rgba(15,23,42,0.04)]">
-      <span className="text-[10px] font-bold uppercase tracking-widest text-slate-400">
-        {label}
-      </span>
-      <span className="text-sm font-semibold text-slate-900">{value}</span>
     </div>
   );
 }
@@ -1126,8 +1118,12 @@ function ListingDetailsContent() {
                 </p>
               </div>
 
-              {/* Stats badges — fade-up as a row */}
-              <div className="mt-6 flex flex-wrap gap-2 sm:gap-3 ov-fade-up ov-fade-up-2">
+              {/* Stats grid — always exactly 4 cards: Sleeps / Bedrooms / Bathrooms /
+                  Check-out By. A fixed-column CSS grid (not flex-wrap) so every card
+                  is always equal width and equal height: 2x2 on mobile, one even row
+                  from the sm breakpoint up. Fixed card count avoids a 4+1 layout when
+                  a listing also has a check-in time. */}
+              <div className="mt-6 grid grid-cols-2 sm:grid-cols-4 gap-2 sm:gap-3 ov-fade-up ov-fade-up-2">
                 <StatBadge
                   label="Sleeps"
                   value={listing.maxGuests ? String(listing.maxGuests) : "—"}
@@ -1140,19 +1136,11 @@ function ListingDetailsContent() {
                   label="Bathrooms"
                   value={listing.bathrooms ? String(listing.bathrooms) : "—"}
                 />
+                <StatBadge
+                  label="Check-out by"
+                  value={listing.checkOutTime || "—"}
+                />
               </div>
-
-              {/* Check-in / check-out times */}
-              {(listing.checkInTime || listing.checkOutTime) && (
-                <div className="mt-3 flex flex-wrap gap-2 sm:gap-3 ov-fade-up ov-fade-up-3">
-                  {listing.checkInTime && (
-                    <CheckTimeBadge label="Check-in from" value={listing.checkInTime} />
-                  )}
-                  {listing.checkOutTime && (
-                    <CheckTimeBadge label="Check-out by" value={listing.checkOutTime} />
-                  )}
-                </div>
-              )}
 
               {/* Description — scroll reveal */}
               {LISTING_DESCRIPTION_OVERRIDES[listing.id]
