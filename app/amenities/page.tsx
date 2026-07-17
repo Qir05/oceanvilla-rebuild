@@ -14,7 +14,24 @@ export const metadata: Metadata = {
     title: "Villa Amenities — Turtle Bay, North Shore Oahu | Ocean Villas",
     description:
       "Every Ocean Villas rental includes gourmet kitchen, resort pool, private lanai, ocean views, and beach gear. Book direct — no platform fees.",
+    url: "/amenities",
+    siteName: "Ocean Villas at Turtle Bay",
     type: "website",
+    images: [
+      {
+        url: "/brand/TTB-Logo.png",
+        width: 1200,
+        height: 630,
+        alt: "Ocean Villas at Turtle Bay",
+      },
+    ],
+  },
+  twitter: {
+    card: "summary_large_image",
+    title: "Villa Amenities — Turtle Bay, North Shore Oahu | Ocean Villas",
+    description:
+      "Every Ocean Villas rental includes gourmet kitchen, resort pool, private lanai, ocean views, and beach gear.",
+    images: ["/brand/TTB-Logo.png"],
   },
 };
 
@@ -74,15 +91,15 @@ const faqJsonLd = {
       name: "Do Ocean Villas at Turtle Bay have a pool?",
       acceptedAnswer: {
         "@type": "Answer",
-        text: "Yes. All Ocean Villas guests receive resort pool access as part of their stay, in addition to a short walk to Turtle Bay Resort beach.",
+        text: "Yes. All guests receive resort pool access as part of their stay, and Turtle Bay Resort beach is a short walk from the villas.",
       },
     },
     {
       "@type": "Question",
-      name: "What kitchen amenities are included in the villas?",
+      name: "What kitchen amenities are included?",
       acceptedAnswer: {
         "@type": "Answer",
-        text: "Every villa comes with a fully equipped gourmet kitchen — including cookware, appliances, and everything needed to prepare meals for your group. No need to eat out every night.",
+        text: "Every villa comes with a fully equipped gourmet kitchen: cookware, appliances, and everything your group needs to cook meals during your stay.",
       },
     },
     {
@@ -90,7 +107,7 @@ const faqJsonLd = {
       name: "Is beach gear included with the rental?",
       acceptedAnswer: {
         "@type": "Answer",
-        text: "Yes. Beach chairs, umbrellas, and snorkel sets are included with every villa rental so you can head straight to the beach without extra equipment rentals.",
+        text: "Yes. Beach chairs, umbrellas, and snorkel sets are provided with every villa so you can head straight to the beach without extra equipment rentals.",
       },
     },
     {
@@ -98,15 +115,7 @@ const faqJsonLd = {
       name: "Do the villas have ocean views?",
       acceptedAnswer: {
         "@type": "Answer",
-        text: "Most villas feature ocean or garden views from a private lanai or terrace. Individual listing pages show the specific view and layout for each villa.",
-      },
-    },
-    {
-      "@type": "Question",
-      name: "Is WiFi included at Ocean Villas?",
-      acceptedAnswer: {
-        "@type": "Answer",
-        text: "Yes. High-speed WiFi is included throughout all villas at no extra charge.",
+        text: "Most villas feature ocean or garden views from a private lanai or terrace. Check the individual listing page for the specific view and layout for each villa.",
       },
     },
     {
@@ -114,15 +123,28 @@ const faqJsonLd = {
       name: "Are there extra fees for amenities?",
       acceptedAnswer: {
         "@type": "Answer",
-        text: "No hidden amenity fees. All listed amenities are included in the nightly rate. Rates are pulled live from Hostaway so what you see is what you pay — with no third-party platform markups on top.",
+        text: "No hidden amenity fees. All listed amenities are included in the nightly rate, sourced live from Hostaway. No third-party platform markups are added on top.",
       },
     },
+  ],
+};
+
+const breadcrumbJsonLd = {
+  "@context": "https://schema.org",
+  "@type": "BreadcrumbList",
+  itemListElement: [
+    { "@type": "ListItem", position: 1, name: "Home", item: "https://oceanvillasturtlebay.com/" },
+    { "@type": "ListItem", position: 2, name: "Amenities", item: "https://oceanvillasturtlebay.com/amenities" },
   ],
 };
 
 export default function AmenitiesPage() {
   return (
     <main className="min-h-screen bg-slate-50 text-slate-900">
+      <script
+        type="application/ld+json"
+        dangerouslySetInnerHTML={{ __html: JSON.stringify(breadcrumbJsonLd) }}
+      />
       <script
         type="application/ld+json"
         dangerouslySetInnerHTML={{ __html: JSON.stringify(faqJsonLd) }}
@@ -283,9 +305,11 @@ export default function AmenitiesPage() {
       <footer className="border-t border-slate-200 bg-slate-50 py-10">
         <div className="mx-auto max-w-7xl px-6 lg:px-8 flex flex-col md:flex-row justify-between items-center gap-4">
           <div className="text-lg font-serif font-bold text-slate-900">Ocean Villas at Turtle Bay</div>
-          <nav className="flex items-center gap-5 text-sm text-slate-500">
+          <nav className="flex flex-wrap items-center justify-center gap-x-5 gap-y-2 text-sm text-slate-500">
             <Link href="/rentals" className="hover:text-slate-700 transition">Rentals</Link>
             <Link href="/location" className="hover:text-slate-700 transition">Location</Link>
+            <Link href="/about" className="hover:text-slate-700 transition">About</Link>
+            <Link href="/contact" className="hover:text-slate-700 transition">Contact</Link>
           </nav>
           <div className="text-sm text-slate-500">© {new Date().getFullYear()} Ocean Villas at Turtle Bay. All rights reserved.</div>
         </div>

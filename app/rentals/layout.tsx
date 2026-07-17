@@ -12,7 +12,24 @@ export const metadata: Metadata = {
     title: "Turtle Bay Villa Rentals — North Shore Oahu | Ocean Villas",
     description:
       "7 luxury private villas at Turtle Bay, North Shore Oahu. Live availability, transparent pricing, and direct booking — no Airbnb or VRBO fees.",
+    url: "/rentals",
+    siteName: "Ocean Villas at Turtle Bay",
     type: "website",
+    images: [
+      {
+        url: "/brand/TTB-Logo.png",
+        width: 1200,
+        height: 630,
+        alt: "Ocean Villas at Turtle Bay",
+      },
+    ],
+  },
+  twitter: {
+    card: "summary_large_image",
+    title: "Turtle Bay Villa Rentals — North Shore Oahu | Ocean Villas",
+    description:
+      "7 luxury private villas at Turtle Bay, North Shore Oahu. Live availability and direct booking — no platform fees.",
+    images: ["/brand/TTB-Logo.png"],
   },
 };
 

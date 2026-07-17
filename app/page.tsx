@@ -3,7 +3,7 @@
 import Image from "next/image";
 import Link from "next/link";
 import Script from "next/script";
-import React, { useEffect, useMemo, useState } from "react";
+import React, { useEffect, useMemo, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 
 type HostawayListing = {
@@ -303,13 +303,20 @@ function ListingCard({ l }: { l: HostawayListing }) {
   );
 }
 
-const videoStyle: React.CSSProperties = { transform: "translateZ(0) scale(1.01)" };
-
 export default function Home() {
   const router = useRouter();
   const today = useMemo(() => formatISO(new Date()), []);
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
-  const [videoReady, setVideoReady] = useState(false);
+  const videoRef = useRef<HTMLVideoElement>(null);
+
+  // Autoplay is set on the element for browsers/crawlers that never run this
+  // effect, but guests who prefer reduced motion get a paused first frame
+  // instead of a looping video.
+  useEffect(() => {
+    if (window.matchMedia("(prefers-reduced-motion: reduce)").matches) {
+      videoRef.current?.pause();
+    }
+  }, []);
 
   const [checkIn, setCheckIn] = useState<string>("");
   const [checkOut, setCheckOut] = useState<string>("");
@@ -332,7 +339,7 @@ export default function Home() {
         name: "How do I book a villa at Ocean Villas at Turtle Bay?",
         acceptedAnswer: {
           "@type": "Answer",
-          text: "Use the availability search on the homepage to select your dates and number of guests, then continue directly into the booking path — no third-party platform required.",
+          text: "Use the availability search above to select your dates and number of guests, then continue directly into the booking path. No third-party platform required.",
         },
       },
       {
@@ -340,12 +347,12 @@ export default function Home() {
         name: "How far are Ocean Villas from Honolulu International Airport?",
         acceptedAnswer: {
           "@type": "Answer",
-          text: "Ocean Villas at Turtle Bay is approximately 35 miles north of Honolulu International Airport (HNL), about a 45–60 minute drive via H-2 and Kamehameha Highway.",
+          text: "The villas are approximately 35 miles north of HNL, about a 45 to 60 minute drive via H-2 and Kamehameha Highway, with scenic views once you reach the North Shore.",
         },
       },
       {
         "@type": "Question",
-        name: "What beaches and surf spots are near Turtle Bay on Oahu’s North Shore?",
+        name: "What beaches and surf spots are near Turtle Bay?",
         acceptedAnswer: {
           "@type": "Answer",
           text: "Banzai Pipeline is 12 minutes away, Waimea Bay 10 minutes, Shark’s Cove 11 minutes, and Haleiwa Town 15 minutes. Turtle Bay Resort beach is a 2-minute walk from the villas.",
@@ -353,7 +360,7 @@ export default function Home() {
       },
       {
         "@type": "Question",
-        name: "What is included in the Ocean Villas nightly rate?",
+        name: "What is included in the nightly rate?",
         acceptedAnswer: {
           "@type": "Answer",
           text: "Each villa includes a fully equipped gourmet kitchen, high-speed WiFi, resort pool access, private lanai, beach gear (chairs, umbrellas, snorkel sets), and dedicated parking. Rates are sourced directly from Hostaway with no platform markups.",
@@ -361,13 +368,22 @@ export default function Home() {
       },
       {
         "@type": "Question",
-        name: "Is Turtle Bay better than staying in Waikiki for an Oahu vacation?",
+        name: "Is Turtle Bay better than staying in Waikiki?",
         acceptedAnswer: {
           "@type": "Answer",
-          text: "Turtle Bay offers a private-villa experience far from the crowds of Waikiki, on Oahu’s quieter, more scenic North Shore. Guests enjoy direct beach access, world-class surf nearby, and a more authentic island lifestyle with all the comforts of a luxury villa.",
+          text: "Turtle Bay offers a private-villa experience far from the crowds of Waikiki. Guests enjoy direct beach access, world-class surf nearby, and a more authentic island pace, with all the comfort of a luxury villa.",
         },
       },
     ],
+  };
+
+  const organizationJsonLd = {
+    "@context": "https://schema.org",
+    "@type": "Organization",
+    name: BRAND.name,
+    url: SITE_URL,
+    logo: `${SITE_URL}/brand/TTB-Logo.png`,
+    telephone: "+18587272427",
   };
 
   const websiteJsonLd = {
@@ -436,7 +452,7 @@ export default function Home() {
 
         if (!alive) return;
         setListings(results);
-      } catch (e) {
+      } catch {
         if (!alive) return;
         setListingsError("Hostaway listings failed to load. Please check API/ENV and try again.");
       } finally {
@@ -451,11 +467,8 @@ export default function Home() {
     };
   }, []);
 
-  function scrollToAvailability(targetId?: "availability" | "availability-mobile") {
-    const resolvedTarget =
-      targetId || (window.innerWidth < 768 ? "availability-mobile" : "availability");
-
-    const section = document.getElementById(resolvedTarget);
+  function scrollToAvailability() {
+    const section = document.getElementById("availability");
     if (section) {
       section.scrollIntoView({ behavior: "smooth", block: "start" });
       return;
@@ -486,6 +499,11 @@ export default function Home() {
 
   return (
     <main className="min-h-screen bg-slate-50 text-slate-900 selection:bg-slate-200">
+      <Script
+        id="ov-organization-schema"
+        type="application/ld+json"
+        dangerouslySetInnerHTML={{ __html: JSON.stringify(organizationJsonLd) }}
+      />
       <Script
         id="ov-website-schema"
         type="application/ld+json"
@@ -523,7 +541,7 @@ export default function Home() {
             </Link>
             <button
               type="button"
-              onClick={() => scrollToAvailability("availability")}
+              onClick={() => scrollToAvailability()}
               className="hover:text-slate-900 transition-colors"
             >
               Availability
@@ -540,7 +558,7 @@ export default function Home() {
             <a className="text-sm font-medium text-slate-600 hover:text-slate-900 transition" href={`tel:+1${sanitizeTel(BRAND.phone)}`}>
               Mira · {BRAND.phone}
             </a>
-            <PrimaryButton type="button" onClick={() => scrollToAvailability("availability")}>
+            <PrimaryButton type="button" onClick={() => scrollToAvailability()}>
               Check Availability
             </PrimaryButton>
           </div>
@@ -560,7 +578,7 @@ export default function Home() {
                 type="button"
                 onClick={() => {
                   setMobileMenuOpen(false);
-                  scrollToAvailability("availability-mobile");
+                  scrollToAvailability();
                 }}
                 className="py-2 text-left hover:text-slate-900"
               >
@@ -580,37 +598,54 @@ export default function Home() {
         )}
       </header>
 
-      <div className="block md:hidden">
-        <div className="relative w-full h-[35vh] min-h-[250px] overflow-hidden bg-[#020611] isolate">
-          <video
-            className="absolute inset-0 h-full w-full object-cover object-center scale-[1.035]"
-            style={{
-              transform: "translate3d(-0.5px, 0, 0) scale(1.03)",
-              backfaceVisibility: "hidden",
-              WebkitBackfaceVisibility: "hidden",
-            }}
-            autoPlay
-            muted
-            loop
-            playsInline
-            preload="auto"
-            controls={false}
-            disablePictureInPicture
-          >
-            <source src="/media/hero.mp4" type="video/mp4" />
-          </video>
-          <div className="absolute inset-0 bg-slate-900/20" />
-        </div>
+      <section
+        id="top"
+        className="relative isolate w-full overflow-hidden bg-[#0b2436] h-[62vh] min-h-[440px] sm:h-[70vh] md:h-[80vh]"
+      >
+        <video
+          ref={videoRef}
+          className="absolute inset-0 h-full w-full object-cover object-center"
+          style={{ transform: "scale(1.06) translateZ(0)", backfaceVisibility: "hidden" }}
+          poster="/media/hero-poster.jpg"
+          autoPlay
+          muted
+          loop
+          playsInline
+          preload="auto"
+          controls={false}
+          disablePictureInPicture
+        >
+          <source src="/media/hero.mp4" type="video/mp4" />
+        </video>
 
-        <section className="bg-white px-4 pt-8 pb-3">
-          <div
-            id="availability-mobile"
-            className="rounded-2xl border border-slate-200 bg-slate-100 px-4 py-6 shadow-sm"
-          >
-            <div className="grid grid-cols-2 gap-3 mb-3">
-              <div>
-                <label className="block text-[10px] font-bold uppercase tracking-wide text-slate-500 mb-1">Arrival</label>
+        {/* Single tonal gradient — darkest at the bottom where text/gradient
+            meets the white section below, lightest through the middle so the
+            video itself stays clearly visible. */}
+        <div className="absolute inset-0 bg-gradient-to-b from-black/30 via-black/20 to-black/55" />
+
+        <div className="relative z-10 flex h-full flex-col justify-center px-5 pb-14 pt-16 sm:px-6 md:pb-24 lg:px-8">
+          <div className="mx-auto w-full max-w-7xl">
+            <div className="max-w-4xl">
+              <h1 className="text-4xl sm:text-5xl md:text-7xl font-serif font-medium tracking-tight text-white leading-tight [text-shadow:0_2px_16px_rgba(0,0,0,0.4)]">
+                Luxury Vacation Rentals at Turtle Bay, Oahu&apos;s North Shore
+              </h1>
+
+              <p className="mt-4 max-w-2xl text-base sm:text-lg text-white/90 leading-relaxed md:mt-6 [text-shadow:0_1px_10px_rgba(0,0,0,0.4)]">
+                Ocean Villas sits in the heart of Turtle Bay, near the Ritz Carlton. North Shore regulars keep coming back to our villas. Browse featured villas, check live availability, and book direct.
+              </p>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <section id="availability" className="bg-white pt-10 pb-14 md:pt-20 md:pb-20">
+        <div className="mx-auto max-w-5xl px-4 sm:px-6">
+          <GlassCard className="p-5 sm:p-6 md:p-8">
+            <div className="grid grid-cols-2 gap-3 md:flex md:flex-row md:items-end md:gap-4">
+              <div className="md:flex-1">
+                <label htmlFor="ov-checkin" className="block text-[10px] md:text-xs font-bold uppercase tracking-wide text-slate-500 mb-1 md:mb-2">Check-in</label>
                 <input
+                  id="ov-checkin"
                   type="date"
                   min={today}
                   value={checkIn}
@@ -619,28 +654,29 @@ export default function Home() {
                     setCheckIn(v);
                     if (checkOut && (v === checkOut || isAfter(v, checkOut))) setCheckOut(addDays(v, 2));
                   }}
-                  className="w-full rounded-xl border border-slate-200 bg-white px-3 py-2.5 text-sm focus:border-slate-900 focus:outline-none focus:ring-1 focus:ring-slate-900"
+                  className="w-full rounded-xl border border-slate-200 bg-slate-50 px-3 py-2.5 text-sm focus:border-slate-900 focus:outline-none focus:ring-1 focus:ring-slate-900 md:px-4 md:py-3"
                 />
               </div>
-              <div>
-                <label className="block text-[10px] font-bold uppercase tracking-wide text-slate-500 mb-1">Departure</label>
+
+              <div className="md:flex-1">
+                <label htmlFor="ov-checkout" className="block text-[10px] md:text-xs font-bold uppercase tracking-wide text-slate-500 mb-1 md:mb-2">Check-out</label>
                 <input
+                  id="ov-checkout"
                   type="date"
                   min={checkIn || today}
                   value={checkOut}
                   onChange={(e) => setCheckOut(e.target.value)}
-                  className="w-full rounded-xl border border-slate-200 bg-white px-3 py-2.5 text-sm focus:border-slate-900 focus:outline-none focus:ring-1 focus:ring-slate-900"
+                  className="w-full rounded-xl border border-slate-200 bg-slate-50 px-3 py-2.5 text-sm focus:border-slate-900 focus:outline-none focus:ring-1 focus:ring-slate-900 md:px-4 md:py-3"
                 />
               </div>
-            </div>
 
-            <div className="grid grid-cols-2 gap-3 mb-4">
-              <div>
-                <label className="block text-[10px] font-bold uppercase tracking-wide text-slate-500 mb-1">Guests</label>
+              <div className="md:w-32">
+                <label htmlFor="ov-guests" className="block text-[10px] md:text-xs font-bold uppercase tracking-wide text-slate-500 mb-1 md:mb-2">Guests</label>
                 <select
+                  id="ov-guests"
                   value={guests}
                   onChange={(e) => setGuests(Number(e.target.value))}
-                  className="w-full rounded-xl border border-slate-200 bg-white px-3 py-2.5 text-sm focus:border-slate-900 focus:outline-none focus:ring-1 focus:ring-slate-900"
+                  className="w-full rounded-xl border border-slate-200 bg-slate-50 px-3 py-2.5 text-sm focus:border-slate-900 focus:outline-none focus:ring-1 focus:ring-slate-900 md:px-4 md:py-3"
                 >
                   {Array.from({ length: 10 }).map((_, i) => (
                     <option key={i + 1} value={i + 1}>
@@ -649,137 +685,29 @@ export default function Home() {
                   ))}
                 </select>
               </div>
-              <div>
-                <label className="block text-[10px] font-bold uppercase tracking-wide text-slate-500 mb-1">Promo</label>
+
+              <div className="md:w-44">
+                <label htmlFor="ov-promo" className="block text-[10px] md:text-xs font-bold uppercase tracking-wide text-slate-500 mb-1 md:mb-2">Promo</label>
                 <input
+                  id="ov-promo"
                   value={promo}
                   onChange={(e) => setPromo(e.target.value)}
-                  placeholder="Optional code"
-                  className="w-full rounded-xl border border-slate-200 bg-white px-3 py-2.5 text-sm focus:border-slate-900 focus:outline-none focus:ring-1 focus:ring-slate-900"
+                  placeholder="Optional"
+                  className="w-full rounded-xl border border-slate-200 bg-slate-50 px-3 py-2.5 text-sm focus:border-slate-900 focus:outline-none focus:ring-1 focus:ring-slate-900 md:px-4 md:py-3"
                 />
               </div>
-            </div>
 
-            <PrimaryButton type="button" onClick={onSearch} disabled={loading} className="w-full py-3">
-              {loading ? "Searching…" : "Search Availability"}
-            </PrimaryButton>
-
-            {error && <div className="mt-3 text-center text-xs text-red-600 font-medium">{error}</div>}
-          </div>
-        </section>
-
-        <section className="bg-white px-6 py-10 flex flex-col items-center text-center">
-          <h1 className="text-4xl font-serif font-medium tracking-tight text-slate-900 leading-tight">
-            Luxury Vacation Rentals at Turtle Bay, Oahu’s North Shore
-          </h1>
-
-          <p className="mt-4 text-base text-slate-600 leading-relaxed max-w-xl">
-            Ocean Villas sits in the heart of Turtle Bay, near the Ritz Carlton. North Shore regulars keep coming back to our villas. Browse featured villas, check live availability, and book direct.
-          </p>
-        </section>
-      </div>
-
-      <div className="hidden md:block">
-        <section id="top" className="relative h-[80vh] w-full overflow-hidden bg-[#020611] isolate">
-          <video
-            className={`absolute inset-0 h-full w-full object-cover object-center scale-[1.035] transition-opacity duration-1000 ${
-              videoReady ? "opacity-100" : "opacity-0"
-            }`}
-            style={videoStyle}
-            autoPlay
-            muted
-            loop
-            playsInline
-            preload="auto"
-            controls={false}
-            disablePictureInPicture
-            onCanPlay={() => setVideoReady(true)}
-          >
-            <source src="/media/hero.mp4" type="video/mp4" />
-          </video>
-          <div className="absolute inset-0 z-[1] bg-[#020611]/68" />
-
-          <div className="absolute inset-0 z-10 flex flex-col justify-center pt-16 pb-24">
-            <div className="mx-auto w-full max-w-7xl px-5 sm:px-6 lg:px-8">
-              <div className="max-w-4xl">
-                <h1 className="text-5xl md:text-7xl font-serif font-medium tracking-tight text-white leading-tight">
-                  Luxury Vacation Rentals at Turtle Bay, Oahu's North Shore
-                </h1>
-
-                <p className="mt-6 max-w-2xl text-lg text-white/90 leading-relaxed">
-                  Ocean Villas sits in the heart of Turtle Bay, near the Ritz Carlton. North Shore regulars keep coming back to our villas. Browse featured villas, check live availability, and book direct.
-                </p>
+              <div className="col-span-2 md:col-span-1">
+                <PrimaryButton type="button" onClick={onSearch} disabled={loading} className="w-full py-3 md:h-[48px]">
+                  {loading ? "Searching…" : "Search Availability"}
+                </PrimaryButton>
               </div>
             </div>
-          </div>
-        </section>
 
-        <section id="availability" className="bg-white pt-14 md:pt-20 pb-16 md:pb-20">
-          <div className="mx-auto max-w-5xl px-6">
-            <GlassCard className="p-8">
-              <div className="flex flex-row items-end gap-4">
-                <div className="flex-1">
-                  <label className="block text-xs font-bold uppercase tracking-wide text-slate-500 mb-2">Check-in</label>
-                  <input
-                    type="date"
-                    min={today}
-                    value={checkIn}
-                    onChange={(e) => {
-                      const v = e.target.value;
-                      setCheckIn(v);
-                      if (checkOut && (v === checkOut || isAfter(v, checkOut))) setCheckOut(addDays(v, 2));
-                    }}
-                    className="w-full rounded-xl border border-slate-200 bg-slate-50 px-4 py-3 text-sm focus:border-slate-900 focus:outline-none focus:ring-1 focus:ring-slate-900"
-                  />
-                </div>
-
-                <div className="flex-1">
-                  <label className="block text-xs font-bold uppercase tracking-wide text-slate-500 mb-2">Check-out</label>
-                  <input
-                    type="date"
-                    min={checkIn || today}
-                    value={checkOut}
-                    onChange={(e) => setCheckOut(e.target.value)}
-                    className="w-full rounded-xl border border-slate-200 bg-slate-50 px-4 py-3 text-sm focus:border-slate-900 focus:outline-none focus:ring-1 focus:ring-slate-900"
-                  />
-                </div>
-
-                <div className="w-32">
-                  <label className="block text-xs font-bold uppercase tracking-wide text-slate-500 mb-2">Guests</label>
-                  <select
-                    value={guests}
-                    onChange={(e) => setGuests(Number(e.target.value))}
-                    className="w-full rounded-xl border border-slate-200 bg-slate-50 px-4 py-3 text-sm focus:border-slate-900 focus:outline-none focus:ring-1 focus:ring-slate-900"
-                  >
-                    {Array.from({ length: 10 }).map((_, i) => (
-                      <option key={i + 1} value={i + 1}>
-                        {i + 1} Guests
-                      </option>
-                    ))}
-                  </select>
-                </div>
-
-                <div className="w-44">
-                  <label className="block text-xs font-bold uppercase tracking-wide text-slate-500 mb-2">Promo</label>
-                  <input
-                    value={promo}
-                    onChange={(e) => setPromo(e.target.value)}
-                    placeholder="Optional"
-                    className="w-full rounded-xl border border-slate-200 bg-slate-50 px-4 py-3 text-sm focus:border-slate-900 focus:outline-none focus:ring-1 focus:ring-slate-900"
-                  />
-                </div>
-
-                <div>
-                  <PrimaryButton type="button" onClick={onSearch} disabled={loading} className="w-full py-3 h-[48px]">
-                    {loading ? "Searching…" : "Search"}
-                  </PrimaryButton>
-                </div>
-              </div>
-
-              {error && <div className="mt-4 text-sm text-red-600 font-medium">{error}</div>}
-            </GlassCard>
-          </div>
-        </section>
+            {error && <div className="mt-4 text-sm text-red-600 font-medium">{error}</div>}
+          </GlassCard>
+        </div>
+      </section>
 
       {/* TRUST / POSITIONING */}
       <section className="py-16 md:py-20 bg-white">
@@ -894,7 +822,7 @@ export default function Home() {
           <SectionTitle
             eyebrow="FAQ"
             title="Questions guests ask before booking"
-            desc="This section helps both users and search engines understand the site’s purpose, booking flow, and location relevance."
+            desc="Quick answers on booking direct, getting here, and what's included — the same things Mira hears most before a stay."
           />
 
           <div className="mt-10 space-y-4">
@@ -930,12 +858,20 @@ export default function Home() {
             <div className="mt-1 text-sm text-slate-500">{BRAND.sub}</div>
           </div>
 
+          <nav className="flex flex-wrap items-center justify-center gap-x-5 gap-y-2 text-sm text-slate-500">
+            <Link href="/rentals" className="hover:text-slate-700 transition">Villas</Link>
+            <Link href="/amenities" className="hover:text-slate-700 transition">Amenities</Link>
+            <Link href="/location" className="hover:text-slate-700 transition">Location</Link>
+            <Link href="/availability" className="hover:text-slate-700 transition">Availability</Link>
+            <Link href="/about" className="hover:text-slate-700 transition">About</Link>
+            <Link href="/contact" className="hover:text-slate-700 transition">Contact</Link>
+          </nav>
+
           <div className="text-sm text-slate-500">
             © {new Date().getFullYear()} {BRAND.name}. All rights reserved.
           </div>
         </div>
       </footer>
-      </div>
     </main>
   );
 }

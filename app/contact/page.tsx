@@ -2,17 +2,54 @@
 import Link from "next/link";
 import type { Metadata } from "next";
 
+const pageTitle = "Contact | Ocean Villas at Turtle Bay";
+const pageDescription =
+  "Get in touch with Ocean Villas at Turtle Bay. Questions about availability, bookings, or villa details — we're here to help.";
+
 export const metadata: Metadata = {
-  title: "Contact | Ocean Villas at Turtle Bay",
-  description:
-    "Get in touch with Ocean Villas at Turtle Bay. Questions about availability, bookings, or villa details — we're here to help.",
+  title: { absolute: pageTitle },
+  description: pageDescription,
   alternates: { canonical: "/contact" },
   robots: { index: true, follow: true },
+  openGraph: {
+    title: pageTitle,
+    description: pageDescription,
+    url: "/contact",
+    siteName: "Ocean Villas at Turtle Bay",
+    type: "website",
+    images: [
+      {
+        url: "/brand/TTB-Logo.png",
+        width: 1200,
+        height: 630,
+        alt: "Ocean Villas at Turtle Bay",
+      },
+    ],
+  },
+  twitter: {
+    card: "summary_large_image",
+    title: pageTitle,
+    description: pageDescription,
+    images: ["/brand/TTB-Logo.png"],
+  },
+};
+
+const breadcrumbJsonLd = {
+  "@context": "https://schema.org",
+  "@type": "BreadcrumbList",
+  itemListElement: [
+    { "@type": "ListItem", position: 1, name: "Home", item: "https://oceanvillasturtlebay.com/" },
+    { "@type": "ListItem", position: 2, name: "Contact", item: "https://oceanvillasturtlebay.com/contact" },
+  ],
 };
 
 export default function ContactPage() {
   return (
     <main className="min-h-screen bg-slate-50 text-slate-900">
+      <script
+        type="application/ld+json"
+        dangerouslySetInnerHTML={{ __html: JSON.stringify(breadcrumbJsonLd) }}
+      />
       <header className="sticky top-0 z-50 border-b border-slate-200 bg-white/80 backdrop-blur-md">
         <div className="mx-auto flex h-20 max-w-7xl items-center justify-between px-6 lg:px-8">
           <Link href="/" className="text-sm font-semibold text-slate-600 hover:text-slate-900 transition">
@@ -65,10 +102,10 @@ export default function ContactPage() {
             <div className="rounded-2xl border border-slate-200 bg-white p-8 shadow-sm">
               <h2 className="text-lg font-semibold text-slate-900 mb-4">Booking Questions</h2>
               <p className="text-sm leading-7 text-slate-600">
-                All booking, pricing, and availability is managed through Hostaway. Once you've selected dates and a villa, the booking engine will guide you through secure checkout.
+                All booking, pricing, and availability is managed through Hostaway. Once you&apos;ve selected dates and a villa, the booking engine will guide you through secure checkout.
               </p>
               <Link
-                href="/"
+                href="/availability"
                 className="mt-4 inline-flex items-center justify-center rounded-xl border border-slate-200 px-5 py-2.5 text-sm font-semibold text-slate-700 hover:bg-slate-50 transition"
               >
                 Search Availability
@@ -78,7 +115,7 @@ export default function ContactPage() {
             <div className="rounded-2xl border border-slate-200 bg-white p-8 shadow-sm">
               <h2 className="text-lg font-semibold text-slate-900 mb-4">Location</h2>
               <p className="text-sm leading-7 text-slate-600">
-                Ocean Villas at Turtle Bay is located on Oahu's North Shore, Hawaii. The properties are within the Turtle Bay resort area, approximately 45 minutes north of Honolulu International Airport.
+                Ocean Villas at Turtle Bay is located on Oahu&apos;s North Shore, Hawaii. The properties are within the Turtle Bay resort area, approximately 45 minutes north of Honolulu International Airport.
               </p>
               <Link
                 href="/location"
@@ -94,6 +131,12 @@ export default function ContactPage() {
       <footer className="border-t border-slate-200 bg-slate-50 py-10">
         <div className="mx-auto max-w-7xl px-6 lg:px-8 flex flex-col md:flex-row justify-between items-center gap-4">
           <div className="text-lg font-serif font-bold text-slate-900">Ocean Villas at Turtle Bay</div>
+          <nav className="flex flex-wrap items-center justify-center gap-x-5 gap-y-2 text-sm text-slate-500">
+            <Link href="/rentals" className="hover:text-slate-700 transition">Villas</Link>
+            <Link href="/amenities" className="hover:text-slate-700 transition">Amenities</Link>
+            <Link href="/location" className="hover:text-slate-700 transition">Location</Link>
+            <Link href="/about" className="hover:text-slate-700 transition">About</Link>
+          </nav>
           <div className="text-sm text-slate-500">© {new Date().getFullYear()} Ocean Villas at Turtle Bay. All rights reserved.</div>
         </div>
       </footer>

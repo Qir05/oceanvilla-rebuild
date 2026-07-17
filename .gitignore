@@ -36,6 +36,9 @@ yarn-error.log*
 # vercel
 .vercel
 
+# original pre-optimization media backups (not deployed)
+/media-originals
+
 # typescript
 *.tsbuildinfo
 next-env.d.ts

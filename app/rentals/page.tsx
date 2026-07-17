@@ -344,9 +344,11 @@ export default function RentalsPage() {
           <div className="text-lg font-serif font-bold text-slate-900">
             Ocean Villas at Turtle Bay
           </div>
-          <nav className="flex items-center gap-5 text-sm text-slate-500">
+          <nav className="flex flex-wrap items-center justify-center gap-x-5 gap-y-2 text-sm text-slate-500">
             <Link href="/amenities" className="hover:text-slate-700 transition">Amenities</Link>
             <Link href="/location" className="hover:text-slate-700 transition">Location</Link>
+            <Link href="/about" className="hover:text-slate-700 transition">About</Link>
+            <Link href="/contact" className="hover:text-slate-700 transition">Contact</Link>
           </nav>
           <div className="text-sm text-slate-500">
             © {new Date().getFullYear()} Ocean Villas at Turtle Bay. All rights reserved.

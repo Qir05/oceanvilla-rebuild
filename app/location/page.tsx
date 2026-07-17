@@ -14,7 +14,24 @@ export const metadata: Metadata = {
     title: "Turtle Bay, Oahu — North Shore Location Guide | Ocean Villas",
     description:
       "Turtle Bay sits on Oahu's North Shore, 35 miles from Honolulu. Walk to the beach, drive to Pipeline, Waimea Bay & Haleiwa. Stay at Ocean Villas and book direct.",
+    url: "/location",
+    siteName: "Ocean Villas at Turtle Bay",
     type: "website",
+    images: [
+      {
+        url: "/brand/TTB-Logo.png",
+        width: 1200,
+        height: 630,
+        alt: "Ocean Villas at Turtle Bay",
+      },
+    ],
+  },
+  twitter: {
+    card: "summary_large_image",
+    title: "Turtle Bay, Oahu — North Shore Location Guide | Ocean Villas",
+    description:
+      "Turtle Bay sits on Oahu's North Shore, 35 miles from Honolulu, near Pipeline, Waimea Bay & Haleiwa.",
+    images: ["/brand/TTB-Logo.png"],
   },
 };
 
@@ -37,23 +54,23 @@ const faqJsonLd = {
       name: "How far is Turtle Bay from Honolulu International Airport?",
       acceptedAnswer: {
         "@type": "Answer",
-        text: "Turtle Bay is approximately 35 miles north of Honolulu International Airport (HNL) via the H-2 freeway and Kamehameha Highway. The drive takes 45–60 minutes depending on traffic and is highly scenic through the North Shore pineapple fields.",
+        text: "Approximately 35 miles north of HNL — about a 45–60 minute drive via H-2 and Kamehameha Highway. The drive becomes scenic through the pineapple fields heading north.",
       },
     },
     {
       "@type": "Question",
-      name: "What surf beaches are near Turtle Bay on Oahu's North Shore?",
+      name: "What surf beaches are near Turtle Bay?",
       acceptedAnswer: {
         "@type": "Answer",
-        text: "Banzai Pipeline is 12 minutes away, Waimea Bay is 10 minutes, Shark's Cove is 11 minutes, and Haleiwa Town is 15 minutes. Turtle Bay Resort beach is a 2-minute walk from Ocean Villas.",
+        text: "Banzai Pipeline is 12 minutes away, Waimea Bay 10 minutes, Shark's Cove 11 minutes, and Haleiwa Town 15 minutes. Turtle Bay Resort beach is a 2-minute walk from the villas.",
       },
     },
     {
       "@type": "Question",
-      name: "Do I need a rental car to stay at Turtle Bay?",
+      name: "Do I need a rental car for Turtle Bay?",
       acceptedAnswer: {
         "@type": "Answer",
-        text: "Yes, a rental car is strongly recommended for a North Shore stay. Public transit exists but is limited. Having a vehicle lets you move freely between beaches, surf spots, restaurants, and the full stretch of the North Shore.",
+        text: "Yes, a rental car is strongly recommended. Public transit is limited on the North Shore. Having a car lets you explore Pipeline, Haleiwa Town, and beaches across the full North Shore stretch freely.",
       },
     },
     {
@@ -61,7 +78,7 @@ const faqJsonLd = {
       name: "What is the best time of year to visit Turtle Bay?",
       acceptedAnswer: {
         "@type": "Answer",
-        text: "Turtle Bay is great year-round. Winter (November–February) brings large swells and the famous Triple Crown of Surfing — ideal for spectators. Summer offers flat, clear water perfect for snorkeling, paddleboarding, and diving. Both seasons deliver warm weather and the North Shore's signature golden light.",
+        text: "Turtle Bay is excellent year-round. Winter (November–February) brings large swells and the Triple Crown of Surfing. Summer offers flat, clear water ideal for snorkeling and paddleboarding. Both seasons have warm weather and the North Shore's signature golden light.",
       },
     },
     {
@@ -69,7 +86,7 @@ const faqJsonLd = {
       name: "How is Turtle Bay different from Waikiki?",
       acceptedAnswer: {
         "@type": "Answer",
-        text: "Turtle Bay is on Oahu's North Shore — far less crowded, more local, and more scenic than Waikiki. There are no high-rise hotels, no tourist-trap strips, and far more open beach. It's the side of Oahu that regular Hawaii visitors return to every year.",
+        text: "Turtle Bay is far less crowded, more local, and more scenic. No high-rise hotels, no tourist strips — just open beach, world-class surf nearby, and a genuine North Shore atmosphere. It's the side of Oahu that repeat visitors return to every year.",
       },
     },
   ],
@@ -96,9 +113,22 @@ const placeJsonLd = {
   ],
 };
 
+const breadcrumbJsonLd = {
+  "@context": "https://schema.org",
+  "@type": "BreadcrumbList",
+  itemListElement: [
+    { "@type": "ListItem", position: 1, name: "Home", item: "https://oceanvillasturtlebay.com/" },
+    { "@type": "ListItem", position: 2, name: "Location", item: "https://oceanvillasturtlebay.com/location" },
+  ],
+};
+
 export default function LocationPage() {
   return (
     <main className="min-h-screen bg-slate-50 text-slate-900">
+      <script
+        type="application/ld+json"
+        dangerouslySetInnerHTML={{ __html: JSON.stringify(breadcrumbJsonLd) }}
+      />
       <script
         type="application/ld+json"
         dangerouslySetInnerHTML={{ __html: JSON.stringify(faqJsonLd) }}
@@ -309,9 +339,11 @@ export default function LocationPage() {
       <footer className="border-t border-slate-200 bg-slate-50 py-10">
         <div className="mx-auto max-w-7xl px-6 lg:px-8 flex flex-col md:flex-row justify-between items-center gap-4">
           <div className="text-lg font-serif font-bold text-slate-900">Ocean Villas at Turtle Bay</div>
-          <nav className="flex items-center gap-5 text-sm text-slate-500">
+          <nav className="flex flex-wrap items-center justify-center gap-x-5 gap-y-2 text-sm text-slate-500">
             <Link href="/rentals" className="hover:text-slate-700 transition">Rentals</Link>
             <Link href="/amenities" className="hover:text-slate-700 transition">Amenities</Link>
+            <Link href="/about" className="hover:text-slate-700 transition">About</Link>
+            <Link href="/contact" className="hover:text-slate-700 transition">Contact</Link>
           </nav>
           <div className="text-sm text-slate-500">© {new Date().getFullYear()} Ocean Villas at Turtle Bay. All rights reserved.</div>
         </div>
