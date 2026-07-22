@@ -1,6 +1,7 @@
 // app/about/page.tsx
 import Link from "next/link";
 import type { Metadata } from "next";
+import MobileStickyBookingBar from "@/components/MobileStickyBookingBar";
 
 const pageTitle = "About | Ocean Villas at Turtle Bay";
 const pageDescription =
@@ -45,7 +46,7 @@ const breadcrumbJsonLd = {
 
 export default function AboutPage() {
   return (
-    <main className="min-h-screen bg-slate-50 text-slate-900">
+    <main className="min-h-screen bg-slate-50 text-slate-900 pb-24 md:pb-0">
       <script
         type="application/ld+json"
         dangerouslySetInnerHTML={{ __html: JSON.stringify(breadcrumbJsonLd) }}
@@ -125,6 +126,8 @@ export default function AboutPage() {
           <div className="text-sm text-slate-500">© {new Date().getFullYear()} Ocean Villas at Turtle Bay. All rights reserved.</div>
         </div>
       </footer>
+
+      <MobileStickyBookingBar />
     </main>
   );
 }

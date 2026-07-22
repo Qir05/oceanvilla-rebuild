@@ -5,6 +5,9 @@ import Link from "next/link";
 import Script from "next/script";
 import React, { useEffect, useMemo, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
+import MobileStickyBookingBar from "@/components/MobileStickyBookingBar";
+import TrustSignals from "@/components/TrustSignals";
+import { trackEvent } from "@/lib/analytics";
 
 type HostawayListing = {
   id: string;
@@ -363,7 +366,7 @@ export default function Home() {
         name: "What is included in the nightly rate?",
         acceptedAnswer: {
           "@type": "Answer",
-          text: "Each villa includes a fully equipped gourmet kitchen, high-speed WiFi, resort pool access, private lanai, beach gear (chairs, umbrellas, snorkel sets), and dedicated parking. Rates are sourced directly from Hostaway with no platform markups.",
+          text: "Each villa includes a fully equipped gourmet kitchen, high-speed WiFi, a private lanai, beach gear (chairs, umbrellas, snorkel sets), and dedicated parking. Rates are sourced directly from Hostaway with no platform markups. Turtle Bay Resort amenities such as pool access are separate — see the amenities page for confirmed details.",
         },
       },
       {
@@ -498,7 +501,7 @@ export default function Home() {
   }
 
   return (
-    <main className="min-h-screen bg-slate-50 text-slate-900 selection:bg-slate-200">
+    <main className="min-h-screen bg-slate-50 text-slate-900 selection:bg-slate-200 pb-24 md:pb-0">
       <Script
         id="ov-organization-schema"
         type="application/ld+json"
@@ -555,8 +558,12 @@ export default function Home() {
           </nav>
 
           <div className="hidden md:flex items-center gap-6 z-10">
-            <a className="text-sm font-medium text-slate-600 hover:text-slate-900 transition" href={`tel:+1${sanitizeTel(BRAND.phone)}`}>
-              Mira · {BRAND.phone}
+            <a
+              className="text-sm font-medium text-slate-600 hover:text-slate-900 transition"
+              href={`tel:+1${sanitizeTel(BRAND.phone)}`}
+              onClick={() => trackEvent("phone_click", { source: "home_header" })}
+            >
+              Call Us · {BRAND.phone}
             </a>
             <PrimaryButton type="button" onClick={() => scrollToAvailability()}>
               Check Availability
@@ -590,8 +597,12 @@ export default function Home() {
               <Link onClick={() => setMobileMenuOpen(false)} href="/amenities" className="py-2 hover:text-slate-900">
                 Amenities
               </Link>
-              <a href={`tel:+1${sanitizeTel(BRAND.phone)}`} className="py-2 hover:text-slate-900">
-                Call Mira · {BRAND.phone}
+              <a
+                href={`tel:+1${sanitizeTel(BRAND.phone)}`}
+                className="py-2 hover:text-slate-900"
+                onClick={() => trackEvent("phone_click", { source: "home_mobile_menu" })}
+              >
+                Call Us · {BRAND.phone}
               </a>
             </div>
           </div>
@@ -709,6 +720,9 @@ export default function Home() {
         </div>
       </section>
 
+      {/* TRUST SIGNALS */}
+      <TrustSignals />
+
       {/* TRUST / POSITIONING */}
       <section className="py-16 md:py-20 bg-white">
         <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
@@ -822,7 +836,7 @@ export default function Home() {
           <SectionTitle
             eyebrow="FAQ"
             title="Questions guests ask before booking"
-            desc="Quick answers on booking direct, getting here, and what's included — the same things Mira hears most before a stay."
+            desc="Quick answers on booking direct, getting here, and what's included — the same things our team hears most before a stay."
           />
 
           <div className="mt-10 space-y-4">
@@ -840,7 +854,7 @@ export default function Home() {
             />
             <FAQItem
               question="What is included in the nightly rate?"
-              answer="Each villa includes a fully equipped gourmet kitchen, high-speed WiFi, resort pool access, private lanai, beach gear (chairs, umbrellas, snorkel sets), and dedicated parking. Rates are sourced directly from Hostaway with no platform markups."
+              answer="Each villa includes a fully equipped gourmet kitchen, high-speed WiFi, a private lanai, beach gear (chairs, umbrellas, snorkel sets), and dedicated parking. Rates are sourced directly from Hostaway with no platform markups. Turtle Bay Resort amenities such as pool access are separate — see the amenities page for confirmed details."
             />
             <FAQItem
               question="Is Turtle Bay better than staying in Waikiki?"
@@ -872,6 +886,8 @@ export default function Home() {
           </div>
         </div>
       </footer>
+
+      <MobileStickyBookingBar checkDatesHref="#availability" />
     </main>
   );
 }

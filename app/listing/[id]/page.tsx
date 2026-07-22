@@ -4,6 +4,8 @@ import Image from "next/image";
 import Link from "next/link";
 import { Suspense, useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useParams, useSearchParams } from "next/navigation";
+import TrustSignals from "@/components/TrustSignals";
+import { trackEvent } from "@/lib/analytics";
 
 // ─── Types ────────────────────────────────────────────────────
 
@@ -88,24 +90,6 @@ function sanitizeTel(phone: string) {
   return (phone || "").replace(/[^\d+]/g, "") || phone;
 }
 
-/**
- * Lightweight analytics stub. Wire to GA4, Segment, Mixpanel, or any other
- * analytics platform. Safe to call server-side (no-ops silently).
- *
- * Examples:
- *   GA4:    window.gtag?.("event", event, data)
- *   Segment: window.analytics?.track(event, data)
- */
-function trackEvent(event: string, data?: Record<string, string | number>) {
-  try {
-    if (typeof window === "undefined") return;
-    // Replace with your analytics calls:
-    // window.gtag?.("event", event, data);
-    if (process.env.NODE_ENV !== "production") {
-      console.debug("[OceanVillas]", event, data);
-    }
-  } catch { /* analytics must never break the UI */ }
-}
 
 // ─── Scroll-reveal component ──────────────────────────────────
 //
@@ -636,11 +620,21 @@ function AmenitiesSection({ amenities }: { amenities: string[] }) {
 
 // ─── Booking Card ─────────────────────────────────────────────
 
+type PricingResult = {
+  hasPricing: boolean;
+  isAvailable: boolean;
+  avgNightlyPrice: number;
+  minNightlyPrice: number;
+  totalNightlyPrice: number;
+  nights: number;
+};
+
 function BookingCard({
   onInquire,
   startDate,
   endDate,
   guests,
+  listingId,
 }: {
   onInquire: () => void;
   startDate: string;
@@ -669,6 +663,52 @@ function BookingCard({
     );
     return n > 0 ? n : 0;
   }, [localCheckIn, localCheckOut]);
+
+  const [pricing, setPricing] = useState<PricingResult | null>(null);
+  const [pricingLoading, setPricingLoading] = useState(false);
+
+  // Verified-pricing lookup — never estimates; only shows a total when
+  // Hostaway actually returns per-night pricing for these exact dates.
+  const hasValidDateRange = Boolean(localCheckIn && localCheckOut && nights > 0);
+
+  useEffect(() => {
+    if (!hasValidDateRange) return;
+
+    let alive = true;
+
+    async function loadPricing() {
+      setPricingLoading(true);
+      try {
+        const res = await fetch(
+          `/api/hostaway/pricing?listingId=${encodeURIComponent(listingId)}&startDate=${localCheckIn}&endDate=${localCheckOut}`,
+          { cache: "no-store" }
+        );
+        const json = await res.json();
+        if (!alive) return;
+        if (json?.success) {
+          setPricing({
+            hasPricing: Boolean(json.hasPricing),
+            isAvailable: Boolean(json.isAvailable),
+            avgNightlyPrice: json.avgNightlyPrice ?? 0,
+            minNightlyPrice: json.minNightlyPrice ?? 0,
+            totalNightlyPrice: json.totalNightlyPrice ?? 0,
+            nights: json.nights ?? nights,
+          });
+        } else {
+          setPricing(null);
+        }
+      } catch {
+        if (alive) setPricing(null);
+      } finally {
+        if (alive) setPricingLoading(false);
+      }
+    }
+
+    loadPricing();
+    return () => {
+      alive = false;
+    };
+  }, [listingId, localCheckIn, localCheckOut, nights, hasValidDateRange]);
 
   return (
     <div className="rounded-3xl border border-slate-200 bg-white p-5 sm:p-6 shadow-[0_12px_48px_rgba(15,23,42,0.09)]">
@@ -736,6 +776,35 @@ function BookingCard({
             </div>
           )}
         </div>
+
+        {/* ── Verified pricing summary — only shown when Hostaway returns real
+             per-night pricing for these exact dates. Never an estimate. ── */}
+        {nights > 0 && (
+          <div className="mt-3 rounded-xl border border-slate-200 bg-slate-50 p-3.5">
+            {pricingLoading ? (
+              <p className="text-xs text-slate-500">Checking availability and pricing…</p>
+            ) : pricing?.hasPricing ? (
+              <div className="space-y-1.5">
+                <div className="flex items-center justify-between text-sm">
+                  <span className="text-slate-600">
+                    {pricing.nights} night{pricing.nights === 1 ? "" : "s"} × ${Math.round(pricing.avgNightlyPrice)} avg/night
+                  </span>
+                  <span className="font-semibold text-slate-900">
+                    ≈ ${Math.round(pricing.totalNightlyPrice)}
+                  </span>
+                </div>
+                <p className="text-[11px] text-slate-400 leading-4">
+                  Estimated accommodation total. Taxes, cleaning fees, and other required fees are calculated at checkout.
+                </p>
+                <p className={`text-xs font-semibold ${pricing.isAvailable ? "text-emerald-700" : "text-amber-700"}`}>
+                  {pricing.isAvailable ? "Available for these dates" : "Not available for these dates"}
+                </p>
+              </div>
+            ) : (
+              <p className="text-xs text-slate-500">Check Availability and Pricing for these exact dates below.</p>
+            )}
+          </div>
+        )}
       </div>
 
       {/* ── Primary CTA — ocean blue, opens GHL inquiry modal ── */}
@@ -783,11 +852,11 @@ function BookingCard({
         <svg className="h-4 w-4 shrink-0 text-slate-400" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.8}>
           <path strokeLinecap="round" strokeLinejoin="round" d="M3 5a2 2 0 012-2h3.28a1 1 0 01.948.684l1.498 4.493a1 1 0 01-.502 1.21l-2.257 1.13a11.042 11.042 0 005.516 5.516l1.13-2.257a1 1 0 011.21-.502l4.493 1.498a1 1 0 01.684.949V19a2 2 0 01-2 2h-1C9.716 21 3 14.284 3 6V5z" />
         </svg>
-        Call Mira · +1 (858) 727-2427
+        Call Us · +1 (858) 727-2427
       </a>
 
       <p className="mt-4 text-center text-[11px] text-slate-400 leading-5">
-        No booking commitment yet. Mira or the property manager will confirm availability and guide you through the next step.
+        No booking commitment yet. Our local team will confirm availability and guide you through the next step.
       </p>
     </div>
   );
@@ -864,7 +933,7 @@ function InquiryModal({
           <div>
             <h2 className="text-lg font-semibold text-slate-900">Request Availability for This Villa</h2>
             <p className="text-xs text-slate-500 mt-0.5 leading-relaxed">
-              Please fill out the form below and one of our team members will reach out to confirm availability and next steps. This request goes directly to Mira for faster assistance.
+              Please fill out the form below and one of our team members will reach out to confirm availability and next steps. This request goes directly to our local team for faster assistance.
             </p>
           </div>
           <button
@@ -1072,9 +1141,10 @@ function ListingDetailsContent() {
 
             <a
               href={`tel:+1${sanitizeTel(BRAND_PHONE)}`}
+              onClick={() => trackEvent("phone_click", { source: "listing_header" })}
               className="hidden sm:block text-sm font-medium text-slate-600 hover:text-slate-900 transition-colors duration-200"
             >
-              Mira · {BRAND_PHONE}
+              Call Us · {BRAND_PHONE}
             </a>
           </div>
         </header>
@@ -1151,6 +1221,10 @@ function ListingDetailsContent() {
               {/* Amenities — scroll reveal */}
               <AmenitiesSection amenities={amenities} />
 
+              <RevealSection className="mt-10" delay={100}>
+                <TrustSignals variant="compact" />
+              </RevealSection>
+
               {/* Inline booking card — mobile only, scroll reveal */}
               <RevealSection className="mt-10 lg:hidden" delay={60}>
                 <h2 className="text-xl font-semibold text-slate-900 mb-4">Check Availability</h2>
@@ -1182,14 +1256,15 @@ function ListingDetailsContent() {
                   Have questions?
                 </p>
                 <p className="text-sm text-slate-600 leading-6">
-                  Call Mira at{" "}
+                  Call Us at{" "}
                   <a
                     href={`tel:+1${sanitizeTel(BRAND_PHONE)}`}
+                    onClick={() => trackEvent("phone_click", { source: "listing_sidebar" })}
                     className="font-semibold text-slate-900 hover:underline hover:underline-offset-2"
                   >
                     {BRAND_PHONE}
                   </a>{" "}
-                  — she responds within a few hours.
+                  — our local team will get back to you shortly.
                 </p>
               </div>
             </div>
@@ -1201,13 +1276,15 @@ function ListingDetailsContent() {
           z-[60]: above regular page content but below the modal (z-[500]).
           GHL widget is lifted to 80px above bottom via globals.css.
         */}
-        <div className="fixed bottom-0 left-0 right-0 z-[60] lg:hidden bg-white/96 backdrop-blur-md border-t border-slate-200 px-4 py-3 shadow-[0_-6px_28px_rgba(15,23,42,0.09)]">
+        <div className="fixed bottom-0 left-0 right-0 z-[60] lg:hidden bg-white/96 backdrop-blur-md border-t border-slate-200 px-4 py-3 shadow-[0_-6px_28px_rgba(15,23,42,0.09)] pb-[calc(env(safe-area-inset-bottom)+12px)]">
           <div className="max-w-lg mx-auto flex gap-3">
             {/* Left: Call button */}
             <a
               href={`tel:+1${sanitizeTel(BRAND_PHONE)}`}
+              aria-label={`Call Us at ${BRAND_PHONE}`}
+              onClick={() => trackEvent("phone_click", { source: "listing_mobile_bar" })}
               className={[
-                "flex-1 inline-flex items-center justify-center rounded-xl px-3 py-3.5",
+                "flex-1 inline-flex items-center justify-center min-h-[48px] rounded-xl px-3 py-3.5",
                 "bg-white border border-slate-200 text-slate-700 text-sm font-semibold",
                 "shadow-[0_2px_8px_rgba(15,23,42,0.08)]",
                 "hover:bg-slate-50 hover:border-slate-300 hover:-translate-y-px",
@@ -1219,16 +1296,18 @@ function ListingDetailsContent() {
               <svg className="mr-1.5 h-4 w-4 opacity-70 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.8}>
                 <path strokeLinecap="round" strokeLinejoin="round" d="M3 5a2 2 0 012-2h3.28a1 1 0 01.948.684l1.498 4.493a1 1 0 01-.502 1.21l-2.257 1.13a11.042 11.042 0 005.516 5.516l1.13-2.257a1 1 0 011.21-.502l4.493 1.498a1 1 0 01.684.949V19a2 2 0 01-2 2h-1C9.716 21 3 14.284 3 6V5z" />
               </svg>
-              Call Mira
+              Call Us
             </a>
             {/* Right: Check Availability button */}
             <button
               type="button"
+              aria-label="Check availability for this villa"
               onClick={() => {
                 trackEvent("inquiry_open", { villa: title, listing_id: listing.id, source: "mobile_bar" });
                 openInquiry();
               }}
               className={[
+                "min-h-[48px]",
                 "flex-[2] inline-flex items-center justify-center rounded-xl px-3 py-3.5",
                 "bg-[#3f5f4a] text-white text-sm font-semibold",
                 "shadow-[0_3px_12px_rgba(63,95,74,0.22)]",

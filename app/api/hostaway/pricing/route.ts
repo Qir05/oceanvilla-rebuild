@@ -95,8 +95,15 @@ export async function GET(req: Request) {
         d?.closedOnDeparture !== 1
     );
 
+    // Hostaway's calendar returns one row per date INCLUDING the checkout
+    // date itself (e.g. startDate=Aug1/endDate=Aug4 returns Aug1-Aug4, 4
+    // rows, for what is actually a 3-night stay). The checkout day is not a
+    // stayed/charged night, so it must be excluded before summing price —
+    // otherwise every total is inflated by one extra night.
+    const stayDays = days.length > 1 ? days.slice(0, -1) : days;
+
     // Hostaway returns nightly price in several possible field names depending on plan/config
-    const prices: number[] = days
+    const prices: number[] = stayDays
       .map((d) =>
         Number(
           d?.price ?? d?.nightlyPrice ?? d?.basePrice ?? d?.costPerNight ?? 0
@@ -107,6 +114,7 @@ export async function GET(req: Request) {
     const hasPricing = prices.length > 0;
     const totalNightlyPrice = prices.reduce((sum, p) => sum + p, 0);
     const avgNightlyPrice = hasPricing ? totalNightlyPrice / prices.length : 0;
+    const minNightlyPrice = hasPricing ? Math.min(...prices) : 0;
 
     return NextResponse.json(
       {
@@ -114,10 +122,11 @@ export async function GET(req: Request) {
         listingId,
         startDate,
         endDate,
-        nights: days.length,
+        nights: stayDays.length,
         isAvailable,
         hasPricing,
         avgNightlyPrice: Math.round(avgNightlyPrice * 100) / 100,
+        minNightlyPrice: Math.round(minNightlyPrice * 100) / 100,
         totalNightlyPrice: Math.round(totalNightlyPrice * 100) / 100,
       },
       { status: 200 }

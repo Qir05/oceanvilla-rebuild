@@ -1,6 +1,7 @@
 // app/contact/page.tsx
 import Link from "next/link";
 import type { Metadata } from "next";
+import InquiryForm from "@/components/contact/InquiryForm";
 
 const pageTitle = "Contact | Ocean Villas at Turtle Bay";
 const pageDescription =
@@ -68,39 +69,69 @@ export default function ContactPage() {
             Contact Ocean Villas
           </h1>
           <p className="mt-4 text-lg text-slate-600 leading-relaxed max-w-xl">
-            Have a question about a villa, your booking, or planning your North Shore stay? Use the chat widget on this page or reach us by phone.
+            Have a question about a villa, your booking, or planning your North Shore stay? Send an inquiry below, use the chat widget on this page, or reach us by phone.
           </p>
         </div>
       </section>
 
       <section className="py-10 md:py-14">
-        <div className="mx-auto max-w-4xl px-6 lg:px-8">
-          <div className="grid gap-6 md:grid-cols-2">
-            <div className="rounded-2xl border border-slate-200 bg-white p-8 shadow-sm">
-              <h2 className="text-lg font-semibold text-slate-900 mb-4">Phone</h2>
+        <div className="mx-auto max-w-4xl px-6 lg:px-8 grid gap-8 lg:grid-cols-[1fr_360px] lg:items-start">
+          {/* Inquiry form */}
+          <InquiryForm />
+
+          {/* Sidebar: phone / chat / hours / other ways to reach us */}
+          <div className="space-y-6">
+            <div className="rounded-2xl border border-slate-200 bg-white p-6 shadow-sm">
+              <h2 className="text-base font-semibold text-slate-900 mb-3">Phone</h2>
               <p className="text-sm text-slate-600 mb-4">
-                Call Mira directly for booking questions, availability, or general inquiries.
+                Call Us directly for booking questions, availability, or general inquiries.
               </p>
               <a
                 href="tel:+18587272427"
-                className="inline-flex items-center justify-center rounded-xl bg-slate-900 px-6 py-3 text-sm font-semibold text-white hover:bg-slate-800 transition"
+                className="inline-flex w-full items-center justify-center rounded-xl bg-slate-900 px-6 py-3 text-sm font-semibold text-white hover:bg-slate-800 transition"
               >
-                Mira · (858) 727-2427
+                Call Us · (858) 727-2427
               </a>
             </div>
 
-            <div className="rounded-2xl border border-slate-200 bg-white p-8 shadow-sm">
-              <h2 className="text-lg font-semibold text-slate-900 mb-4">Live Chat</h2>
+            <div className="rounded-2xl border border-slate-200 bg-white p-6 shadow-sm">
+              <h2 className="text-base font-semibold text-slate-900 mb-3">Chat With Us</h2>
               <p className="text-sm text-slate-600 mb-4">
-                Use the chat widget at the bottom-right of any page to connect with the team directly.
+                Use the chat widget at the bottom-right of any page to connect with our local team directly.
               </p>
               <span className="inline-flex items-center rounded-full bg-emerald-50 border border-emerald-100 px-4 py-2 text-xs font-semibold text-emerald-700">
                 Chat available on every page
               </span>
             </div>
 
-            <div className="rounded-2xl border border-slate-200 bg-white p-8 shadow-sm">
-              <h2 className="text-lg font-semibold text-slate-900 mb-4">Booking Questions</h2>
+            <div className="rounded-2xl border border-dashed border-slate-300 bg-white p-6">
+              <h2 className="text-base font-semibold text-slate-900 mb-3">Other Ways to Reach Us</h2>
+              <ul className="space-y-2 text-sm text-slate-500">
+                <li className="flex items-center justify-between">
+                  <span>Email</span>
+                  <span className="text-xs font-medium text-amber-600">To be confirmed</span>
+                </li>
+                <li className="flex items-center justify-between">
+                  <span>Text message</span>
+                  <span className="text-xs font-medium text-amber-600">To be confirmed</span>
+                </li>
+                <li className="flex items-center justify-between">
+                  <span>WhatsApp</span>
+                  <span className="text-xs font-medium text-amber-600">To be confirmed</span>
+                </li>
+                <li className="flex items-center justify-between">
+                  <span>Contact hours</span>
+                  <span className="text-xs font-medium text-amber-600">To be confirmed</span>
+                </li>
+                <li className="flex items-center justify-between">
+                  <span>Typical response time</span>
+                  <span className="text-xs font-medium text-amber-600">To be confirmed</span>
+                </li>
+              </ul>
+            </div>
+
+            <div className="rounded-2xl border border-slate-200 bg-white p-6 shadow-sm">
+              <h2 className="text-base font-semibold text-slate-900 mb-3">Booking Questions</h2>
               <p className="text-sm leading-7 text-slate-600">
                 All booking, pricing, and availability is managed through Hostaway. Once you&apos;ve selected dates and a villa, the booking engine will guide you through secure checkout.
               </p>
@@ -112,10 +143,10 @@ export default function ContactPage() {
               </Link>
             </div>
 
-            <div className="rounded-2xl border border-slate-200 bg-white p-8 shadow-sm">
-              <h2 className="text-lg font-semibold text-slate-900 mb-4">Location</h2>
+            <div className="rounded-2xl border border-slate-200 bg-white p-6 shadow-sm">
+              <h2 className="text-base font-semibold text-slate-900 mb-3">Location</h2>
               <p className="text-sm leading-7 text-slate-600">
-                Ocean Villas at Turtle Bay is located on Oahu&apos;s North Shore, Hawaii. The properties are within the Turtle Bay resort area, approximately 45 minutes north of Honolulu International Airport.
+                Ocean Villas at Turtle Bay is located on Oahu&apos;s North Shore, Hawaii, within the Turtle Bay resort area, approximately 45 minutes north of Honolulu International Airport.
               </p>
               <Link
                 href="/location"

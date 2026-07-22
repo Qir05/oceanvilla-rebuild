@@ -48,6 +48,45 @@ export const VILLA_STAT_OVERRIDES: Record<
 };
 
 /**
+ * Editorial / descriptive villa details that are NOT available from the
+ * Hostaway API and have not yet been verified for every villa.
+ *
+ * Every field is optional and starts unset. Populate a field only once you
+ * have verified, factual data for that specific villa — the UI (rentals
+ * filters, comparison table, card badges) is built to gracefully hide any
+ * filter or field with zero populated values across all villas, rather than
+ * guessing. Do not infer view, floor, or ground-floor status from a villa's
+ * name or unit number.
+ *
+ * `editorialLabels` should only ever contain labels you can factually stand
+ * behind for that specific villa (e.g. "Ground-Floor Convenience" once
+ * `groundFloor: true` is confirmed). Labels driven purely by verified
+ * Hostaway numbers (guest capacity) are computed separately in the rentals
+ * UI and do not need to be listed here.
+ */
+export type VillaDetail = {
+  /** e.g. "Ocean View", "Partial Ocean View", "Garden View" — leave unset until confirmed. */
+  view?: string;
+  /** e.g. "Ground Floor", "2nd Floor" — leave unset until confirmed. */
+  floorLevel?: string;
+  /** True only once confirmed the unit has no stairs to the main living level. */
+  groundFloor?: boolean;
+  /** One short, factual differentiator shown on the villa card (e.g. "Steps from the beach path"). */
+  shortFeature?: string;
+  /** Manually curated labels this villa has verified support for. */
+  editorialLabels?: string[];
+};
+
+export const VILLA_DETAILS: Record<string, VillaDetail> = {
+  // "489089": { view: "Ocean View", floorLevel: "Ground Floor", groundFloor: true, ... },
+  // Populate as verified villa-specific data becomes available.
+};
+
+export function getVillaDetail(listingId: string): VillaDetail {
+  return VILLA_DETAILS[listingId] ?? {};
+}
+
+/**
  * Build a Hostaway booking engine URL for a specific listing.
  *
  * `base` is the value returned by /api/hostaway/listings as `bookingEngineBase`,

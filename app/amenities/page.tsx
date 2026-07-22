@@ -1,19 +1,27 @@
 // app/amenities/page.tsx
 import Link from "next/link";
 import type { Metadata } from "next";
+import MobileStickyBookingBar from "@/components/MobileStickyBookingBar";
+import AmenityDisclaimer from "@/components/AmenityDisclaimer";
+import {
+  AMENITIES_LIVING_COMFORT,
+  AMENITIES_OUTDOOR_PROPERTY,
+  AMENITIES_BOOKING_AND_SERVICE,
+  AMENITIES_RITZ_CARLTON_RESORT,
+} from "@/lib/amenities-data";
 
 export const metadata: Metadata = {
   title: {
     absolute: "Villa Amenities — Turtle Bay, North Shore Oahu | Ocean Villas",
   },
   description:
-    "See what's included in every Ocean Villas rental: gourmet kitchen, resort pool access, private lanai, ocean views, beach gear, and more. Book direct on Oahu's North Shore.",
+    "See what's included in every Ocean Villas rental: gourmet kitchen, private lanai, beach gear, and more, plus what's available separately through Turtle Bay Resort. Book direct on Oahu's North Shore.",
   alternates: { canonical: "/amenities" },
   robots: { index: true, follow: true },
   openGraph: {
     title: "Villa Amenities — Turtle Bay, North Shore Oahu | Ocean Villas",
     description:
-      "Every Ocean Villas rental includes gourmet kitchen, resort pool, private lanai, ocean views, and beach gear. Book direct — no platform fees.",
+      "Every Ocean Villas rental includes a gourmet kitchen, private lanai, and beach gear. Book direct — no platform fees.",
     url: "/amenities",
     siteName: "Ocean Villas at Turtle Bay",
     type: "website",
@@ -30,56 +38,15 @@ export const metadata: Metadata = {
     card: "summary_large_image",
     title: "Villa Amenities — Turtle Bay, North Shore Oahu | Ocean Villas",
     description:
-      "Every Ocean Villas rental includes gourmet kitchen, resort pool, private lanai, ocean views, and beach gear.",
+      "Every Ocean Villas rental includes a gourmet kitchen, private lanai, and beach gear.",
     images: ["/brand/TTB-Logo.png"],
   },
 };
 
 const AMENITY_GROUPS = [
-  {
-    group: "Living & Comfort",
-    items: [
-      "Fully equipped gourmet kitchen",
-      "High-speed WiFi throughout",
-      "Central air conditioning",
-      "Premium bed linens and towels",
-      "Smart TV with streaming services",
-      "Washer and dryer in unit",
-    ],
-  },
-  {
-    group: "Outdoor & Recreation",
-    items: [
-      "Private lanai or terrace",
-      "Ocean or garden views",
-      "Resort pool access",
-      "BBQ grill",
-      "Beach gear (chairs, umbrellas, snorkel sets)",
-      "Surf storage and rinse station",
-    ],
-  },
-  {
-    group: "Property & Access",
-    items: [
-      "Secure keyless entry",
-      "Dedicated parking space",
-      "Resort concierge access",
-      "Walkable to Turtle Bay beach",
-      "Close to North Shore dining and surf breaks",
-      "Pet policy varies by villa. Check listing for details.",
-    ],
-  },
-  {
-    group: "Booking & Service",
-    items: [
-      "Direct booking via Hostaway (no platform markups)",
-      "Live availability and pricing",
-      "Flexible check-in / check-out",
-      "Professional housekeeping",
-      "24/7 owner support contact",
-      "Secure Hostaway checkout",
-    ],
-  },
+  { group: "Living & Comfort", items: AMENITIES_LIVING_COMFORT },
+  { group: "Outdoor & Property", items: AMENITIES_OUTDOOR_PROPERTY },
+  { group: "Booking & Service", items: AMENITIES_BOOKING_AND_SERVICE },
 ];
 
 const faqJsonLd = {
@@ -88,10 +55,10 @@ const faqJsonLd = {
   mainEntity: [
     {
       "@type": "Question",
-      name: "Do Ocean Villas at Turtle Bay have a pool?",
+      name: "Do Ocean Villas at Turtle Bay have pool access?",
       acceptedAnswer: {
         "@type": "Answer",
-        text: "Yes. All guests receive resort pool access as part of their stay, and Turtle Bay Resort beach is a short walk from the villas.",
+        text: "Turtle Bay Resort has a pool, but it is managed by the resort, not Ocean Villas, and current access terms for villa guests have not yet been confirmed. Contact our local team before your stay to confirm the latest pool access policy.",
       },
     },
     {
@@ -115,15 +82,15 @@ const faqJsonLd = {
       name: "Do the villas have ocean views?",
       acceptedAnswer: {
         "@type": "Answer",
-        text: "Most villas feature ocean or garden views from a private lanai or terrace. Check the individual listing page for the specific view and layout for each villa.",
+        text: "View varies by villa. Check the individual villa page for its specific, confirmed view and layout.",
       },
     },
     {
       "@type": "Question",
-      name: "Are there extra fees for amenities?",
+      name: "Are there extra fees for villa amenities?",
       acceptedAnswer: {
         "@type": "Answer",
-        text: "No hidden amenity fees. All listed amenities are included in the nightly rate, sourced live from Hostaway. No third-party platform markups are added on top.",
+        text: "Amenities provided by the villa itself are included in the nightly rate, sourced live from Hostaway, with no third-party platform markups added. Amenities provided separately by Turtle Bay Resort may involve a reservation, day pass, or fee — confirm current terms with our local team.",
       },
     },
   ],
@@ -140,7 +107,7 @@ const breadcrumbJsonLd = {
 
 export default function AmenitiesPage() {
   return (
-    <main className="min-h-screen bg-slate-50 text-slate-900">
+    <main className="min-h-screen bg-slate-50 text-slate-900 pb-24 md:pb-0">
       <script
         type="application/ld+json"
         dangerouslySetInnerHTML={{ __html: JSON.stringify(breadcrumbJsonLd) }}
@@ -171,7 +138,7 @@ export default function AmenitiesPage() {
             Luxury Villa Amenities at Turtle Bay, North Shore Oahu
           </h1>
           <p className="mt-5 text-lg text-slate-600 leading-relaxed max-w-2xl">
-            Every Ocean Villa is set up for a complete North Shore stay. Gourmet kitchens, resort pool access, private lanais, beach gear, and ocean views. The details are handled so you can focus on Oahu.
+            Every Ocean Villa is set up for a complete North Shore stay: gourmet kitchens, private lanais, and beach gear are included with your villa. Turtle Bay Resort amenities are available separately — see below for what&apos;s confirmed.
           </p>
           <div className="mt-8 flex flex-wrap gap-4">
             <Link
@@ -191,7 +158,7 @@ export default function AmenitiesPage() {
       </section>
 
       <section className="py-16 md:py-20">
-        <div className="mx-auto max-w-7xl px-6 lg:px-8">
+        <div className="mx-auto max-w-7xl px-6 lg:px-8 space-y-10">
           <div className="grid gap-8 md:grid-cols-2">
             {AMENITY_GROUPS.map((group) => (
               <div
@@ -201,18 +168,45 @@ export default function AmenitiesPage() {
                 <h2 className="text-xl font-semibold text-slate-900 mb-5">{group.group}</h2>
                 <ul className="space-y-3">
                   {group.items.map((item) => (
-                    <li key={item} className="flex items-start gap-3 text-sm text-slate-600">
+                    <li key={item.name} className="flex items-start gap-3 text-sm text-slate-600">
                       <span className="mt-0.5 h-4 w-4 shrink-0 rounded-full bg-slate-900 flex items-center justify-center">
                         <svg className="h-2 w-2 text-white" fill="currentColor" viewBox="0 0 8 8">
                           <path d="M6.5 1.5L3 5 1.5 3.5l-1 1L3 7l4.5-4.5z" />
                         </svg>
                       </span>
-                      {item}
+                      <span>
+                        {item.name}
+                        {item.note && <span className="block text-xs text-slate-400 mt-0.5">{item.note}</span>}
+                      </span>
                     </li>
                   ))}
                 </ul>
               </div>
             ))}
+          </div>
+
+          {/* Turtle Bay Resort amenities — clearly separated, never presented as confirmed */}
+          <div className="rounded-2xl border border-slate-200 bg-white p-8 shadow-[0_4px_20px_rgba(15,23,42,0.05)]">
+            <h2 className="text-xl font-semibold text-slate-900 mb-2">Turtle Bay Resort Amenities</h2>
+            <p className="text-sm text-slate-500 mb-5">
+              Provided by Turtle Bay Resort, not Ocean Villas at Turtle Bay directly.
+            </p>
+            <ul className="space-y-4 mb-6">
+              {AMENITIES_RITZ_CARLTON_RESORT.map((item) => (
+                <li key={item.name} className="flex items-start gap-3 text-sm text-slate-600">
+                  <span className="mt-0.5 h-4 w-4 shrink-0 rounded-full bg-amber-400 flex items-center justify-center">
+                    <svg className="h-2 w-2 text-white" fill="currentColor" viewBox="0 0 8 8">
+                      <path d="M4 0l1 3h3L5.5 5 6.5 8 4 6 1.5 8l1-3L0 3h3z" />
+                    </svg>
+                  </span>
+                  <span>
+                    <span className="font-medium text-slate-700">{item.name}</span>
+                    {item.note && <span className="block text-xs text-slate-400 mt-0.5">{item.note}</span>}
+                  </span>
+                </li>
+              ))}
+            </ul>
+            <AmenityDisclaimer />
           </div>
         </div>
       </section>
@@ -231,10 +225,10 @@ export default function AmenitiesPage() {
           <div className="space-y-4">
             <details className="group rounded-2xl border border-slate-200 bg-slate-50 p-5">
               <summary className="cursor-pointer list-none text-base font-semibold text-slate-900">
-                Do Ocean Villas at Turtle Bay have a pool?
+                Do Ocean Villas at Turtle Bay have pool access?
               </summary>
               <p className="mt-3 text-sm leading-7 text-slate-600">
-                Yes. All guests receive resort pool access as part of their stay, and Turtle Bay Resort beach is a short walk from the villas.
+                Turtle Bay Resort has a pool, but it is managed by the resort, not Ocean Villas, and current access terms for villa guests have not yet been confirmed. Contact our local team before your stay to confirm the latest policy.
               </p>
             </details>
 
@@ -261,16 +255,16 @@ export default function AmenitiesPage() {
                 Do the villas have ocean views?
               </summary>
               <p className="mt-3 text-sm leading-7 text-slate-600">
-                Most villas feature ocean or garden views from a private lanai or terrace. Check the individual listing page for the specific view and layout for each villa.
+                View varies by villa. Check the individual villa page for its specific, confirmed view and layout.
               </p>
             </details>
 
             <details className="group rounded-2xl border border-slate-200 bg-slate-50 p-5">
               <summary className="cursor-pointer list-none text-base font-semibold text-slate-900">
-                Are there extra fees for amenities?
+                Are there extra fees for villa amenities?
               </summary>
               <p className="mt-3 text-sm leading-7 text-slate-600">
-                No hidden amenity fees. All listed amenities are included in the nightly rate, sourced live from Hostaway. No third-party platform markups are added on top.
+                Amenities provided by the villa itself are included in the nightly rate, sourced live from Hostaway, with no third-party platform markups added. Amenities provided separately by Turtle Bay Resort may involve a reservation, day pass, or fee — confirm current terms with our local team.
               </p>
             </details>
           </div>
@@ -314,6 +308,8 @@ export default function AmenitiesPage() {
           <div className="text-sm text-slate-500">© {new Date().getFullYear()} Ocean Villas at Turtle Bay. All rights reserved.</div>
         </div>
       </footer>
+
+      <MobileStickyBookingBar />
     </main>
   );
 }
