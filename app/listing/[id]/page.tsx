@@ -6,6 +6,7 @@ import { Suspense, useCallback, useEffect, useMemo, useRef, useState } from "rea
 import { useParams, useSearchParams } from "next/navigation";
 import TrustSignals from "@/components/TrustSignals";
 import { trackEvent } from "@/lib/analytics";
+import { getVillaCompliance, type VillaComplianceDetails } from "@/lib/villaCompliance";
 
 // ─── Types ────────────────────────────────────────────────────
 
@@ -440,9 +441,53 @@ function parseDescription(raw: string): ParsedDescription {
   return { overview: chunks[0] || text, highlights: [], details: chunks.slice(1) };
 }
 
+// ─── Compliance details (TMK, TA registration, occupancy) ─────
+//
+// Rendered as the final element of the "About this villa" section for
+// listings with verified compliance data. Sourced from lib/villaCompliance.ts,
+// which is entirely separate from the live Hostaway listing response.
+
+function ComplianceDetails({ compliance }: { compliance: VillaComplianceDetails }) {
+  return (
+    <div className="mt-6 pt-5 border-t border-slate-100">
+      <div className="text-[10px] font-bold uppercase tracking-widest text-slate-400 mb-3">
+        Property Registration &amp; Occupancy
+      </div>
+      <dl className="grid grid-cols-1 sm:grid-cols-2 gap-x-8 gap-y-3 text-sm">
+        <div className="flex items-baseline justify-between gap-3 sm:block">
+          <dt className="text-slate-400">Maximum Occupancy</dt>
+          <dd className="font-semibold text-slate-800 sm:mt-0.5">
+            {compliance.maximumOccupancy} guests
+          </dd>
+        </div>
+        <div className="flex items-baseline justify-between gap-3 sm:block">
+          <dt className="text-slate-400">Occupancy per Bedroom</dt>
+          <dd className="font-semibold text-slate-800 sm:mt-0.5">
+            {compliance.occupancyPerBedroom}
+          </dd>
+        </div>
+        <div className="flex items-baseline justify-between gap-3 sm:block">
+          <dt className="text-slate-400">Tax Map Key (TMK)</dt>
+          <dd className="font-semibold text-slate-800 sm:mt-0.5">{compliance.taxMapKey}</dd>
+        </div>
+        <div className="flex items-baseline justify-between gap-3 sm:block">
+          <dt className="text-slate-400">TA Registration</dt>
+          <dd className="font-semibold text-slate-800 sm:mt-0.5">{compliance.tat}</dd>
+        </div>
+      </dl>
+    </div>
+  );
+}
+
 // ─── Description ─────────────────────────────────────────────
 
-function DescriptionSection({ description }: { description: string }) {
+function DescriptionSection({
+  description,
+  compliance,
+}: {
+  description: string;
+  compliance?: VillaComplianceDetails;
+}) {
   const [expanded, setExpanded] = useState(false);
   const parsed = useMemo(() => parseDescription(description), [description]);
   const hasHighlights = parsed.highlights.length > 0;
@@ -526,6 +571,9 @@ function DescriptionSection({ description }: { description: string }) {
             </div>
           );
         })()}
+
+        {/* Compliance details — always visible, never gated behind "Read more" */}
+        {compliance && <ComplianceDetails compliance={compliance} />}
       </div>
     </RevealSection>
   );
@@ -533,7 +581,13 @@ function DescriptionSection({ description }: { description: string }) {
 
 // ─── Override description (curated listings) ─────────────────
 
-function OverrideDescriptionSection({ override }: { override: DescriptionOverride }) {
+function OverrideDescriptionSection({
+  override,
+  compliance,
+}: {
+  override: DescriptionOverride;
+  compliance?: VillaComplianceDetails;
+}) {
   return (
     <RevealSection className="mt-10">
       <h2 className="text-xl font-semibold text-slate-900 mb-5">About this villa</h2>
@@ -569,6 +623,9 @@ function OverrideDescriptionSection({ override }: { override: DescriptionOverrid
           </div>
         </div>
       )}
+
+      {/* Compliance details — always visible, never gated behind "Read more" */}
+      {compliance && <ComplianceDetails compliance={compliance} />}
     </RevealSection>
   );
 }
@@ -1107,6 +1164,7 @@ function ListingDetailsContent() {
     : [];
   const images = reorderImages(listing.id, rawImages);
   const amenities = listing.amenities || [];
+  const compliance = getVillaCompliance(listing.id);
 
   return (
     <>
@@ -1214,8 +1272,8 @@ function ListingDetailsContent() {
 
               {/* Description — scroll reveal */}
               {LISTING_DESCRIPTION_OVERRIDES[listing.id]
-                ? <OverrideDescriptionSection override={LISTING_DESCRIPTION_OVERRIDES[listing.id]!} />
-                : <DescriptionSection description={description} />
+                ? <OverrideDescriptionSection override={LISTING_DESCRIPTION_OVERRIDES[listing.id]!} compliance={compliance} />
+                : <DescriptionSection description={description} compliance={compliance} />
               }
 
               {/* Amenities — scroll reveal */}
