@@ -49,8 +49,8 @@ export const VILLA_COMPLIANCE: Record<string, VillaComplianceDetails> = {
     unit: "Villa 218",
     taxMapKey: "570010130039",
     tat: "TA-157-647-8720-01",
-    maximumOccupancy: 10,
-    occupancyPerBedroom: "2 for each bedroom, 4 in double queen bedroom",
+    maximumOccupancy: 12,
+    occupancyPerBedroom: "2 in each master bedroom, 4 in the double queen bedroom, and 4 in the two bunk beds room",
   },
   "505671": {
     // Villa 304

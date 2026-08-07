@@ -38,6 +38,7 @@ export type OceanVillaListingId = (typeof OCEAN_VILLA_LISTING_IDS)[number];
  * "489097" — Combined 2-in-1 (Honeymoon + Ohana): Hostaway has 2 baths / 8 guests;
  *             actual configuration is 3 bathrooms, sleeps 12.
  * "505671" — The View Villa: Hostaway has 8 guests; actual capacity is 10.
+ * "489089" — Villa 218: Hostaway has 10 guests; actual capacity is 12.
  */
 export const VILLA_STAT_OVERRIDES: Record<
   string,
@@ -45,6 +46,7 @@ export const VILLA_STAT_OVERRIDES: Record<
 > = {
   "489097": { maxGuests: 12, bathrooms: 3 },
   "505671": { maxGuests: 10 },
+  "489089": { maxGuests: 12 },
 };
 
 /**
