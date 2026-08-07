@@ -377,6 +377,14 @@ export default function Home() {
           text: "Turtle Bay offers a private-villa experience far from the crowds of Waikiki. Guests enjoy direct beach access, world-class surf nearby, and a more authentic island pace, with all the comfort of a luxury villa.",
         },
       },
+      {
+        "@type": "Question",
+        name: "Why stay at Ocean Villas instead of a hotel at Turtle Bay?",
+        acceptedAnswer: {
+          "@type": "Answer",
+          text: "Ocean Villas combines the luxury and convenience of a resort setting with the comfort and privacy of a spacious vacation home. Guests can enjoy multiple bedrooms, full kitchens, expansive living areas, private lanais where applicable, and room for families and groups to relax together—all while staying close to the beaches and experiences that make Turtle Bay and Oahu’s North Shore a sought-after destination.",
+        },
+      },
     ],
   };
 
@@ -524,7 +532,7 @@ export default function Home() {
       />
 
       <header className="sticky top-0 z-50 border-b border-slate-200 bg-white/90 backdrop-blur-md">
-        <div className="relative mx-auto flex h-16 md:h-20 max-w-7xl items-center justify-between px-4 sm:px-6 lg:px-8">
+        <div className="relative mx-auto flex h-16 lg:h-20 max-w-7xl items-center justify-between px-4 sm:px-6 lg:px-8">
           <a href="#top" className="flex items-center gap-3 z-10 shrink-0">
             <div className="relative h-8 w-8 md:h-10 md:w-10 overflow-hidden">
               <Image src="/brand/TTB-Logo.png" alt={BRAND.name} fill className="object-contain" priority />
@@ -532,13 +540,13 @@ export default function Home() {
             <div className="text-lg md:text-xl font-serif font-bold text-slate-900 hidden sm:block">{BRAND.name}</div>
           </a>
 
-          <div className="absolute inset-0 flex items-center justify-center md:hidden pointer-events-none px-14">
+          <div className="absolute inset-0 flex items-center justify-center sm:hidden pointer-events-none px-14">
             <span className="text-[13px] font-serif font-bold text-[#0A4C61] text-center leading-tight tracking-tight">
               Luxury Villas on Oahu’s North Shore
             </span>
           </div>
 
-          <nav className="hidden md:flex items-center gap-6 text-sm font-medium text-slate-600 z-10">
+          <nav className="hidden lg:flex items-center gap-6 text-sm font-medium text-slate-600 z-10">
             <Link className="hover:text-slate-900 transition-colors" href="/rentals">
               Villas
             </Link>
@@ -557,7 +565,7 @@ export default function Home() {
             </Link>
           </nav>
 
-          <div className="hidden md:flex items-center gap-6 z-10">
+          <div className="hidden lg:flex items-center gap-6 z-10">
             <a
               className="text-sm font-medium text-slate-600 hover:text-slate-900 transition"
               href={`tel:+1${sanitizeTel(BRAND.phone)}`}
@@ -570,13 +578,13 @@ export default function Home() {
             </PrimaryButton>
           </div>
 
-          <button className="md:hidden p-2 text-sm font-semibold text-slate-600 z-10" onClick={() => setMobileMenuOpen(!mobileMenuOpen)}>
+          <button className="lg:hidden p-2 text-sm font-semibold text-slate-600 z-10" onClick={() => setMobileMenuOpen(!mobileMenuOpen)}>
             {mobileMenuOpen ? "Close" : "Menu"}
           </button>
         </div>
 
         {mobileMenuOpen && (
-          <div className="md:hidden border-t border-slate-200 bg-white px-4 py-4 shadow-lg absolute w-full z-20">
+          <div className="lg:hidden border-t border-slate-200 bg-white px-4 py-4 shadow-lg absolute w-full z-20">
             <div className="flex flex-col gap-4 text-sm font-medium text-slate-600">
               <Link onClick={() => setMobileMenuOpen(false)} href="/rentals" className="py-2 hover:text-slate-900">
                 Villas
@@ -638,12 +646,22 @@ export default function Home() {
           <div className="mx-auto w-full max-w-7xl">
             <div className="max-w-4xl">
               <h1 className="text-4xl sm:text-5xl md:text-7xl font-serif font-medium tracking-tight text-white leading-tight [text-shadow:0_2px_16px_rgba(0,0,0,0.4)]">
-                Luxury Vacation Rentals at Turtle Bay, Oahu&apos;s North Shore
+                Wake Up to Ocean Views. End Your Day with Hawaiian Sunsets.
               </h1>
 
               <p className="mt-4 max-w-2xl text-base sm:text-lg text-white/90 leading-relaxed md:mt-6 [text-shadow:0_1px_10px_rgba(0,0,0,0.4)]">
-                Ocean Villas sits in the heart of Turtle Bay, near the Ritz Carlton. North Shore regulars keep coming back to our villas. Browse featured villas, check live availability, and book direct.
+                Discover luxury beachfront villas where every stay is designed for relaxation, connection, and unforgettable island experiences. Located within the exclusive Ocean Villas at Turtle Bay, our spacious accommodations place you just steps from the beach and moments from the very best of Oahu&apos;s North Shore.
               </p>
+
+              <div className="mt-7 md:mt-9">
+                <Link
+                  href="/rentals"
+                  className="inline-flex items-center justify-center rounded-xl px-6 py-3 text-sm font-semibold bg-slate-900 text-white shadow-md transition-all duration-200 hover:bg-slate-800 hover:shadow-lg active:scale-[0.98] focus:outline-none focus:ring-2 focus:ring-slate-400 focus:ring-offset-2 sm:text-base sm:px-7 sm:py-3.5"
+                  onClick={() => trackEvent("cta_click", { source: "home_hero", label: "Find Your Perfect Villa" })}
+                >
+                  Find Your Perfect Villa
+                </Link>
+              </div>
             </div>
           </div>
         </div>
@@ -720,6 +738,17 @@ export default function Home() {
         </div>
       </section>
 
+      {/* OPENING NARRATIVE */}
+      <section className="py-16 md:py-20 bg-white">
+        <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
+          <SectionTitle
+            eyebrow="The Experience"
+            title="Experience the North Shore Like Never Before"
+            desc="Wake up to breathtaking ocean views, spend your days exploring pristine beaches and world-famous surf breaks, and unwind each evening with spectacular Hawaiian sunsets. Whether you’re planning a family getaway, celebrating a special occasion, or simply escaping to paradise, Ocean Villas at Turtle Bay offers the perfect setting to create unforgettable memories on Oahu’s iconic North Shore."
+          />
+        </div>
+      </section>
+
       {/* TRUST SIGNALS */}
       <TrustSignals />
 
@@ -727,23 +756,23 @@ export default function Home() {
       <section className="py-16 md:py-20 bg-white">
         <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
           <SectionTitle
-            eyebrow="Why Book Direct"
-            title="The North Shore, without the platform markup"
-            desc="Ocean Villas at Turtle Bay is built for guests who want a genuine North Shore experience: private villas, live rates, and a clean direct booking path."
+            eyebrow="Book With Us"
+            title="Why Book Direct?"
+            desc="Booking directly with Ocean Villas means more than securing a competitive rate. It gives guests direct access to the local team, personalized recommendations, exclusive offers when available, and dedicated support before and throughout their stay—helping create a seamless Hawaiian vacation from the moment planning begins."
           />
 
           <div className="mt-10 grid gap-6 md:grid-cols-3">
             <InfoCard
-              title="North Shore access"
-              desc="Turtle Bay sits at the far northeast of Oahu, away from the resort crowds, close to legendary surf breaks, local beaches, and the unhurried pace the North Shore is known for."
+              title="Direct access to our team"
+              desc="Skip the third-party platform and connect straight with our local team for questions, recommendations, and support, before you even book."
             />
             <InfoCard
-              title="Book direct and save"
-              desc="Search live availability, review the full villa, and move directly into booking, without the service fees that third-party travel platforms add on top."
+              title="Personalized planning"
+              desc="Get tailored villa recommendations and North Shore guidance suited to your trip, from a team that knows every villa firsthand."
             />
             <InfoCard
-              title="Private villa stays"
-              desc="These aren’t hotel rooms. Each villa is a full private space, managed through Hostaway for accurate availability and pricing, every time you search."
+              title="Savings, without the markup"
+              desc="Rates are sourced directly from Hostaway with no added platform fees, a welcome benefit on top of the direct support you get along the way."
             />
           </div>
         </div>
@@ -754,8 +783,8 @@ export default function Home() {
         <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
           <SectionTitle
             eyebrow="North Shore Beaches"
-            title="Where you'll spend your days"
-            desc="The North Shore of Oahu moves at its own pace, less crowded, more local, and a long way from Waikiki. The beaches here don't need much explaining."
+            title="Discover the Magic of Oahu’s North Shore"
+            desc="Spend your mornings strolling along quiet beaches, your afternoons snorkeling in clear waters or exploring scenic coastal trails, and your evenings enjoying unforgettable sunsets just steps from your villa. From iconic surf beaches to local eateries, every day on the North Shore offers a new experience waiting to be discovered."
           />
 
           <div className="mt-10 grid gap-6 md:grid-cols-2">
@@ -776,8 +805,8 @@ export default function Home() {
         <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
           <SectionTitle
             eyebrow="The Collection"
-            title="Featured Turtle Bay Villas"
-            desc="Browse curated villas connected to live booking data, then view the individual villa page or continue directly into booking."
+            title="Find the Villa That Fits Your Perfect Vacation"
+            desc="Whether guests are gathering the entire family, celebrating a milestone, planning a couples’ retreat, or simply looking for a relaxing escape, each Ocean Villa offers thoughtfully designed spaces, luxury amenities, and the comfort of feeling at home in paradise."
           />
 
           <div className="mt-10 md:mt-12">
@@ -859,6 +888,10 @@ export default function Home() {
             <FAQItem
               question="Is Turtle Bay better than staying in Waikiki?"
               answer="Turtle Bay offers a private-villa experience far from the crowds of Waikiki. Guests enjoy direct beach access, world-class surf nearby, and a more authentic island pace, with all the comfort of a luxury villa."
+            />
+            <FAQItem
+              question="Why stay at Ocean Villas instead of a hotel at Turtle Bay?"
+              answer="Ocean Villas combines the luxury and convenience of a resort setting with the comfort and privacy of a spacious vacation home. Guests can enjoy multiple bedrooms, full kitchens, expansive living areas, private lanais where applicable, and room for families and groups to relax together—all while staying close to the beaches and experiences that make Turtle Bay and Oahu’s North Shore a sought-after destination."
             />
           </div>
         </div>

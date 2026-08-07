@@ -18,11 +18,11 @@ const siteUrl = "https://oceanvillasturtlebay.com";
 export const metadata: Metadata = {
   metadataBase: new URL(siteUrl),
   title: {
-    default: "Ocean Villas at Turtle Bay — Luxury Vacation Rentals, North Shore Oahu",
+    default: "Ocean Villas at Turtle Bay — Luxury Beachfront Villas, North Shore Oahu",
     template: "%s | Ocean Villas at Turtle Bay",
   },
   description:
-    "Private luxury villa rentals at Turtle Bay on Oahu’s North Shore. Book direct for live availability and transparent pricing — no platform fees. 7 curated villas.",
+    "Luxury beachfront villas at Turtle Bay on Oahu’s North Shore — ideal for family vacations, milestone celebrations, and island getaways. Book direct for live availability and transparent pricing — no platform fees. 7 curated private villa rentals.",
   alternates: {
     canonical: "/",
   },
@@ -31,9 +31,9 @@ export const metadata: Metadata = {
     follow: true,
   },
   openGraph: {
-    title: "Ocean Villas at Turtle Bay — Luxury Vacation Rentals, North Shore Oahu",
+    title: "Ocean Villas at Turtle Bay — Luxury Beachfront Villas, North Shore Oahu",
     description:
-      "Stay in a private luxury villa at Turtle Bay, Oahu’s North Shore. Browse 7 curated villas, check live availability, and book direct — no platform fees.",
+      "Stay in a private luxury beachfront villa at Turtle Bay, Oahu’s North Shore. Browse 7 curated villas, check live availability, and book direct — no platform fees.",
     url: siteUrl,
     siteName: "Ocean Villas at Turtle Bay",
     type: "website",
@@ -48,9 +48,9 @@ export const metadata: Metadata = {
   },
   twitter: {
     card: "summary_large_image",
-    title: "Ocean Villas at Turtle Bay — Luxury Vacation Rentals, North Shore Oahu",
+    title: "Ocean Villas at Turtle Bay — Luxury Beachfront Villas, North Shore Oahu",
     description:
-      "Private luxury villas at Turtle Bay, North Shore Oahu. Book direct with live availability — no platform markups.",
+      "Private luxury beachfront villas at Turtle Bay, North Shore Oahu. Book direct with live availability — no platform markups.",
     images: ["/brand/TTB-Logo.png"],
   },
   icons: {

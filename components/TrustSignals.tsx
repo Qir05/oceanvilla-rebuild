@@ -5,6 +5,10 @@
 // booking). No star rating, review count, or response-time SLA is invented —
 // the reviews slot is a clearly labeled placeholder until real testimonials
 // and a verified rating are provided.
+//
+// Copy is framed around the guest benefit of each fact (personalized support,
+// booking confidence, effortless stays) rather than the operational feature
+// itself, per the Phase 1 homepage messaging refresh.
 
 import { OCEAN_VILLA_LISTING_IDS } from "@/lib/ocean-villas";
 
@@ -12,23 +16,27 @@ const VILLA_COUNT = OCEAN_VILLA_LISTING_IDS.length;
 
 const FACTS = [
   {
-    title: `${VILLA_COUNT} Villas, Professionally Managed`,
-    desc: "Every Ocean Villas property at Turtle Bay is professionally managed, from housekeeping to guest support.",
+    title: "Effortless Stays, Every Time",
+    desc: `Every one of our ${VILLA_COUNT} Ocean Villas properties at Turtle Bay is professionally managed, so guests can relax knowing their stay is well cared for from arrival to departure.`,
   },
   {
-    title: "Direct Booking, Live Pricing",
-    desc: "Availability and rates are sourced directly from Hostaway — no third-party platform markups added on top.",
+    title: "Book with Confidence",
+    desc: "Guests receive direct communication, personalized service, and support from a dedicated local team committed to making their vacation effortless from arrival to departure.",
   },
   {
-    title: "Local, On-the-Ground Team",
-    desc: "Our team is based on Oahu's North Shore and supports guests throughout their stay at Turtle Bay.",
+    title: "Personalized Local Support",
+    desc: "From restaurant recommendations and island activities to pre-arrival assistance, our local team is here to help guests experience the very best of Oahu's North Shore.",
   },
 ];
 
 export default function TrustSignals({ variant = "full" }: { variant?: "full" | "compact" }) {
   if (variant === "compact") {
     return (
-      <div className="grid gap-4 sm:grid-cols-3">
+      // 3-up once there's room (full-width stacked layout or the widened xl
+      // sidebar column); 2-up in the lg–xl band where the listing page's
+      // 360px booking sidebar squeezes the main column and 3 columns made
+      // this longer guest-benefit copy wrap awkwardly tight.
+      <div className="grid gap-4 sm:grid-cols-3 lg:grid-cols-2 xl:grid-cols-3">
         {FACTS.map((f) => (
           <div key={f.title} className="rounded-xl border border-slate-200 bg-white p-4">
             <div className="text-sm font-semibold text-slate-900">{f.title}</div>
