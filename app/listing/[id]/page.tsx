@@ -1,1059 +1,54 @@
-"use client";
-
-import Image from "next/image";
+// app/listing/[id]/page.tsx
+//
+// Server component: fetches the listing from Hostaway server-side (Tier 1,
+// via lib/hostaway-listing.ts, revalidated every 5 minutes) so guest
+// capacity, bedrooms, bathrooms, amenities, and description are present in
+// the initial server-rendered HTML rather than only appearing after a
+// client-side fetch — required for both traditional crawlers and AI answer
+// engines that don't execute JavaScript. Interactivity (gallery, booking
+// card, inquiry modal) lives in the client component ListingClient.tsx.
+import type { Metadata } from "next";
 import Link from "next/link";
-import { Suspense, useCallback, useEffect, useMemo, useRef, useState } from "react";
-import { useParams, useSearchParams } from "next/navigation";
-import TrustSignals from "@/components/TrustSignals";
-import { trackEvent } from "@/lib/analytics";
-import { getVillaCompliance, type VillaComplianceDetails } from "@/lib/villaCompliance";
+import { notFound } from "next/navigation";
+import { fetchHostawayListing } from "@/lib/hostaway-listing";
+import { getVillaCompliance } from "@/lib/villaCompliance";
+import { getDisplayName } from "@/lib/villa-display";
+import ListingClient from "./ListingClient";
 
-// ─── Types ────────────────────────────────────────────────────
-
-type HostawayListing = {
-  id: string;
-  name: string;
-  description?: string;
-  city?: string;
-  state?: string;
-  country?: string;
-  maxGuests?: number;
-  bedrooms?: number;
-  bathrooms?: number;
-  heroUrl?: string;
-  images?: string[];
-  amenities?: string[];
-  checkInTime?: string;
-  checkOutTime?: string;
-  bookingEngineBase?: string;
-};
-
-// ─── Constants ────────────────────────────────────────────────
-
-const GHL_FORM_BASE = "https://api.leadconnectorhq.com/widget/form/ZSl4b5HMWIr8ULY5bAGa";
+const SITE_URL = "https://oceanvillasturtlebay.com";
 const BRAND_PHONE = "(858) 727-2427";
-const BRAND_NAME = "Ocean Villas at Turtle Bay";
 
-const LISTING_DISPLAY_NAMES: Record<string, string> = {
-  "489095": "The Penthouse Villa", // Villa 318
-  "505671": "The View Villa",      // Villa 304
+type PageProps = {
+  params: Promise<{ id: string }>;
 };
 
-const HERO_IMAGE_OVERRIDES: Record<string, number> = {
-  "505671": 1,
-};
-
-function getDisplayName(id: string, rawName: string): string {
-  if (LISTING_DISPLAY_NAMES[id]) return LISTING_DISPLAY_NAMES[id];
-  if (/\b(?:ov|villa|unit)?\s*318\b/i.test(rawName)) return "The Penthouse Villa";
-  if (/\b(?:ov|villa|unit)?\s*304\b/i.test(rawName)) return "The View Villa";
-  return rawName || `Villa ${id}`;
-}
-
-function reorderImages(listingId: string, images: string[]): string[] {
-  const preferredIdx = HERO_IMAGE_OVERRIDES[listingId];
-  if (preferredIdx === undefined || preferredIdx === 0 || images.length <= preferredIdx) {
-    return images;
-  }
-  const reordered = [...images];
-  const [preferred] = reordered.splice(preferredIdx, 1);
-  return [preferred, ...reordered];
-}
-
-type DescriptionOverride = {
-  paragraphs: string[];
-  highlights: string[];
-};
-
-const LISTING_DESCRIPTION_OVERRIDES: Record<string, DescriptionOverride> = {
-  "505671": {
-    paragraphs: [
-      "Welcome to The View Villa at Ocean Villas at Turtle Bay, a top-floor four-bedroom retreat designed for families, groups, and guests who want a more elevated North Shore stay. Set within the Turtle Bay resort area, this villa pairs ocean-view living with refined comfort, generous indoor space, and easy access to the beaches, resort paths, pool, tennis, oceanfront fitness, dining, and the relaxed rhythm of Oahu's North Shore.",
-      "From the private lanai, guests can take in sweeping coastal views, fresh trade winds, and the peaceful setting that makes Turtle Bay one of the most desirable stays on the island. Inside, the villa offers high ceilings, central air conditioning, a well-equipped kitchen, comfortable gathering spaces, premium bedroom setups, and thoughtful beach-day essentials for a seamless stay.",
-      "The View Villa is ideal for guests who want more than a standard Oahu rental. It gives you space to settle in, privacy to unwind, and a true North Shore base close to quiet beaches, scenic shoreline, family-friendly beach parks, surf breaks, local farms, Haleiwa, and the natural beauty that makes this side of Oahu feel special.",
-    ],
-    highlights: [
-      "Rare four-bedroom top-floor layout",
-      "Ocean-view lanai and elevated coastal perspective",
-      "Comfortable living areas for families and groups",
-      "Central air conditioning and refined interior finishes",
-      "Well-equipped kitchen for easy meals and longer stays",
-      "Beach essentials for relaxed North Shore days",
-      "Access to Turtle Bay resort-area amenities",
-      "Close to quiet beaches, surf spots, local dining, and North Shore attractions",
-    ],
-  },
-};
-
-// ─── Helpers ─────────────────────────────────────────────────
-
-function sanitizeTel(phone: string) {
-  return (phone || "").replace(/[^\d+]/g, "") || phone;
-}
-
-
-// ─── Scroll-reveal component ──────────────────────────────────
-//
-// Adds .ov-reveal class after mount (so SSR renders normally),
-// then .ov-visible when the element enters the viewport.
-// CSS transitions (defined in globals.css) handle the animation.
-
-function RevealSection({
-  children,
-  delay = 0,
-  className = "",
-}: {
-  children: React.ReactNode;
-  delay?: number;
-  className?: string;
-}) {
-  const ref = useRef<HTMLDivElement>(null);
-
-  useEffect(() => {
-    const el = ref.current;
-    if (!el) return;
-
-    // Mark hidden (transition starting point)
-    el.classList.add("ov-reveal");
-
-    if (typeof IntersectionObserver === "undefined") {
-      el.classList.add("ov-visible");
-      return;
-    }
-
-    const obs = new IntersectionObserver(
-      ([entry]) => {
-        if (entry.isIntersecting) {
-          el.classList.add("ov-visible");
-          obs.disconnect();
-        }
-      },
-      { threshold: 0.08, rootMargin: "0px 0px -20px 0px" }
-    );
-
-    obs.observe(el);
-    return () => obs.disconnect();
-  }, []);
-
-  return (
-    <div
-      ref={ref}
-      className={className}
-      style={delay ? { transitionDelay: `${delay}ms` } : undefined}
-    >
-      {children}
-    </div>
-  );
-}
-
-// ─── StatBadge ───────────────────────────────────────────────
-// Shared card used for every entry in the villa stats grid (Sleeps,
-// Bedrooms, Bathrooms, Check-in/Check-out). One component, one visual
-// style, so the grid never mixes differently-sized cards.
-
-function StatBadge({ label, value }: { label: string; value: string }) {
-  return (
-    <div className="flex h-full flex-col items-center justify-center gap-1.5 rounded-2xl border border-slate-200 bg-white px-3 py-4 text-center shadow-[0_2px_8px_rgba(15,23,42,0.04)]">
-      <span className="text-[10px] font-bold uppercase tracking-widest text-slate-400">
-        {label}
-      </span>
-      <span className="text-sm font-bold text-slate-900">{value}</span>
-    </div>
-  );
-}
-
-// ─── Gallery ─────────────────────────────────────────────────
-
-function Gallery({ images, title }: { images: string[]; title: string }) {
-  const [activeIdx, setActiveIdx] = useState(0);
-  const [showGrid, setShowGrid] = useState(false);
-  const safeImages = images.length > 0 ? images : ["/media/rentals/placeholder.jpg"];
-  const active = safeImages[activeIdx] || safeImages[0];
-
-  useEffect(() => {
-    if (!showGrid) return;
-    document.body.style.overflow = "hidden";
-    return () => { document.body.style.overflow = ""; };
-  }, [showGrid]);
-
-  return (
-    // ov-gallery-enter: CSS animation defined in globals.css for the initial entrance
-    <div className="space-y-3 ov-gallery-enter">
-      {/* Main image */}
-      <div className="relative w-full aspect-[16/10] sm:aspect-[16/9] rounded-2xl sm:rounded-3xl overflow-hidden bg-slate-200 shadow-[0_12px_48px_rgba(15,23,42,0.14)]">
-        {/*
-          key={active} forces remount on image switch → triggers ov-img-crossfade.
-          priority only on first image for LCP.
-        */}
-        <Image
-          key={active}
-          src={active}
-          alt={`${title}, photo ${activeIdx + 1}`}
-          fill
-          unoptimized
-          className="object-cover ov-img-crossfade"
-          priority={activeIdx === 0}
-        />
-
-        {/* Photo counter pill */}
-        {safeImages.length > 1 && (
-          <div className="absolute bottom-4 right-4 rounded-full bg-black/48 backdrop-blur-sm px-3 py-1 text-xs font-semibold text-white tabular-nums select-none">
-            {activeIdx + 1} / {safeImages.length}
-          </div>
-        )}
-      </div>
-
-      {/* Thumbnail strip — all photos, horizontally scrollable */}
-      {safeImages.length > 1 && (
-        <div className="flex gap-2 overflow-x-auto [scrollbar-width:none] [&::-webkit-scrollbar]:hidden pb-1">
-          {safeImages.map((src, i) => (
-            <button
-              key={i}
-              type="button"
-              onClick={() => setActiveIdx(i)}
-              className={[
-                "relative shrink-0 rounded-xl overflow-hidden border-2 transition-all duration-200",
-                "w-16 h-11 sm:w-[78px] sm:h-14",
-                i === activeIdx
-                  ? "border-slate-900 opacity-100 shadow-[0_4px_12px_rgba(15,23,42,0.18)] scale-[1.03]"
-                  : "border-transparent opacity-45 hover:opacity-80 hover:border-slate-300",
-              ].join(" ")}
-              aria-label={`View photo ${i + 1}`}
-              aria-pressed={i === activeIdx}
-            >
-              <Image
-                src={src}
-                alt={`${title} thumbnail ${i + 1}`}
-                fill
-                unoptimized
-                className="object-cover"
-              />
-            </button>
-          ))}
-        </div>
-      )}
-
-      {/* View all photos button */}
-      {safeImages.length > 1 && (
-        <button
-          type="button"
-          onClick={() => setShowGrid(true)}
-          className="text-xs font-semibold text-slate-500 hover:text-slate-800 transition underline underline-offset-2 decoration-slate-300"
-        >
-          View all {safeImages.length} photos
-        </button>
-      )}
-
-      {/* Full photo grid overlay */}
-      {showGrid && (
-        <div
-          className="fixed inset-0 z-[500] bg-black/85 backdrop-blur-sm overflow-y-auto"
-          onClick={(e) => { if (e.target === e.currentTarget) setShowGrid(false); }}
-        >
-          <div className="min-h-full flex flex-col">
-            <div className="sticky top-0 z-10 flex items-center justify-between bg-black/90 px-5 py-4">
-              <span className="text-sm font-semibold text-white">
-                {title} · {safeImages.length} photos
-              </span>
-              <button
-                type="button"
-                onClick={() => setShowGrid(false)}
-                className="flex h-8 w-8 items-center justify-center rounded-full bg-white/10 text-white hover:bg-white/20 transition text-xl leading-none"
-                aria-label="Close gallery"
-              >
-                ×
-              </button>
-            </div>
-            <div className="p-3 sm:p-4 grid grid-cols-2 sm:grid-cols-3 gap-2 sm:gap-3">
-              {safeImages.map((src, i) => (
-                <button
-                  key={i}
-                  type="button"
-                  onClick={() => { setActiveIdx(i); setShowGrid(false); }}
-                  className={[
-                    "relative aspect-[4/3] overflow-hidden rounded-xl transition-all duration-150",
-                    i === activeIdx ? "ring-2 ring-white" : "hover:opacity-90",
-                  ].join(" ")}
-                  aria-label={`View photo ${i + 1}`}
-                >
-                  <Image
-                    src={src}
-                    alt={`${title} photo ${i + 1}`}
-                    fill
-                    unoptimized
-                    className="object-cover"
-                  />
-                  <div className="absolute bottom-2 right-2 rounded-full bg-black/50 px-2 py-0.5 text-xs text-white tabular-nums leading-tight">
-                    {i + 1}
-                  </div>
-                </button>
-              ))}
-            </div>
-          </div>
-        </div>
-      )}
-    </div>
-  );
-}
-
-// ─── Description helpers ─────────────────────────────────────
-//
-// Preprocessing preserves \n so Path 0 (double-newline) and Path B
-// (line-based bullets) can fire. Horizontal whitespace is still collapsed.
-
-function splitOverview(text: string): { overview: string; remainder: string } {
-  if (!text) return { overview: "", remainder: "" };
-
-  // Collect sentence-ending chunks
-  const re = /[^.!?]*[.!?]+/g;
-  const sentences: string[] = [];
-  let m: RegExpExecArray | null;
-  while ((m = re.exec(text)) !== null) sentences.push(m[0]);
-  // Capture any trailing fragment that lacks ending punctuation
-  const consumed = sentences.reduce((n, s) => n + s.length, 0);
-  if (consumed < text.length) sentences.push(text.slice(consumed));
-
-  // Short descriptions — show in full, no "Read more" needed
-  if (sentences.length <= 2) return { overview: text.trim(), remainder: "" };
-
-  // Always take at least the first sentence; add the second only when the
-  // first is short enough that two sentences still feel like an intro.
-  const first = sentences[0];
-  let cut = 1;
-  let overview = first;
-  if (first.trim().length < 200 && sentences.length > 1) {
-    overview += sentences[1];
-    cut = 2;
-  }
-
-  return { overview: overview.trim(), remainder: sentences.slice(cut).join("").trim() };
-}
-
-// ─── Description parser ───────────────────────────────────────
-
-type ParsedDescription = {
-  overview: string;
-  highlights: string[];
-  details: string[];
-};
-
-function parseDescription(raw: string): ParsedDescription {
-  // Normalise: strip decorative emoji, unify bullet variants to •, tidy spacing
-  const text = raw
-    .replace(/[\uD800-\uDFFF]/g, "")           // surrogate-pair emoji
-    .replace(/[✓✔►▸▶→➤➜➝➞➔❯❱⇒✦★☑]/g, "•")   // common icon-bullets → •
-    .replace(/[ \t]+/g, " ")                    // collapse horizontal whitespace
-    .replace(/\n{3,}/g, "\n\n")                 // max 2 consecutive newlines
-    .trim();
-
-  if (!text) return { overview: "", highlights: [], details: [] };
-
-  // ── Path 0: double-newline paragraph structure ─────────────────
-  const dblNewlineBlocks = text.split(/\n\n+/).map(b => b.replace(/\n/g, " ").trim()).filter(Boolean);
-  const inlineBulletCountFull = (text.match(/[•·▪]/g) || []).length;
-  if (dblNewlineBlocks.length >= 2 && inlineBulletCountFull < 3) {
-    const { overview, remainder } = splitOverview(dblNewlineBlocks[0]);
-    const rest = [...(remainder ? [remainder] : []), ...dblNewlineBlocks.slice(1)];
-    return { overview, highlights: [], details: rest.filter(Boolean) };
-  }
-
-  // ── Path A: inline bullet separators (•, ·, ▪) ───────────────
-  // Hostaway descriptions commonly use • mid-sentence as list delimiters,
-  // e.g. "Great villa! • Ocean views • Private pool • Sleeps 8 • More text."
-  const inlineBulletCount = (text.match(/[•·▪]/g) || []).length;
-
-  if (inlineBulletCount >= 2) {
-    const segments = text.split(/\s*[•·▪]\s*/).map(s => s.trim()).filter(Boolean);
-
-    // First segment = prose intro → extract 1-2 sentence overview from it
-    const { overview, remainder: introRemainder } = splitOverview(segments[0] || "");
-
-    const highlights: string[] = [];
-    const longTexts: string[] = [];
-
-    for (const seg of segments.slice(1)) {
-      // Strip trailing punctuation for cleaner display
-      const clean = seg.replace(/[.!?,;]\s*$/, "").trim();
-      // Short, single-clause items → highlights; long prose → details
-      if (clean.length <= 110 && !/\.\s+[A-Z]/.test(clean)) {
-        highlights.push(clean);
-      } else {
-        longTexts.push(seg);
-      }
-    }
-
-    return {
-      overview,
-      highlights,
-      details: [introRemainder, ...longTexts].filter(Boolean),
-    };
-  }
-
-  // ── Path B: line-based bullets (newlines intact, rare after preprocessing) ─
-  const lines = text.split(/\n/).map(l => l.trim()).filter(Boolean);
-  const bulletLineRe = /^[\-*►✓✔▸]|\d+\.\s/;
-
-  if (lines.length > 2 && lines.filter(l => bulletLineRe.test(l)).length >= 2) {
-    const proseLines: string[] = [];
-    const highlights: string[] = [];
-    const detailLines: string[] = [];
-    let seenBullets = false;
-
-    for (const line of lines) {
-      if (bulletLineRe.test(line)) {
-        seenBullets = true;
-        highlights.push(
-          line.replace(/^[\-*►✓✔▸]\s*/, "").replace(/^\d+\.\s*/, "").trim()
-        );
-      } else if (!seenBullets) {
-        proseLines.push(line);
-      } else {
-        detailLines.push(line);
-      }
-    }
-
-    const { overview, remainder } = splitOverview(proseLines.join(" "));
-    return {
-      overview,
-      highlights,
-      details: [remainder, detailLines.join(" ")].filter(Boolean),
-    };
-  }
-
-  // ── Path C: plain prose — chunk into ~3-sentence paragraphs ──
-  const sentenceRe = /[^.!?]*[.!?]+/g;
-  const allSentences: string[] = [];
-  let sm: RegExpExecArray | null;
-  while ((sm = sentenceRe.exec(text)) !== null) allSentences.push(sm[0]);
-  const trailing = text.slice(allSentences.reduce((n, s) => n + s.length, 0)).trim();
-  if (trailing) allSentences.push(trailing);
-
-  if (allSentences.length <= 3) {
-    return { overview: text.trim(), highlights: [], details: [] };
-  }
-
-  const CHUNK = 3;
-  const chunks: string[] = [];
-  for (let i = 0; i < allSentences.length; i += CHUNK) {
-    const c = allSentences.slice(i, i + CHUNK).join("").trim();
-    if (c) chunks.push(c);
-  }
-  return { overview: chunks[0] || text, highlights: [], details: chunks.slice(1) };
-}
-
-// ─── Compliance details (TMK, TA registration, occupancy) ─────
-//
-// Rendered as the final element of the "About this villa" section for
-// listings with verified compliance data. Sourced from lib/villaCompliance.ts,
-// which is entirely separate from the live Hostaway listing response.
-
-function ComplianceDetails({ compliance }: { compliance: VillaComplianceDetails }) {
-  return (
-    <div className="mt-6 pt-5 border-t border-slate-100">
-      <div className="text-[10px] font-bold uppercase tracking-widest text-slate-400 mb-3">
-        Property Registration &amp; Occupancy
-      </div>
-      <dl className="grid grid-cols-1 sm:grid-cols-2 gap-x-8 gap-y-3 text-sm">
-        <div className="flex items-baseline justify-between gap-3 sm:block">
-          <dt className="text-slate-400">Maximum Occupancy</dt>
-          <dd className="font-semibold text-slate-800 sm:mt-0.5">
-            {compliance.maximumOccupancy} guests
-          </dd>
-        </div>
-        <div className="flex items-baseline justify-between gap-3 sm:block">
-          <dt className="text-slate-400">Occupancy per Bedroom</dt>
-          <dd className="font-semibold text-slate-800 sm:mt-0.5">
-            {compliance.occupancyPerBedroom}
-          </dd>
-        </div>
-        <div className="flex items-baseline justify-between gap-3 sm:block">
-          <dt className="text-slate-400">Tax Map Key (TMK)</dt>
-          <dd className="font-semibold text-slate-800 sm:mt-0.5">{compliance.taxMapKey}</dd>
-        </div>
-        <div className="flex items-baseline justify-between gap-3 sm:block">
-          <dt className="text-slate-400">TA Registration</dt>
-          <dd className="font-semibold text-slate-800 sm:mt-0.5">{compliance.tat}</dd>
-        </div>
-      </dl>
-    </div>
-  );
-}
-
-// ─── Description ─────────────────────────────────────────────
-
-function DescriptionSection({
-  description,
-  compliance,
-}: {
-  description: string;
-  compliance?: VillaComplianceDetails;
-}) {
-  const [expanded, setExpanded] = useState(false);
-  const parsed = useMemo(() => parseDescription(description), [description]);
-  const hasHighlights = parsed.highlights.length > 0;
-  const hasDetails = parsed.details.length > 0;
-
-  return (
-    <RevealSection className="mt-10">
-      <h2 className="text-xl font-semibold text-slate-900 mb-5">About this villa</h2>
-
-      <div className="space-y-5 max-w-[72ch]">
-        {/* Overview — always visible */}
-        <p className="text-[15px] leading-8 text-slate-600 font-light max-w-prose">
-          {parsed.overview || description}
-        </p>
-
-        {/* Highlights grid — extracted from inline • bullets */}
-        {hasHighlights && (
-          <div className="pt-1">
-            <div className="text-[10px] font-bold uppercase tracking-widest text-slate-400 mb-3">
-              Highlights
-            </div>
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-x-8 gap-y-2.5">
-              {parsed.highlights.map((item, i) => (
-                <div key={i} className="flex items-start gap-2.5 text-sm text-slate-700 leading-6">
-                  <svg
-                    className="h-4 w-4 shrink-0 mt-[3px] text-[#3f5f4a]"
-                    fill="none"
-                    viewBox="0 0 24 24"
-                    stroke="currentColor"
-                    strokeWidth={2.5}
-                  >
-                    <path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" />
-                  </svg>
-                  <span>{item}</span>
-                </div>
-              ))}
-            </div>
-          </div>
-        )}
-
-        {/* Detail paragraphs */}
-        {hasDetails && (() => {
-          // Gate only when there are genuinely many paragraphs
-          const threshold = 3;
-          const always = parsed.details.slice(0, threshold);
-          const extra = parsed.details.slice(threshold);
-          return (
-            <div className={hasHighlights ? "pt-4 border-t border-slate-100" : ""}>
-              <div className="space-y-4">
-                {always.map((block, i) => (
-                  <p key={i} className="text-[15px] leading-8 text-slate-600 font-light">{block}</p>
-                ))}
-              </div>
-              {extra.length > 0 && (
-                <>
-                  {expanded && (
-                    <div className="mt-4 space-y-4">
-                      {extra.map((block, i) => (
-                        <p key={i} className="text-[15px] leading-8 text-slate-600 font-light">{block}</p>
-                      ))}
-                    </div>
-                  )}
-                  <button
-                    type="button"
-                    onClick={() => setExpanded(!expanded)}
-                    className="mt-5 inline-flex items-center gap-1.5 text-sm font-semibold text-slate-700 hover:text-slate-900 transition-colors duration-200"
-                  >
-                    {expanded ? "Show less" : "Read more"}
-                    <svg
-                      className={`h-4 w-4 transition-transform duration-200 ${expanded ? "rotate-180" : ""}`}
-                      fill="none"
-                      viewBox="0 0 24 24"
-                      stroke="currentColor"
-                      strokeWidth={2}
-                    >
-                      <path strokeLinecap="round" strokeLinejoin="round" d="M19 9l-7 7-7-7" />
-                    </svg>
-                  </button>
-                </>
-              )}
-            </div>
-          );
-        })()}
-
-        {/* Compliance details — always visible, never gated behind "Read more" */}
-        {compliance && <ComplianceDetails compliance={compliance} />}
-      </div>
-    </RevealSection>
-  );
-}
-
-// ─── Override description (curated listings) ─────────────────
-
-function OverrideDescriptionSection({
-  override,
-  compliance,
-}: {
-  override: DescriptionOverride;
-  compliance?: VillaComplianceDetails;
-}) {
-  return (
-    <RevealSection className="mt-10">
-      <h2 className="text-xl font-semibold text-slate-900 mb-5">About this villa</h2>
-
-      <div className="space-y-5">
-        {override.paragraphs.map((para, i) => (
-          <p key={i} className="text-[15px] leading-8 text-slate-600 font-light max-w-[72ch]">
-            {para}
-          </p>
-        ))}
-      </div>
-
-      {override.highlights.length > 0 && (
-        <div className="mt-7">
-          <div className="text-[10px] font-bold uppercase tracking-widest text-slate-400 mb-4">
-            Why guests love this villa
-          </div>
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-x-8 gap-y-2.5">
-            {override.highlights.map((item, i) => (
-              <div key={i} className="flex items-start gap-2.5 text-sm text-slate-700 leading-6">
-                <svg
-                  className="h-4 w-4 shrink-0 mt-[3px] text-[#3f5f4a]"
-                  fill="none"
-                  viewBox="0 0 24 24"
-                  stroke="currentColor"
-                  strokeWidth={2.5}
-                >
-                  <path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" />
-                </svg>
-                <span>{item}</span>
-              </div>
-            ))}
-          </div>
-        </div>
-      )}
-
-      {/* Compliance details — always visible, never gated behind "Read more" */}
-      {compliance && <ComplianceDetails compliance={compliance} />}
-    </RevealSection>
-  );
-}
-
-// ─── Amenities ────────────────────────────────────────────────
-
-function AmenitiesSection({ amenities }: { amenities: string[] }) {
-  const [expanded, setExpanded] = useState(false);
-  const LIMIT = 12;
-  const shown = expanded ? amenities : amenities.slice(0, LIMIT);
-  const hasMore = amenities.length > LIMIT;
-
-  if (!amenities.length) return null;
-
-  return (
-    <RevealSection className="mt-10" delay={80}>
-      <h2 className="text-xl font-semibold text-slate-900 mb-4">Amenities</h2>
-      <div className="grid grid-cols-2 sm:grid-cols-3 gap-2">
-        {shown.map((a, i) => (
-          <div
-            key={i}
-            className="flex items-center gap-2 rounded-xl bg-white border border-slate-100 px-3 py-2.5 text-sm text-slate-700 shadow-[0_1px_4px_rgba(15,23,42,0.04)]"
-          >
-            <svg
-              className="h-3.5 w-3.5 shrink-0 text-[#3f5f4a]"
-              fill="none"
-              viewBox="0 0 24 24"
-              stroke="currentColor"
-              strokeWidth={2.5}
-            >
-              <path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" />
-            </svg>
-            <span className="truncate">{a}</span>
-          </div>
-        ))}
-      </div>
-      {hasMore && (
-        <button
-          type="button"
-          onClick={() => setExpanded(!expanded)}
-          className="mt-4 text-sm font-semibold text-slate-900 underline underline-offset-4 hover:text-slate-600 transition-colors duration-200"
-        >
-          {expanded ? "Show fewer amenities" : `Show all ${amenities.length} amenities`}
-        </button>
-      )}
-    </RevealSection>
-  );
-}
-
-// ─── Booking Card ─────────────────────────────────────────────
-
-type PricingResult = {
-  hasPricing: boolean;
-  isAvailable: boolean;
-  avgNightlyPrice: number;
-  minNightlyPrice: number;
-  totalNightlyPrice: number;
-  nights: number;
-};
-
-function BookingCard({
-  onInquire,
-  startDate,
-  endDate,
-  guests,
-  listingId,
-}: {
-  onInquire: () => void;
-  startDate: string;
-  endDate: string;
-  guests: string;
-  villaName: string;
-  listingId: string;
-}) {
-  const today = useMemo(() => {
-    const d = new Date();
-    return [
-      d.getFullYear(),
-      String(d.getMonth() + 1).padStart(2, "0"),
-      String(d.getDate()).padStart(2, "0"),
-    ].join("-");
-  }, []);
-
-  const [localCheckIn, setLocalCheckIn] = useState(startDate);
-  const [localCheckOut, setLocalCheckOut] = useState(endDate);
-  const [localGuests, setLocalGuests] = useState(Number(guests) || 2);
-
-  const nights = useMemo(() => {
-    if (!localCheckIn || !localCheckOut) return 0;
-    const n = Math.round(
-      (new Date(localCheckOut).getTime() - new Date(localCheckIn).getTime()) / 86_400_000
-    );
-    return n > 0 ? n : 0;
-  }, [localCheckIn, localCheckOut]);
-
-  const [pricing, setPricing] = useState<PricingResult | null>(null);
-  const [pricingLoading, setPricingLoading] = useState(false);
-
-  // Verified-pricing lookup — never estimates; only shows a total when
-  // Hostaway actually returns per-night pricing for these exact dates.
-  const hasValidDateRange = Boolean(localCheckIn && localCheckOut && nights > 0);
-
-  useEffect(() => {
-    if (!hasValidDateRange) return;
-
-    let alive = true;
-
-    async function loadPricing() {
-      setPricingLoading(true);
-      try {
-        const res = await fetch(
-          `/api/hostaway/pricing?listingId=${encodeURIComponent(listingId)}&startDate=${localCheckIn}&endDate=${localCheckOut}`,
-          { cache: "no-store" }
-        );
-        const json = await res.json();
-        if (!alive) return;
-        if (json?.success) {
-          setPricing({
-            hasPricing: Boolean(json.hasPricing),
-            isAvailable: Boolean(json.isAvailable),
-            avgNightlyPrice: json.avgNightlyPrice ?? 0,
-            minNightlyPrice: json.minNightlyPrice ?? 0,
-            totalNightlyPrice: json.totalNightlyPrice ?? 0,
-            nights: json.nights ?? nights,
-          });
-        } else {
-          setPricing(null);
-        }
-      } catch {
-        if (alive) setPricing(null);
-      } finally {
-        if (alive) setPricingLoading(false);
-      }
-    }
-
-    loadPricing();
-    return () => {
-      alive = false;
-    };
-  }, [listingId, localCheckIn, localCheckOut, nights, hasValidDateRange]);
-
-  return (
-    <div className="rounded-3xl border border-slate-200 bg-white p-5 sm:p-6 shadow-[0_12px_48px_rgba(15,23,42,0.09)]">
-
-      {/* ── Card header ───────────────────────────────────── */}
-      <div className="mb-5">
-        <h3 className="text-base font-semibold text-slate-900">Plan Your Stay</h3>
-        <p className="mt-1 text-xs text-slate-500 leading-relaxed">
-          Share your dates and guest details. Our property manager will confirm availability and next steps.
-        </p>
-      </div>
-
-      {/* ── Date + guest selector ──────────────────────────── */}
-      <div className="mb-5 space-y-3">
-        <div className="text-[10px] font-bold uppercase tracking-widest text-slate-400">
-          {nights > 0 ? "Your stay" : "Select dates"}
-        </div>
-
-        <div className="grid grid-cols-2 gap-2">
-          <div>
-            <label className="block text-[10px] text-slate-400 mb-1">Check-in</label>
-            <input
-              type="date"
-              min={today}
-              value={localCheckIn}
-              onChange={(e) => {
-                const v = e.target.value;
-                setLocalCheckIn(v);
-                if (localCheckOut && v >= localCheckOut) setLocalCheckOut("");
-              }}
-              className="w-full rounded-xl border border-slate-200 bg-slate-50 px-3 py-2 text-sm text-slate-900 focus:border-slate-900 focus:outline-none focus:ring-1 focus:ring-slate-900"
-            />
-          </div>
-          <div>
-            <label className="block text-[10px] text-slate-400 mb-1">Check-out</label>
-            <input
-              type="date"
-              min={localCheckIn || today}
-              value={localCheckOut}
-              onChange={(e) => setLocalCheckOut(e.target.value)}
-              className="w-full rounded-xl border border-slate-200 bg-slate-50 px-3 py-2 text-sm text-slate-900 focus:border-slate-900 focus:outline-none focus:ring-1 focus:ring-slate-900"
-            />
-          </div>
-        </div>
-
-        <div className="flex gap-2">
-          <div className="flex-1">
-            <label className="block text-[10px] text-slate-400 mb-1">Guests</label>
-            <select
-              value={localGuests}
-              onChange={(e) => setLocalGuests(Number(e.target.value))}
-              className="w-full rounded-xl border border-slate-200 bg-slate-50 px-3 py-2 text-sm text-slate-900 focus:border-slate-900 focus:outline-none focus:ring-1 focus:ring-slate-900"
-            >
-              {Array.from({ length: 10 }).map((_, i) => (
-                <option key={i + 1} value={i + 1}>
-                  {i + 1} {i === 0 ? "Guest" : "Guests"}
-                </option>
-              ))}
-            </select>
-          </div>
-          {nights > 0 && (
-            <div className="shrink-0 flex flex-col items-center justify-center rounded-xl bg-slate-100 border border-slate-200 px-4 min-w-[64px]">
-              <span className="text-[9px] font-bold uppercase tracking-widest text-slate-400">Nights</span>
-              <span className="text-sm font-bold text-slate-900">{nights}</span>
-            </div>
-          )}
-        </div>
-
-        {/* ── Verified pricing summary — only shown when Hostaway returns real
-             per-night pricing for these exact dates. Never an estimate. ── */}
-        {nights > 0 && (
-          <div className="mt-3 rounded-xl border border-slate-200 bg-slate-50 p-3.5">
-            {pricingLoading ? (
-              <p className="text-xs text-slate-500">Checking availability and pricing…</p>
-            ) : pricing?.hasPricing ? (
-              <div className="space-y-1.5">
-                <div className="flex items-center justify-between text-sm">
-                  <span className="text-slate-600">
-                    {pricing.nights} night{pricing.nights === 1 ? "" : "s"} × ${Math.round(pricing.avgNightlyPrice)} avg/night
-                  </span>
-                  <span className="font-semibold text-slate-900">
-                    ≈ ${Math.round(pricing.totalNightlyPrice)}
-                  </span>
-                </div>
-                <p className="text-[11px] text-slate-400 leading-4">
-                  Estimated accommodation total. Taxes, cleaning fees, and other required fees are calculated at checkout.
-                </p>
-                <p className={`text-xs font-semibold ${pricing.isAvailable ? "text-emerald-700" : "text-amber-700"}`}>
-                  {pricing.isAvailable ? "Available for these dates" : "Not available for these dates"}
-                </p>
-              </div>
-            ) : (
-              <p className="text-xs text-slate-500">Check Availability and Pricing for these exact dates below.</p>
-            )}
-          </div>
-        )}
-      </div>
-
-      {/* ── Primary CTA — ocean blue, opens GHL inquiry modal ── */}
-      <button
-        type="button"
-        onClick={onInquire}
-        className={[
-          "flex items-center justify-center w-full rounded-2xl px-6 py-4",
-          "bg-[#0A6B8A] text-white text-sm font-semibold",
-          "shadow-[0_4px_18px_rgba(10,107,138,0.30)]",
-          "hover:-translate-y-0.5 hover:bg-[#085f7a] hover:shadow-[0_8px_28px_rgba(10,107,138,0.40)]",
-          "active:translate-y-0 active:scale-[0.98]",
-          "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#0A6B8A] focus-visible:ring-offset-2",
-          "transition-all duration-[250ms] ease-[cubic-bezier(0.16,1,0.3,1)]",
-        ].join(" ")}
-      >
-        Check Availability
-      </button>
-
-      {/* ── Secondary CTA — green, opens same GHL inquiry modal ── */}
-      <button
-        type="button"
-        onClick={onInquire}
-        className={[
-          "mt-3 flex items-center justify-center w-full rounded-2xl px-6 py-4",
-          "bg-[#3f5f4a] text-white text-sm font-semibold",
-          "shadow-[0_4px_18px_rgba(63,95,74,0.22)]",
-          "hover:-translate-y-0.5 hover:bg-[#334e3c] hover:shadow-[0_8px_28px_rgba(63,95,74,0.30)]",
-          "active:translate-y-0 active:scale-[0.98]",
-          "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#3f5f4a] focus-visible:ring-offset-2",
-          "transition-all duration-[250ms] ease-[cubic-bezier(0.16,1,0.3,1)]",
-        ].join(" ")}
-      >
-        <svg className="mr-2 h-4 w-4 opacity-80" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.8}>
-          <path strokeLinecap="round" strokeLinejoin="round" d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z" />
-        </svg>
-        Ask About This Villa
-      </button>
-
-      {/* ── Phone link ────────────────────────────────────── */}
-      <a
-        href="tel:+18587272427"
-        className="mt-3 flex items-center justify-center gap-2 text-sm text-slate-600 hover:text-slate-900 transition-colors duration-200"
-      >
-        <svg className="h-4 w-4 shrink-0 text-slate-400" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.8}>
-          <path strokeLinecap="round" strokeLinejoin="round" d="M3 5a2 2 0 012-2h3.28a1 1 0 01.948.684l1.498 4.493a1 1 0 01-.502 1.21l-2.257 1.13a11.042 11.042 0 005.516 5.516l1.13-2.257a1 1 0 011.21-.502l4.493 1.498a1 1 0 01.684.949V19a2 2 0 01-2 2h-1C9.716 21 3 14.284 3 6V5z" />
-        </svg>
-        Call Us · +1 (858) 727-2427
-      </a>
-
-      <p className="mt-4 text-center text-[11px] text-slate-400 leading-5">
-        No booking commitment yet. Our local team will confirm availability and guide you through the next step.
-      </p>
-    </div>
-  );
-}
-
-// ─── Inquiry Modal ────────────────────────────────────────────
-
-function InquiryModal({
-  open,
-  onClose,
-  villaName,
-  listingId,
-}: {
-  open: boolean;
-  onClose: () => void;
-  villaName: string;
-  listingId: string;
-}) {
-  const formUrl = [
-    GHL_FORM_BASE,
-    `?villa=${encodeURIComponent(villaName)}`,
-    `&listing_id=${encodeURIComponent(listingId)}`,
-    `&source=${encodeURIComponent("oceanvillasturtlebay.com")}`,
-    `&Villa_of_Interest=${encodeURIComponent(villaName)}`,
-  ].join("");
-
-  // Escape key closes modal
-  useEffect(() => {
-    if (!open) return;
-    function onKey(e: KeyboardEvent) {
-      if (e.key === "Escape") onClose();
-    }
-    window.addEventListener("keydown", onKey);
-    return () => window.removeEventListener("keydown", onKey);
-  }, [open, onClose]);
-
-  // Lock body scroll + manage GHL widget z-index via body class
-  useEffect(() => {
-    if (open) {
-      document.body.style.overflow = "hidden";
-      document.body.classList.add("ov-modal-open");
-    } else {
-      document.body.style.overflow = "";
-      document.body.classList.remove("ov-modal-open");
-    }
-    return () => {
-      document.body.style.overflow = "";
-      document.body.classList.remove("ov-modal-open");
-    };
-  }, [open]);
-
-  if (!open) return null;
-
-  return (
-    // z-[500] — sits above sticky bars (z-50), GHL widget (~9999 is suppressed to 90 via .ov-modal-open CSS)
-    <div
-      className="fixed inset-0 z-[500] flex items-end sm:items-center justify-center p-0 sm:p-4"
-      role="dialog"
-      aria-modal="true"
-      aria-label="Villa inquiry form"
-    >
-      {/* Backdrop */}
-      <div
-        className="absolute inset-0 bg-slate-900/65 backdrop-blur-[3px]"
-        onClick={onClose}
-        aria-hidden="true"
-      />
-
-      {/* Panel — fixed height so flex-1 iframe fills it exactly (no outer scroll) */}
-      <div className="relative z-10 w-full h-[96dvh] sm:h-[92vh] sm:max-w-[820px] flex flex-col bg-white rounded-t-3xl sm:rounded-3xl shadow-[0_32px_80px_rgba(15,23,42,0.28)] overflow-hidden">
-
-        {/* Modal header — always visible */}
-        <div className="flex items-start justify-between px-5 sm:px-6 pt-5 pb-4 border-b border-slate-100 shrink-0">
-          <div>
-            <h2 className="text-lg font-semibold text-slate-900">Request Availability for This Villa</h2>
-            <p className="text-xs text-slate-500 mt-0.5 leading-relaxed">
-              Please fill out the form below and one of our team members will reach out to confirm availability and next steps. This request goes directly to our local team for faster assistance.
-            </p>
-          </div>
-          <button
-            type="button"
-            onClick={onClose}
-            className="ml-4 shrink-0 flex items-center justify-center h-9 w-9 rounded-full bg-slate-100 text-slate-500 hover:bg-slate-200 hover:text-slate-900 transition-colors duration-200 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-slate-400"
-            aria-label="Close inquiry form"
-          >
-            <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-              <path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" />
-            </svg>
-          </button>
-        </div>
-
-        {/* Villa context strip */}
-        <div className="px-5 sm:px-6 py-3 bg-slate-50 border-b border-slate-100 shrink-0">
-          <p className="text-xs text-slate-500">
-            Requesting availability for:{" "}
-            <span className="font-semibold text-slate-800">{villaName}</span>
-          </p>
-        </div>
-
-        {/* GHL iframe — fills remaining height; GHL's own scroll is the only scrollbar */}
-        <div className="flex-1 min-h-0 overflow-hidden">
-          <iframe
-            src={formUrl}
-            title="Villa Inquiry Form"
-            style={{ width: "100%", height: "100%", border: "none", display: "block" }}
-            loading="lazy"
-          />
-        </div>
-      </div>
-    </div>
-  );
-}
-
-// ─── Loading skeleton ─────────────────────────────────────────
-
-function LoadingSkeleton() {
+// A Hostaway fetch failure (unreachable, erroring) is not the same fact as
+// "no such listing" and must not render as a 404 — a 404 on a page that
+// really exists tells search engines to deindex it. This renders as a
+// normal 200 response with its own recovery UI instead.
+function ListingUnavailable() {
   return (
     <main className="min-h-screen bg-slate-50 text-slate-900">
-      <div className="sticky top-0 z-50 h-16 md:h-20 border-b border-slate-200 bg-white/90 backdrop-blur-md" />
-      <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8 py-8 md:py-10 animate-pulse">
-        <div className="lg:grid lg:grid-cols-[1fr_380px] lg:gap-10">
-          <div className="space-y-4">
-            <div className="aspect-[16/9] w-full rounded-3xl bg-slate-200" />
-            <div className="flex gap-2">
-              {[1, 2, 3, 4, 5].map((i) => (
-                <div key={i} className="w-[78px] h-14 rounded-xl bg-slate-200 shrink-0" />
-              ))}
-            </div>
-            <div className="mt-8 h-7 w-2/3 rounded-xl bg-slate-200" />
-            <div className="h-4 w-1/3 rounded-lg bg-slate-200" />
-            <div className="flex gap-3 mt-6">
-              {[1, 2, 3].map((i) => (
-                <div key={i} className="flex-1 h-[72px] rounded-2xl bg-slate-200" />
-              ))}
-            </div>
-            <div className="mt-10 h-44 rounded-2xl bg-slate-200" />
-            <div className="mt-10 h-60 rounded-2xl bg-slate-200" />
-          </div>
-          <div className="hidden lg:block">
-            <div className="h-72 rounded-3xl bg-slate-200" />
+      <div className="mx-auto max-w-4xl px-4 sm:px-6 py-16">
+        <div className="rounded-2xl border border-red-200 bg-red-50 p-8 text-center">
+          <h1 className="text-2xl font-serif text-red-800">Villa information is temporarily unavailable</h1>
+          <p className="mt-4 text-sm text-red-700">
+            We&apos;re having trouble loading this villa&apos;s details right now. This is a temporary issue on our
+            end, not a sign the villa no longer exists — please try again in a moment.
+          </p>
+          <div className="mt-6 flex flex-wrap items-center justify-center gap-4">
+            <a
+              href={`tel:+1${BRAND_PHONE.replace(/[^\d+]/g, "")}`}
+              className="inline-flex items-center justify-center rounded-xl bg-slate-900 px-6 py-3 text-sm font-semibold text-white hover:bg-slate-800 transition-colors"
+            >
+              Call Us · {BRAND_PHONE}
+            </a>
+            <Link
+              href="/rentals"
+              className="inline-flex items-center justify-center rounded-xl border border-slate-200 bg-white px-6 py-3 text-sm font-semibold text-slate-700 hover:bg-slate-50 transition-colors"
+            >
+              Browse All Villas
+            </Link>
           </div>
         </div>
       </div>
@@ -1061,338 +56,145 @@ function LoadingSkeleton() {
   );
 }
 
-// ─── Page content (wrapped in Suspense for useSearchParams) ───
-
-function ListingDetailsContent() {
-  const params = useParams();
-  const searchParams = useSearchParams();
-
-  const id = useMemo(() => {
-    const raw = params?.id;
-    return Array.isArray(raw) ? raw[0] : raw;
-  }, [params]);
-
-  const startDate = searchParams.get("startDate") || "";
-  const endDate = searchParams.get("endDate") || "";
-  const guests = searchParams.get("guests") || "2";
-
-  const [listing, setListing] = useState<HostawayListing | null>(null);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState("");
-  const [inquiryOpen, setInquiryOpen] = useState(false);
-
-  const openInquiry = useCallback(() => setInquiryOpen(true), []);
-  const closeInquiry = useCallback(() => setInquiryOpen(false), []);
-
-  useEffect(() => {
-    let alive = true;
-
-    async function load() {
-      if (!id) {
-        setError("Missing listing ID.");
-        setLoading(false);
-        return;
-      }
-      setLoading(true);
-      setError("");
-      try {
-        const res = await fetch(`/api/hostaway/listings?id=${encodeURIComponent(id)}`, {
-          cache: "no-store",
-        });
-        const json = await res.json().catch(() => null);
-        if (!res.ok || !json?.success || !json?.listing) {
-          throw new Error("Listing not found.");
-        }
-        if (!alive) return;
-        setListing(json.listing as HostawayListing);
-      } catch (e: any) {
-        if (!alive) return;
-        setError(e?.message || "Failed to load listing.");
-      } finally {
-        if (!alive) return;
-        setLoading(false);
-      }
-    }
-
-    load();
-    return () => { alive = false; };
-  }, [id]);
-
-  const backHref = startDate && endDate
-    ? `/availability?startDate=${encodeURIComponent(startDate)}&endDate=${encodeURIComponent(endDate)}&guests=${encodeURIComponent(guests)}`
-    : "/rentals";
-
-  // ── Loading ───────────────────────────────────────
-  if (loading) return <LoadingSkeleton />;
-
-  // ── Error ─────────────────────────────────────────
-  if (error || !listing) {
-    return (
-      <main className="min-h-screen bg-slate-50 text-slate-900">
-        <div className="mx-auto max-w-4xl px-4 sm:px-6 py-16">
-          <div className="rounded-2xl border border-red-200 bg-red-50 p-8 text-center">
-            <h1 className="text-2xl font-serif text-red-800">Unable to load villa</h1>
-            <p className="mt-4 text-sm text-red-700">{error || "Listing not found."}</p>
-            <div className="mt-6">
-              <Link
-                href={backHref}
-                className="inline-flex items-center justify-center rounded-xl bg-slate-900 px-6 py-3 text-sm font-semibold text-white hover:bg-slate-800 transition-colors"
-              >
-                Go Back
-              </Link>
-            </div>
-          </div>
-        </div>
-      </main>
-    );
+export async function generateMetadata({ params }: PageProps): Promise<Metadata> {
+  const { id } = await params;
+  const result = await fetchHostawayListing(id);
+  if (result.status === "not_found") return { title: "Villa Not Found | Ocean Villas at Turtle Bay" };
+  if (result.status === "error") {
+    // No index/canonical asserted for a page we can't currently confirm the
+    // content of — avoid publishing metadata for content we didn't actually
+    // load this request.
+    return { title: "Ocean Villas at Turtle Bay", robots: { index: false, follow: true } };
   }
 
-  // ── Derived values ────────────────────────────────
+  const listing = result.listing;
   const title = getDisplayName(listing.id, listing.name || "");
-  const locationLabel = listing.city
-    ? `${listing.city}${listing.state ? `, ${listing.state}` : ""}`
-    : "Turtle Bay · North Shore, Oahu";
-  const description = (listing.description || "")
-    .replace(/[^\S\n]+/g, " ")
-    .replace(/\n{3,}/g, "\n\n")
-    .trim()
-    || "Explore this Ocean Villas property at Turtle Bay on Oahu's North Shore.";
-  const rawImages = listing.images?.length
-    ? listing.images
-    : listing.heroUrl
-    ? [listing.heroUrl]
-    : [];
-  const images = reorderImages(listing.id, rawImages);
-  const amenities = listing.amenities || [];
+  const sleeps = listing.maxGuests ? `Sleeps ${listing.maxGuests}` : "Turtle Bay Oahu";
+  const metaTitle = `${title} — ${sleeps} | Ocean Villas`;
+
+  const bedroomsPart = listing.bedrooms ? `${listing.bedrooms}-bedroom ` : "";
+  const description = listing.maxGuests
+    ? `${title}: ${bedroomsPart}villa sleeps ${listing.maxGuests} at Turtle Bay, Oahu's North Shore. Book direct with live availability — no platform fees.`
+    : `${title} at Ocean Villas, Turtle Bay, Oahu's North Shore. Book direct with live availability — no platform fees.`;
+
+  const ogImage = listing.heroUrl || "/brand/TTB-Logo.png";
+
+  return {
+    title: { absolute: metaTitle },
+    description,
+    alternates: { canonical: `/listing/${listing.id}` },
+    robots: { index: true, follow: true },
+    openGraph: {
+      title: metaTitle,
+      description,
+      url: `/listing/${listing.id}`,
+      siteName: "Ocean Villas at Turtle Bay",
+      type: "website",
+      images: [{ url: ogImage, width: 1200, height: 630, alt: title }],
+    },
+    twitter: {
+      card: "summary_large_image",
+      title: metaTitle,
+      description,
+      images: [ogImage],
+    },
+  };
+}
+
+export default async function ListingDetailsPage({ params }: PageProps) {
+  const { id } = await params;
+  const result = await fetchHostawayListing(id);
+
+  if (result.status === "not_found") notFound();
+  if (result.status === "error") return <ListingUnavailable />;
+
+  const listing = result.listing;
+  const title = getDisplayName(listing.id, listing.name || "");
   const compliance = getVillaCompliance(listing.id);
+
+  const accommodationJsonLd = {
+    "@context": "https://schema.org",
+    "@type": "Accommodation",
+    name: title,
+    url: `${SITE_URL}/listing/${listing.id}`,
+    ...(listing.images.length ? { image: listing.images } : {}),
+    ...(listing.bedrooms ? { numberOfBedrooms: listing.bedrooms } : {}),
+    ...(listing.bathrooms ? { numberOfBathroomsTotal: listing.bathrooms } : {}),
+    address: {
+      "@type": "PostalAddress",
+      addressLocality: listing.city || "Kahuku",
+      addressRegion: listing.state || "HI",
+      addressCountry: "US",
+    },
+    // `occupancy` is always the licensed/bookable maximum, never the sum of
+    // room capacities — for Villa 218 these deliberately differ (see
+    // lib/villaCompliance.ts), and `containsPlace` below keeps each room's
+    // real physical capacity even where that sums above the top-level
+    // occupancy. That's accurate, not a contradiction to fix: rooms
+    // describe physical space, `occupancy` describes what's permitted.
+    ...(compliance
+      ? {
+          occupancy: {
+            "@type": "QuantitativeValue",
+            value: compliance.licensedMaxOccupancy,
+            unitCode: "C62",
+          },
+          ...(compliance.sleepingSpaces
+            ? {
+                // @type stays "Room" for every space — schema.org has no
+                // distinct "bedroom" type, so this is accurate for both a
+                // bedroom and a living area. The `name` is what keeps a
+                // living-area sofa bed from being described as a bedroom.
+                containsPlace: compliance.sleepingSpaces.map((space) => ({
+                  "@type": "Room",
+                  name: space.label,
+                  occupancy: {
+                    "@type": "QuantitativeValue",
+                    value: space.guests,
+                    unitCode: "C62",
+                  },
+                })),
+              }
+            : {}),
+        }
+      : listing.maxGuests
+      ? {
+          occupancy: {
+            "@type": "QuantitativeValue",
+            value: listing.maxGuests,
+            unitCode: "C62",
+          },
+        }
+      : {}),
+  };
+
+  const breadcrumbJsonLd = {
+    "@context": "https://schema.org",
+    "@type": "BreadcrumbList",
+    itemListElement: [
+      { "@type": "ListItem", position: 1, name: "Home", item: `${SITE_URL}/` },
+      { "@type": "ListItem", position: 2, name: "Villas", item: `${SITE_URL}/rentals` },
+      { "@type": "ListItem", position: 3, name: title, item: `${SITE_URL}/listing/${listing.id}` },
+    ],
+  };
 
   return (
     <>
-      <InquiryModal
-        open={inquiryOpen}
-        onClose={closeInquiry}
-        villaName={title}
-        listingId={listing.id}
+      {/* Plain <script>, not next/script's <Script> — Script's default
+          "afterInteractive" strategy injects client-side only, after
+          hydration, and is absent from the initial server-rendered HTML
+          entirely. A crawler that doesn't execute JavaScript would see no
+          structured data at all. A literal <script> tag is part of the
+          actual server-rendered output. */}
+      <script
+        type="application/ld+json"
+        dangerouslySetInnerHTML={{ __html: JSON.stringify(accommodationJsonLd) }}
       />
-
-      {/* pb-24 lg:pb-0 = clearance for mobile sticky bottom bar */}
-      <main className="min-h-screen bg-slate-50 text-slate-900 pb-24 lg:pb-0">
-
-        {/* ── Header ──────────────────────────────────────── */}
-        <header className="sticky top-0 z-50 border-b border-slate-200 bg-white/90 backdrop-blur-md">
-          <div className="mx-auto flex h-16 md:h-20 max-w-7xl items-center justify-between px-4 sm:px-6 lg:px-8">
-            <Link
-              href={backHref}
-              onClick={() => trackEvent("back_to_browse", { from: `listing_${listing.id}` })}
-              className="text-sm font-semibold text-slate-600 hover:text-slate-900 transition-colors duration-200"
-            >
-              <span className="hidden sm:inline">Back to Browse</span>
-              <span className="sm:hidden">Back</span>
-            </Link>
-
-            <Link
-              href="/"
-              className="text-sm font-medium text-slate-500 hover:text-slate-800 transition-colors duration-200"
-            >
-              {BRAND_NAME}
-            </Link>
-
-            <a
-              href={`tel:+1${sanitizeTel(BRAND_PHONE)}`}
-              onClick={() => trackEvent("phone_click", { source: "listing_header" })}
-              className="hidden sm:block text-sm font-medium text-slate-600 hover:text-slate-900 transition-colors duration-200"
-            >
-              Call Us · {BRAND_PHONE}
-            </a>
-          </div>
-        </header>
-
-        {/* ── Page body ───────────────────────────────────── */}
-        <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8 py-8 md:py-10 xl:py-14">
-          <div className="lg:grid lg:grid-cols-[1fr_360px] xl:grid-cols-[1fr_400px] lg:gap-10 xl:gap-14 lg:items-start">
-
-            {/* ── Left column ─────────────────────────────── */}
-            <div className="min-w-0">
-
-              {/* Gallery — CSS entrance animation (ov-gallery-enter in globals.css) */}
-              <Gallery images={images} title={title} />
-
-              {/* Villa identity — CSS fade-up on page load */}
-              <div className="mt-8 ov-fade-up">
-                <div className="inline-flex items-center rounded-full bg-slate-100 px-4 py-1.5 text-[11px] font-bold uppercase tracking-widest text-slate-500 mb-4">
-                  Villa #{listing.id} · Ocean Villas at Turtle Bay
-                </div>
-
-                <h1 className="text-3xl sm:text-4xl lg:text-5xl font-serif font-medium tracking-tight text-slate-900 leading-tight">
-                  {title}
-                </h1>
-
-                <p className="mt-3 flex items-center gap-2 text-base text-slate-500">
-                  <svg
-                    className="h-4 w-4 shrink-0 text-slate-400"
-                    fill="none"
-                    viewBox="0 0 24 24"
-                    stroke="currentColor"
-                    strokeWidth={1.5}
-                  >
-                    <path
-                      strokeLinecap="round"
-                      strokeLinejoin="round"
-                      d="M17.657 16.657L13.414 20.9a2 2 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z"
-                    />
-                    <path strokeLinecap="round" strokeLinejoin="round" d="M15 11a3 3 0 11-6 0 3 3 0 016 0z" />
-                  </svg>
-                  {locationLabel}
-                </p>
-              </div>
-
-              {/* Stats grid — always exactly 4 cards: Sleeps / Bedrooms / Bathrooms /
-                  Check-out By. A fixed-column CSS grid (not flex-wrap) so every card
-                  is always equal width and equal height: 2x2 on mobile, one even row
-                  from the sm breakpoint up. Fixed card count avoids a 4+1 layout when
-                  a listing also has a check-in time. */}
-              <div className="mt-6 grid grid-cols-2 sm:grid-cols-4 gap-2 sm:gap-3 ov-fade-up ov-fade-up-2">
-                <StatBadge
-                  label="Sleeps"
-                  value={listing.maxGuests ? String(listing.maxGuests) : "—"}
-                />
-                <StatBadge
-                  label="Bedrooms"
-                  value={listing.bedrooms ? String(listing.bedrooms) : "—"}
-                />
-                <StatBadge
-                  label="Bathrooms"
-                  value={listing.bathrooms ? String(listing.bathrooms) : "—"}
-                />
-                <StatBadge
-                  label="Check-out by"
-                  value={listing.checkOutTime || "—"}
-                />
-              </div>
-
-              {/* Description — scroll reveal */}
-              {LISTING_DESCRIPTION_OVERRIDES[listing.id]
-                ? <OverrideDescriptionSection override={LISTING_DESCRIPTION_OVERRIDES[listing.id]!} compliance={compliance} />
-                : <DescriptionSection description={description} compliance={compliance} />
-              }
-
-              {/* Amenities — scroll reveal */}
-              <AmenitiesSection amenities={amenities} />
-
-              <RevealSection className="mt-10" delay={100}>
-                <TrustSignals variant="compact" />
-              </RevealSection>
-
-              {/* Inline booking card — mobile only, scroll reveal */}
-              <RevealSection className="mt-10 lg:hidden" delay={60}>
-                <h2 className="text-xl font-semibold text-slate-900 mb-4">Check Availability</h2>
-                <BookingCard
-                  onInquire={openInquiry}
-                  startDate={startDate}
-                  endDate={endDate}
-                  guests={guests}
-                  villaName={title}
-                  listingId={listing.id}
-                />
-              </RevealSection>
-            </div>
-
-            {/* ── Right column — sticky desktop sidebar ────── */}
-            <div className="hidden lg:block lg:sticky lg:top-28 shrink-0">
-              <BookingCard
-                onInquire={openInquiry}
-                startDate={startDate}
-                endDate={endDate}
-                guests={guests}
-                villaName={title}
-                listingId={listing.id}
-              />
-
-              {/* Contact support card */}
-              <div className="mt-4 rounded-2xl border border-slate-200 bg-slate-50 p-5">
-                <p className="text-[10px] font-bold uppercase tracking-widest text-slate-400 mb-2">
-                  Have questions?
-                </p>
-                <p className="text-sm text-slate-600 leading-6">
-                  Call Us at{" "}
-                  <a
-                    href={`tel:+1${sanitizeTel(BRAND_PHONE)}`}
-                    onClick={() => trackEvent("phone_click", { source: "listing_sidebar" })}
-                    className="font-semibold text-slate-900 hover:underline hover:underline-offset-2"
-                  >
-                    {BRAND_PHONE}
-                  </a>{" "}
-                  — our local team will get back to you shortly.
-                </p>
-              </div>
-            </div>
-          </div>
-        </div>
-
-        {/* ── Mobile sticky bottom bar ─────────────────────── */}
-        {/*
-          z-[60]: above regular page content but below the modal (z-[500]).
-          GHL widget is lifted to 80px above bottom via globals.css.
-        */}
-        <div className="fixed bottom-0 left-0 right-0 z-[60] lg:hidden bg-white/96 backdrop-blur-md border-t border-slate-200 px-4 py-3 shadow-[0_-6px_28px_rgba(15,23,42,0.09)] pb-[calc(env(safe-area-inset-bottom)+12px)]">
-          <div className="max-w-lg mx-auto flex gap-3">
-            {/* Left: Call button */}
-            <a
-              href={`tel:+1${sanitizeTel(BRAND_PHONE)}`}
-              aria-label={`Call Us at ${BRAND_PHONE}`}
-              onClick={() => trackEvent("phone_click", { source: "listing_mobile_bar" })}
-              className={[
-                "flex-1 inline-flex items-center justify-center min-h-[48px] rounded-xl px-3 py-3.5",
-                "bg-white border border-slate-200 text-slate-700 text-sm font-semibold",
-                "shadow-[0_2px_8px_rgba(15,23,42,0.08)]",
-                "hover:bg-slate-50 hover:border-slate-300 hover:-translate-y-px",
-                "active:translate-y-0 active:scale-[0.97]",
-                "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-slate-300 focus-visible:ring-offset-2",
-                "transition-all duration-[220ms] ease-[cubic-bezier(0.16,1,0.3,1)]",
-              ].join(" ")}
-            >
-              <svg className="mr-1.5 h-4 w-4 opacity-70 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.8}>
-                <path strokeLinecap="round" strokeLinejoin="round" d="M3 5a2 2 0 012-2h3.28a1 1 0 01.948.684l1.498 4.493a1 1 0 01-.502 1.21l-2.257 1.13a11.042 11.042 0 005.516 5.516l1.13-2.257a1 1 0 011.21-.502l4.493 1.498a1 1 0 01.684.949V19a2 2 0 01-2 2h-1C9.716 21 3 14.284 3 6V5z" />
-              </svg>
-              Call Us
-            </a>
-            {/* Right: Check Availability button */}
-            <button
-              type="button"
-              aria-label="Check availability for this villa"
-              onClick={() => {
-                trackEvent("inquiry_open", { villa: title, listing_id: listing.id, source: "mobile_bar" });
-                openInquiry();
-              }}
-              className={[
-                "min-h-[48px]",
-                "flex-[2] inline-flex items-center justify-center rounded-xl px-3 py-3.5",
-                "bg-[#3f5f4a] text-white text-sm font-semibold",
-                "shadow-[0_3px_12px_rgba(63,95,74,0.22)]",
-                "hover:-translate-y-px hover:bg-[#334e3c] hover:shadow-[0_6px_20px_rgba(63,95,74,0.28)]",
-                "active:translate-y-0 active:scale-[0.97]",
-                "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#3f5f4a] focus-visible:ring-offset-2",
-                "transition-all duration-[220ms] ease-[cubic-bezier(0.16,1,0.3,1)]",
-              ].join(" ")}
-            >
-              <svg className="mr-1.5 h-4 w-4 opacity-80 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.8}>
-                <path strokeLinecap="round" strokeLinejoin="round" d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z" />
-              </svg>
-              Check Availability
-            </button>
-          </div>
-        </div>
-      </main>
+      <script
+        type="application/ld+json"
+        dangerouslySetInnerHTML={{ __html: JSON.stringify(breadcrumbJsonLd) }}
+      />
+      <ListingClient listing={listing} title={title} compliance={compliance} />
     </>
-  );
-}
-
-// ─── Default export ───────────────────────────────────────────
-
-export default function ListingDetailsPage() {
-  return (
-    <Suspense fallback={<LoadingSkeleton />}>
-      <ListingDetailsContent />
-    </Suspense>
   );
 }
