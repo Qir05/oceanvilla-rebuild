@@ -1,232 +1,102 @@
-"use client";
-
+// app/rentals/page.tsx
+//
+// Server component: fetches all 7 villas from Hostaway server-side (Tier 1,
+// revalidated every 5 minutes) so name, description, bedrooms, bathrooms,
+// and guest capacity are present in the initial HTML rather than only
+// appearing after a client-side fetch. Live pricing/availability enrichment
+// and all filter/sort/compare interactivity live in RentalsClient.tsx.
+import type { Metadata } from "next";
 import Link from "next/link";
-import Script from "next/script";
-import { Suspense, useCallback, useEffect, useMemo, useState } from "react";
-import { useSearchParams } from "next/navigation";
 import { OCEAN_VILLA_LISTING_IDS, getVillaDetail } from "@/lib/ocean-villas";
-import { trackEvent } from "@/lib/analytics";
-import MobileStickyBookingBar from "@/components/MobileStickyBookingBar";
-import VillaCard from "@/components/villas/VillaCard";
-import VillaCardSkeleton from "@/components/villas/VillaCardSkeleton";
-import VillaFilterBar from "@/components/villas/VillaFilterBar";
-import VillaSortSelect from "@/components/villas/VillaSortSelect";
-import CompareBar from "@/components/villas/CompareBar";
-import CompareModal from "@/components/villas/CompareModal";
-import {
-  DEFAULT_FILTERS,
-  filterListings,
-  sortListings,
-  type RentalListing,
-  type VillaFilters,
-  type VillaSort,
-} from "@/components/villas/types";
-
-const LISTING_IDS = OCEAN_VILLA_LISTING_IDS;
-
-const LISTING_DISPLAY_NAMES: Record<string, string> = {
-  "489095": "The Penthouse Villa", // Villa 318
-  "505671": "The View Villa",      // Villa 304
-};
-
-// Original per-villa hero override (restored from HEAD) — some listings'
-// default Hostaway image (index 0) is not the preferred display photo, so a
-// specific gallery index is pinned here instead.
-const HERO_IMAGE_OVERRIDES: Record<string, number> = {
-  "505671": 1,
-};
-
-function getDisplayName(id: string, rawName: string): string {
-  if (LISTING_DISPLAY_NAMES[id]) return LISTING_DISPLAY_NAMES[id];
-  if (/\b(?:ov|villa|unit)?\s*318\b/i.test(rawName)) return "The Penthouse Villa";
-  if (/\b(?:ov|villa|unit)?\s*304\b/i.test(rawName)) return "The View Villa";
-  return rawName || `Villa ${id}`;
-}
-
-// Restored from HEAD's getPreferredHero(): applies the per-villa override
-// index when present, otherwise falls back to heroUrl / images[0]. The only
-// intentional change from HEAD is the final fallback: HEAD pointed to
-// "/media/rentals/placeholder.jpg", a path that does not exist in
-// public/media (confirmed via file listing) and would 404. Returning ""
-// instead lets VillaCard render its "Photo coming soon" placeholder rather
-// than a broken <img>. This only affects listings with zero images — every
-// currently active villa has images, so this path is not otherwise exercised.
-function getPreferredHero(id: string, heroUrl: string | undefined, images?: string[]): string {
-  const overrideIdx = HERO_IMAGE_OVERRIDES[id];
-  if (overrideIdx !== undefined && images && images.length > overrideIdx) {
-    return images[overrideIdx];
-  }
-  return heroUrl || images?.[0] || "";
-}
+import { fetchHostawayListings } from "@/lib/hostaway-listing";
+import { getVillaCompliance } from "@/lib/villaCompliance";
+import { getDisplayName } from "@/lib/villa-display";
+import type { RentalListing } from "@/components/villas/types";
+import RentalsClient from "./RentalsClient";
 
 const SITE_URL = "https://oceanvillasturtlebay.com";
+const BRAND_PHONE = "(858) 727-2427";
 
-const rentalsJsonLd = {
-  "@context": "https://schema.org",
-  "@type": "ItemList",
-  name: "Ocean Villas at Turtle Bay — Vacation Rental Collection",
+export const metadata: Metadata = {
+  title: {
+    absolute: "Luxury Villa Rentals at Turtle Bay, North Shore Oahu | Ocean Villas",
+  },
   description:
-    "7 luxury private villa rentals at Turtle Bay on Oahu's North Shore. Book direct with live availability and no platform markups.",
-  url: `${SITE_URL}/rentals`,
-  numberOfItems: LISTING_IDS.length,
+    "Browse 7 luxury private villas at Turtle Bay, Oahu's North Shore. Compare bedrooms, guest capacity, and amenities, then book direct with live availability — no platform fees.",
+  alternates: { canonical: "/rentals" },
+  robots: { index: true, follow: true },
+  openGraph: {
+    title: "Luxury Villa Rentals at Turtle Bay, North Shore Oahu | Ocean Villas",
+    description:
+      "7 curated private villas at Turtle Bay, Oahu's North Shore. Live availability, transparent pricing, book direct.",
+    url: "/rentals",
+    siteName: "Ocean Villas at Turtle Bay",
+    type: "website",
+    images: [
+      {
+        url: "/brand/TTB-Logo.png",
+        width: 1200,
+        height: 630,
+        alt: "Ocean Villas at Turtle Bay — Vacation Rental Collection",
+      },
+    ],
+  },
+  twitter: {
+    card: "summary_large_image",
+    title: "Luxury Villa Rentals at Turtle Bay, North Shore Oahu | Ocean Villas",
+    description: "7 curated private villas at Turtle Bay, Oahu's North Shore. Book direct — no platform fees.",
+    images: ["/brand/TTB-Logo.png"],
+  },
 };
 
-function formatISO(d: Date) {
-  const y = d.getFullYear();
-  const m = String(d.getMonth() + 1).padStart(2, "0");
-  const day = String(d.getDate()).padStart(2, "0");
-  return `${y}-${m}-${day}`;
-}
+export default async function RentalsPage() {
+  const { listings: fetched, failedIds } = await fetchHostawayListings(OCEAN_VILLA_LISTING_IDS);
 
-function addDays(dateISO: string, days: number) {
-  const d = new Date(dateISO);
-  d.setDate(d.getDate() + days);
-  return formatISO(d);
-}
-
-function RentalsContent() {
-  const searchParams = useSearchParams();
-  const urlStartDate = searchParams.get("startDate") || "";
-  const urlEndDate = searchParams.get("endDate") || "";
-  const hasDateSearch = Boolean(urlStartDate && urlEndDate);
-
-  const [listings, setListings] = useState<RentalListing[]>([]);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState("");
-
-  const [filters, setFilters] = useState<VillaFilters>(DEFAULT_FILTERS);
-  const [sort, setSort] = useState<VillaSort>("recommended");
-  const [compareIds, setCompareIds] = useState<string[]>([]);
-  const [compareOpen, setCompareOpen] = useState(false);
-
-  const load = useCallback(async () => {
-    setLoading(true);
-    setError("");
-
-    try {
-      const today = formatISO(new Date());
-      const pricingWindowEnd = addDays(today, 90);
-
-      const results = await Promise.all(
-        LISTING_IDS.map(async (id) => {
-          const res = await fetch(`/api/hostaway/listings?id=${encodeURIComponent(id)}`, {
-            cache: "no-store",
-          });
-          const json = await res.json().catch(() => null);
-          if (!res.ok || !json?.success || !json?.listing) {
-            throw new Error(`Failed to load listing ${id}`);
-          }
-
-          const listing = json.listing as RentalListing;
-          const detail = getVillaDetail(id);
-
-          // Best-effort pricing enrichment — never blocks the card if it fails.
-          let minNightlyPrice: number | undefined;
-          let hasPricing = false;
-          try {
-            const priceRes = await fetch(
-              `/api/hostaway/pricing?listingId=${encodeURIComponent(id)}&startDate=${today}&endDate=${pricingWindowEnd}`,
-              { cache: "no-store" }
-            );
-            const priceJson = await priceRes.json().catch(() => null);
-            if (priceRes.ok && priceJson?.success && priceJson?.hasPricing && priceJson.minNightlyPrice > 0) {
-              minNightlyPrice = priceJson.minNightlyPrice;
-              hasPricing = true;
-            }
-          } catch {
-            /* pricing is an enhancement, not a requirement */
-          }
-
-          return {
-            ...listing,
-            ...detail,
-            minNightlyPrice,
-            hasPricing,
-          } satisfies RentalListing;
-        })
-      );
-
-      // Optional availability enrichment when the guest arrived with real dates.
-      if (hasDateSearch) {
-        try {
-          const searchRes = await fetch(
-            `/api/hostaway/search?startDate=${encodeURIComponent(urlStartDate)}&endDate=${encodeURIComponent(urlEndDate)}`,
-            { cache: "no-store" }
-          );
-          const searchJson = await searchRes.json().catch(() => null);
-          if (searchRes.ok && searchJson?.success) {
-            const availableIds = new Set(
-              (searchJson.availableListings || []).map((l: { id: string }) => l.id)
-            );
-            for (const l of results) {
-              l.isAvailable = availableIds.has(l.id);
-            }
-          }
-        } catch {
-          /* availability is an enhancement; cards still render without the badge */
-        }
-      }
-
-      setListings(results);
-    } catch {
-      setError("Hostaway listings failed to load. Please check your connection and try again.");
-    } finally {
-      setLoading(false);
-    }
-  }, [hasDateSearch, urlStartDate, urlEndDate]);
-
-  useEffect(() => {
-    load();
-  }, [load]);
-
-  const titleById = useMemo(() => {
-    const map = new Map<string, string>();
-    for (const l of listings) map.set(l.id, getDisplayName(l.id, l.name || ""));
-    return map;
-  }, [listings]);
-
-  const heroById = useMemo(() => {
-    const map = new Map<string, string>();
-    for (const l of listings) map.set(l.id, getPreferredHero(l.id, l.heroUrl, l.images));
-    return map;
-  }, [listings]);
-
-  const maxBedrooms = useMemo(() => Math.max(1, ...listings.map((l) => l.bedrooms ?? 0)), [listings]);
-  const maxGuestsBound = useMemo(() => Math.max(1, ...listings.map((l) => l.maxGuests ?? 0)), [listings]);
-
-  const showOceanViewFilter = useMemo(() => listings.some((l) => l.view), [listings]);
-  const showGroundFloorFilter = useMemo(() => listings.some((l) => l.groundFloor !== undefined), [listings]);
-
-  const priceRange = useMemo(() => {
-    const priced = listings.filter((l) => l.hasPricing && typeof l.minNightlyPrice === "number");
-    if (priced.length === 0) return null;
-    const values = priced.map((l) => l.minNightlyPrice as number);
-    return { min: Math.min(...values), max: Math.max(...values) };
-  }, [listings]);
-  const showPriceFilter = priceRange !== null;
-
-  const filtered = useMemo(() => filterListings(listings, filters), [listings, filters]);
-  const sorted = useMemo(() => sortListings(filtered, sort), [filtered, sort]);
-
-  const compareSelected = useMemo(
-    () => compareIds.map((id) => listings.find((l) => l.id === id)).filter((l): l is RentalListing => Boolean(l)),
-    [compareIds, listings]
-  );
-
-  function toggleCompare(id: string) {
-    setCompareIds((prev) => {
-      if (prev.includes(id)) return prev.filter((v) => v !== id);
-      if (prev.length >= 4) return prev;
-      const next = [...prev, id];
-      trackEvent("compare_select", { listing_id: id, count: next.length });
-      return next;
-    });
+  if (failedIds.length > 0) {
+    console.error(
+      `[rentals] ${failedIds.length}/${OCEAN_VILLA_LISTING_IDS.length} villa listings failed to load: ${failedIds.join(", ")}`
+    );
   }
+
+  const initialListings: RentalListing[] = fetched.map((listing) => ({
+    id: listing.id,
+    name: listing.name,
+    description: listing.description ?? undefined,
+    city: listing.city ?? undefined,
+    state: listing.state ?? undefined,
+    country: listing.country ?? undefined,
+    maxGuests: listing.maxGuests ?? undefined,
+    bedrooms: listing.bedrooms ?? undefined,
+    bathrooms: listing.bathrooms ?? undefined,
+    heroUrl: listing.heroUrl ?? undefined,
+    images: listing.images,
+    amenities: listing.amenities,
+    bookingEngineBase: listing.bookingEngineBase,
+    ...getVillaDetail(listing.id),
+  }));
+
+  const rentalsJsonLd = {
+    "@context": "https://schema.org",
+    "@type": "ItemList",
+    name: "Ocean Villas at Turtle Bay — Vacation Rental Collection",
+    description:
+      "7 luxury private villa rentals at Turtle Bay on Oahu's North Shore. Book direct with live availability and no platform markups.",
+    url: `${SITE_URL}/rentals`,
+    numberOfItems: OCEAN_VILLA_LISTING_IDS.length,
+    itemListElement: initialListings.map((l, i) => ({
+      "@type": "ListItem",
+      position: i + 1,
+      url: `${SITE_URL}/listing/${l.id}`,
+      name: l.name,
+    })),
+  };
 
   return (
     <main className="min-h-screen bg-slate-50 text-slate-900 pb-24 md:pb-0">
-      <Script
-        id="ov-rentals-schema"
+      {/* Plain <script>, not next/script's <Script> — see app/listing/[id]/page.tsx
+          for why: Script's default strategy never reaches the initial
+          server-rendered HTML. */}
+      <script
         type="application/ld+json"
         dangerouslySetInnerHTML={{ __html: JSON.stringify(rentalsJsonLd) }}
       />
@@ -276,89 +146,93 @@ function RentalsContent() {
         </div>
       </section>
 
-      {/* Villa cards */}
-      <section className="py-16 md:py-20">
-        <div className="mx-auto max-w-7xl px-6 lg:px-8">
-          {loading ? (
-            <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
-              {LISTING_IDS.map((id) => (
-                <VillaCardSkeleton key={id} />
-              ))}
-            </div>
-          ) : error ? (
+      {initialListings.length === 0 ? (
+        // Zero listings loaded is a Hostaway fetch failure, not "no villas
+        // match your filters" — that empty state (rendered inside
+        // RentalsClient) is a different, guest-caused condition and must not
+        // be conflated with a system outage that hides real inventory.
+        <section className="py-16 md:py-20">
+          <div className="mx-auto max-w-4xl px-6 lg:px-8">
             <div className="rounded-2xl border border-red-200 bg-red-50 p-10 text-center">
-              <p className="text-red-700">{error}</p>
-              <button
-                type="button"
-                onClick={load}
-                className="mt-5 inline-flex items-center justify-center rounded-xl bg-red-700 px-6 py-2.5 text-sm font-semibold text-white hover:bg-red-800 transition"
-              >
-                Retry
-              </button>
-            </div>
-          ) : (
-            <>
-              <div className="flex items-center justify-between gap-4 mb-4">
-                <div className="hidden md:block" />
-                <VillaSortSelect
-                  value={sort}
-                  onChange={(s) => {
-                    setSort(s);
-                    trackEvent("sort_change", { sort: s });
-                  }}
-                />
+              <h2 className="text-2xl font-serif text-red-800">Villa information is temporarily unavailable</h2>
+              <p className="mt-4 text-sm text-red-700">
+                We&apos;re having trouble loading our villa listings right now. This is a temporary issue on our end
+                — please try again in a moment, or call us directly to check availability.
+              </p>
+              <div className="mt-6 flex flex-wrap items-center justify-center gap-4">
+                <a
+                  href={`tel:+1${BRAND_PHONE.replace(/[^\d+]/g, "")}`}
+                  className="inline-flex items-center justify-center rounded-xl bg-slate-900 px-6 py-3 text-sm font-semibold text-white hover:bg-slate-800 transition-colors"
+                >
+                  Call Us · {BRAND_PHONE}
+                </a>
+                <Link
+                  href="/rentals"
+                  className="inline-flex items-center justify-center rounded-xl border border-slate-200 bg-white px-6 py-3 text-sm font-semibold text-slate-700 hover:bg-slate-50 transition-colors"
+                >
+                  Retry
+                </Link>
               </div>
+            </div>
+          </div>
+        </section>
+      ) : (
+        <>
+          {/* AEO: question-shaped heading + answer-first paragraph + a real
+              HTML table, since structured per-villa facts are extracted far
+              more reliably by answer engines from a table than from prose. */}
+          <section className="bg-white border-b border-slate-100 py-16 md:py-20">
+            <div className="mx-auto max-w-7xl px-6 lg:px-8">
+              <h2 className="text-3xl font-serif tracking-tight text-slate-900 mb-4">
+                How many guests does each villa at Ocean Villas at Turtle Bay sleep?
+              </h2>
+              <p className="text-base leading-relaxed text-slate-600 max-w-3xl mb-8">
+                Ocean Villas at Turtle Bay operates 7 private villas at Turtle Bay on Oahu&apos;s North Shore, ranging from{" "}
+                {Math.min(...initialListings.map((l) => l.maxGuests ?? Infinity).filter(Number.isFinite))} to{" "}
+                {Math.max(...initialListings.map((l) => l.maxGuests ?? 0))} guests. Occupancy is set per bedroom under
+                Hawaii licensing requirements — bedroom, bathroom, and sleeping-capacity details for every villa are
+                listed below and on each villa&apos;s own listing page.
+              </p>
 
-              <VillaFilterBar
-                filters={filters}
-                onChange={(next) => {
-                  setFilters(next);
-                  trackEvent("filter_apply", { ...next } as Record<string, string | number | boolean>);
-                }}
-                onClearAll={() => setFilters(DEFAULT_FILTERS)}
-                maxBedrooms={maxBedrooms}
-                maxGuests={maxGuestsBound}
-                showOceanViewFilter={showOceanViewFilter}
-                showGroundFloorFilter={showGroundFloorFilter}
-                showPriceFilter={showPriceFilter}
-                priceRange={priceRange}
-                resultCount={sorted.length}
-                totalCount={listings.length}
-              />
+              <div className="overflow-x-auto rounded-2xl border border-slate-200">
+                <table className="w-full min-w-[720px] border-collapse text-sm">
+                  <thead>
+                    <tr className="border-b border-slate-200 bg-slate-50 text-left">
+                      <th scope="col" className="px-4 py-3 font-bold uppercase tracking-wide text-[11px] text-slate-500">Villa</th>
+                      <th scope="col" className="px-4 py-3 font-bold uppercase tracking-wide text-[11px] text-slate-500">Bedrooms</th>
+                      <th scope="col" className="px-4 py-3 font-bold uppercase tracking-wide text-[11px] text-slate-500">Bathrooms</th>
+                      <th scope="col" className="px-4 py-3 font-bold uppercase tracking-wide text-[11px] text-slate-500">Sleeps</th>
+                      <th scope="col" className="px-4 py-3 font-bold uppercase tracking-wide text-[11px] text-slate-500">Bed Configuration</th>
+                      <th scope="col" className="px-4 py-3 font-bold uppercase tracking-wide text-[11px] text-slate-500">Notable Feature</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {initialListings.map((l) => {
+                      const compliance = getVillaCompliance(l.id);
+                      return (
+                        <tr key={l.id} className="border-b border-slate-100 last:border-0">
+                          <th scope="row" className="px-4 py-3 text-left font-semibold text-slate-900 whitespace-nowrap">
+                            <Link href={`/listing/${l.id}`} className="hover:underline">
+                              {getDisplayName(l.id, l.name || "")}
+                            </Link>
+                          </th>
+                          <td className="px-4 py-3 text-slate-700">{l.bedrooms ?? "—"}</td>
+                          <td className="px-4 py-3 text-slate-700">{l.bathrooms ?? "—"}</td>
+                          <td className="px-4 py-3 text-slate-700">{l.maxGuests ?? "—"}</td>
+                          <td className="px-4 py-3 text-slate-700">{compliance?.occupancySummary ?? "—"}</td>
+                          <td className="px-4 py-3 text-slate-700">{l.shortFeature ?? "—"}</td>
+                        </tr>
+                      );
+                    })}
+                  </tbody>
+                </table>
+              </div>
+            </div>
+          </section>
 
-              {sorted.length === 0 ? (
-                <div className="rounded-2xl border border-slate-200 bg-white p-12 text-center">
-                  <h3 className="text-lg font-semibold text-slate-900">No villas match these filters</h3>
-                  <p className="mt-2 text-sm text-slate-500">
-                    Try widening your bedroom, guest, or price criteria.
-                  </p>
-                  <button
-                    type="button"
-                    onClick={() => setFilters(DEFAULT_FILTERS)}
-                    className="mt-5 inline-flex items-center justify-center rounded-xl bg-slate-900 px-6 py-2.5 text-sm font-semibold text-white hover:bg-slate-800 transition"
-                  >
-                    Clear filters
-                  </button>
-                </div>
-              ) : (
-                <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
-                  {sorted.map((listing) => (
-                    <VillaCard
-                      key={listing.id}
-                      listing={listing}
-                      title={titleById.get(listing.id) || listing.name}
-                      heroUrl={heroById.get(listing.id) || ""}
-                      selected={compareIds.includes(listing.id)}
-                      compareDisabled={compareIds.length >= 4}
-                      onToggleCompare={toggleCompare}
-                    />
-                  ))}
-                </div>
-              )}
-            </>
-          )}
-        </div>
-      </section>
+          <RentalsClient initialListings={initialListings} />
+        </>
+      )}
 
       {/* Why book direct */}
       <section className="bg-white border-t border-slate-100 py-16 md:py-20">
@@ -454,43 +328,6 @@ function RentalsContent() {
           </div>
         </div>
       </footer>
-
-      {compareSelected.length > 0 && (
-        <CompareBar
-          selected={compareSelected}
-          onRemove={toggleCompare}
-          onClear={() => setCompareIds([])}
-          onOpenCompare={() => setCompareOpen(true)}
-        />
-      )}
-
-      {compareOpen && (
-        <CompareModal
-          listings={compareSelected}
-          onClose={() => setCompareOpen(false)}
-          getTitle={(l) => titleById.get(l.id) || l.name}
-        />
-      )}
-
-      {compareSelected.length === 0 && <MobileStickyBookingBar />}
     </main>
-  );
-}
-
-export default function RentalsPage() {
-  return (
-    <Suspense
-      fallback={
-        <main className="min-h-screen bg-slate-50">
-          <div className="mx-auto max-w-7xl px-6 py-20 grid gap-6 md:grid-cols-2 lg:grid-cols-3">
-            {LISTING_IDS.map((id) => (
-              <VillaCardSkeleton key={id} />
-            ))}
-          </div>
-        </main>
-      }
-    >
-      <RentalsContent />
-    </Suspense>
   );
 }
