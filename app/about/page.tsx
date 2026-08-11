@@ -79,7 +79,14 @@ export default function AboutPage() {
           <div className="rounded-2xl border border-slate-200 bg-white p-8">
             <h2 className="text-xl font-semibold text-slate-900 mb-4">The Property Collection</h2>
             <p className="text-sm leading-8 text-slate-600">
-              Our 7 villas are positioned within the Turtle Bay area on Oahu&apos;s North Shore, one of Hawaii&apos;s most desirable and unspoiled destinations. Each property is fully managed with professional housekeeping, secure keyless entry, and access to resort amenities. Availability, pricing, and booking are powered by Hostaway to ensure accuracy and reliability.
+              Our 7 villas are positioned within the Turtle Bay area on Oahu&apos;s North Shore, one of Hawaii&apos;s most desirable and unspoiled destinations. Each property is fully managed with professional housekeeping and secure keyless entry. Availability, pricing, and booking are powered by Hostaway to ensure accuracy and reliability.
+            </p>
+            <p className="mt-4 text-sm leading-8 text-slate-600">
+              Ocean Villas at Turtle Bay is an independently operated villa collection, not a Turtle Bay Resort property, brand, or operating division. Villa guests are located near many of the resort&apos;s dining, golf, spa, and recreational experiences, but resort access is not included, complimentary, or guaranteed with a villa stay — see the{" "}
+              <Link href="/amenities" className="font-semibold text-slate-900 hover:underline">
+                amenities page
+              </Link>{" "}
+              for what is confirmed.
             </p>
           </div>
 
