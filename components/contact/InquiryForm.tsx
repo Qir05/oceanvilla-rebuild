@@ -2,7 +2,7 @@
 "use client";
 
 import { useMemo, useState } from "react";
-import { OCEAN_VILLA_LISTING_IDS } from "@/lib/ocean-villas";
+import { OCEAN_VILLA_LISTING_IDS, MAX_SITE_GUEST_CAPACITY } from "@/lib/ocean-villas";
 import { trackEvent } from "@/lib/analytics";
 
 // Same GHL form already used by the villa inquiry modal (app/listing/[id]/page.tsx) —
@@ -359,7 +359,10 @@ export default function InquiryForm() {
                 value={form.guests}
                 onChange={(e) => update("guests", e.target.value)}
               >
-                {Array.from({ length: 12 }, (_, i) => i + 1).map((n) => (
+                {/* No villa selected yet on this generic form, so bounded by
+                    the largest resolved capacity across all villas rather
+                    than a hardcoded number. */}
+                {Array.from({ length: MAX_SITE_GUEST_CAPACITY }, (_, i) => i + 1).map((n) => (
                   <option key={n} value={n}>{n}</option>
                 ))}
               </select>

@@ -4,7 +4,7 @@ import Image from "next/image";
 import Link from "next/link";
 import { Suspense, useEffect, useMemo, useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
-import { OCEAN_VILLA_LISTING_IDS } from "@/lib/ocean-villas";
+import { OCEAN_VILLA_LISTING_IDS, MAX_SITE_GUEST_CAPACITY } from "@/lib/ocean-villas";
 
 type HostawayListing = {
   id: string;
@@ -195,7 +195,10 @@ function AvailabilitySearchForm() {
 
       // Use the URL param directly so the search fires exactly once per URL
       // change and is never double-triggered by local guests state updates.
-      const guestsNum = Math.min(Number(guestsParam) || 2, 10);
+      // Clamped to the largest resolved villa capacity, not a hardcoded
+      // number — a stale "10" here silently dropped the 12-guest combined
+      // 489097 unit from any 11-12 guest search.
+      const guestsNum = Math.min(Number(guestsParam) || 2, MAX_SITE_GUEST_CAPACITY);
 
       setLoading(true);
       setError("");
@@ -314,7 +317,11 @@ function AvailabilitySearchForm() {
               onChange={(e) => setGuests(Number(e.target.value))}
               className="w-full rounded-xl border border-slate-200 bg-white px-4 py-3 text-sm focus:border-slate-900 focus:outline-none focus:ring-1 focus:ring-slate-900"
             >
-              {Array.from({ length: 10 }).map((_, i) => (
+              {/* Not villa-scoped yet at this point in the flow, so bounded by
+                  the largest resolved capacity across all villas rather than
+                  a hardcoded number — otherwise a guest could never even
+                  select a party size that the combined 489097 unit sleeps. */}
+              {Array.from({ length: MAX_SITE_GUEST_CAPACITY }).map((_, i) => (
                 <option key={i + 1} value={i + 1}>
                   {i + 1} Guests
                 </option>
