@@ -1,8 +1,29 @@
 // app/api/hostaway/search/route.ts
 import { NextResponse } from "next/server";
-import { OCEAN_VILLA_LISTING_IDS, VILLA_STAT_OVERRIDES } from "@/lib/ocean-villas";
+import { OCEAN_VILLA_LISTING_IDS, VILLA_STAT_OVERRIDES, MAX_SITE_GUEST_CAPACITY, checkOccupancyDrift } from "@/lib/ocean-villas";
 
 const LISTING_IDS = OCEAN_VILLA_LISTING_IDS;
+
+interface HostawayCalendarDay {
+  isAvailable?: number | boolean;
+  closedOnArrival?: number | boolean;
+  closedOnDeparture?: number | boolean;
+  minimumStay?: number | string;
+}
+
+/** The subset of Hostaway's raw listing shape this route reads. */
+interface HostawaySearchListing {
+  id?: number | string;
+  name?: string;
+  externalListingName?: string;
+  city?: string;
+  state?: string;
+  personCapacity?: number;
+  maxGuests?: number;
+  bedroomsNumber?: number;
+  bathroomsNumber?: number;
+  listingImages?: { url?: string; airbnbUrl?: string }[];
+}
 
 const BOOKING_ENGINE_BASE_URL =
   process.env.HOSTAWAY_BOOKING_ENGINE_BASE_URL ||
@@ -30,7 +51,7 @@ async function getHostawayAccessToken() {
     body,
     cache: "no-store",
   });
-  const json = await res.json().catch(() => ({} as any));
+  const json = (await res.json().catch(() => ({}))) as { access_token?: string };
   if (!res.ok || !json?.access_token) {
     throw new Error(`Failed to get Hostaway access token (status ${res.status}).`);
   }
@@ -46,7 +67,10 @@ function isValidISODate(s: string) {
 function parseGuests(s: string | null) {
   const n = Number(s || "2");
   if (!Number.isFinite(n) || n < 1) return 2;
-  return Math.min(Math.floor(n), 10);
+  // Capped to the largest resolved villa capacity, not a hardcoded number —
+  // a stale "10" here silently truncated any 11-12 guest search before it
+  // ever reached the per-listing capacity filter below.
+  return Math.min(Math.floor(n), MAX_SITE_GUEST_CAPACITY);
 }
 
 function daysBetween(startISO: string, endISO: string) {
@@ -89,8 +113,8 @@ export async function GET(req: Request) {
             cache: "no-store",
           }
         );
-        const calJson = await calRes.json().catch(() => ({} as any));
-        const days: any[] = Array.isArray(calJson?.result) ? calJson.result : [];
+        const calJson = (await calRes.json().catch(() => ({}))) as { result?: HostawayCalendarDay[] };
+        const days = Array.isArray(calJson?.result) ? calJson.result : [];
         if (!calRes.ok || days.length === 0) return null;
 
         // Every night in the stay must be available (not blocked by an existing booking).
@@ -116,11 +140,12 @@ export async function GET(req: Request) {
             cache: "no-store",
           }
         );
-        const listingJson = await listingRes.json().catch(() => ({} as any));
+        const listingJson = (await listingRes.json().catch(() => ({}))) as { result?: HostawaySearchListing };
         const l = listingJson?.result;
         if (!listingRes.ok || !l) return null;
 
         const rawCapacity = l.personCapacity ?? l.maxGuests ?? null;
+        checkOccupancyDrift(String(l.id), rawCapacity);
         const capacity = VILLA_STAT_OVERRIDES[String(l.id)]?.maxGuests ?? rawCapacity;
         if (capacity != null && Number(capacity) < guests) return null;
 
@@ -129,7 +154,7 @@ export async function GET(req: Request) {
         if (checkInMinStay != null && Number(checkInMinStay) > nights) return null;
 
         const images = Array.isArray(l?.listingImages) ? l.listingImages : [];
-        const hero = images.find((img: any) => img?.url) || images[0];
+        const hero = images.find((img) => img?.url) || images[0];
 
         const statOverride = VILLA_STAT_OVERRIDES[String(l.id)] ?? {};
 
@@ -161,10 +186,8 @@ export async function GET(req: Request) {
       { success: true, startDate, endDate, guests, availableListings: cleaned },
       { status: 200 }
     );
-  } catch (err: any) {
-    return NextResponse.json(
-      { success: false, error: err?.message || "Internal Server Error" },
-      { status: 500 }
-    );
+  } catch (err) {
+    const message = err instanceof Error ? err.message : "Internal Server Error";
+    return NextResponse.json({ success: false, error: message }, { status: 500 });
   }
 }

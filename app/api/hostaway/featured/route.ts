@@ -1,6 +1,21 @@
 // app/api/hostaway/featured/route.ts
 import { NextResponse } from "next/server";
-import { OCEAN_VILLA_LISTING_IDS } from "@/lib/ocean-villas";
+import { OCEAN_VILLA_LISTING_IDS, VILLA_STAT_OVERRIDES, checkOccupancyDrift } from "@/lib/ocean-villas";
+
+/** The subset of Hostaway's raw listing shape this (currently unused —
+ * no page calls this route) endpoint reads. */
+interface HostawayFeaturedListing {
+  id?: number | string;
+  name?: string;
+  externalListingName?: string;
+  city?: string;
+  state?: string;
+  personCapacity?: number;
+  maxGuests?: number;
+  bedroomsNumber?: number;
+  bathroomsNumber?: number;
+  listingImages?: { url?: string; airbnbUrl?: string }[];
+}
 
 async function getHostawayAccessToken() {
   const accountId = process.env.HOSTAWAY_ACCOUNT_ID;
@@ -53,20 +68,23 @@ export async function GET() {
         cache: "no-store",
       }
     );
-    const json = await res.json().catch(() => ({}));
-    const all = json?.result || json?.data || json;
-    const picked = Array.isArray(all)
-      ? all.filter((l: any) => listingIds.includes(String(l?.id)))
+    const json = (await res.json().catch(() => ({}))) as { result?: unknown; data?: unknown };
+    const all: unknown = json?.result ?? json?.data ?? json;
+    const picked: HostawayFeaturedListing[] = Array.isArray(all)
+      ? (all as HostawayFeaturedListing[]).filter((l) => listingIds.includes(String(l?.id)))
       : [];
-    const featured = picked.map((l: any) => {
+    const featured = picked.map((l) => {
       const images = Array.isArray(l?.listingImages) ? l.listingImages : [];
       const hero =
-        images.find((img: any) => img?.url) ||
-        images.find((img: any) => img?.airbnbUrl) ||
+        images.find((img) => img?.url) ||
+        images.find((img) => img?.airbnbUrl) ||
         images[0];
-      const sleeps = l?.personCapacity ?? l?.maxGuests ?? null;
-      const beds = l?.bedroomsNumber ?? null;
-      const baths = l?.bathroomsNumber ?? null;
+      const rawSleeps = l?.personCapacity ?? l?.maxGuests ?? null;
+      checkOccupancyDrift(String(l?.id), rawSleeps);
+      const statOverride = VILLA_STAT_OVERRIDES[String(l?.id)] ?? {};
+      const sleeps = statOverride.maxGuests ?? rawSleeps;
+      const beds = statOverride.bedrooms ?? l?.bedroomsNumber ?? null;
+      const baths = statOverride.bathrooms ?? l?.bathroomsNumber ?? null;
       return {
         id: String(l?.id),
         name: l?.name || l?.externalListingName || `Listing ${l?.id}`,
@@ -81,10 +99,8 @@ export async function GET() {
       };
     });
     return NextResponse.json({ success: true, featured }, { status: 200 });
-  } catch (err: any) {
-    return NextResponse.json(
-      { success: false, error: err?.message || "Unknown error" },
-      { status: 500 }
-    );
+  } catch (err) {
+    const message = err instanceof Error ? err.message : "Unknown error";
+    return NextResponse.json({ success: false, error: message }, { status: 500 });
   }
 }
