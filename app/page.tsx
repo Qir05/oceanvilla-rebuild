@@ -2,12 +2,13 @@
 
 import Image from "next/image";
 import Link from "next/link";
-import Script from "next/script";
 import React, { useEffect, useMemo, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import MobileStickyBookingBar from "@/components/MobileStickyBookingBar";
 import TrustSignals from "@/components/TrustSignals";
 import { trackEvent } from "@/lib/analytics";
+import { VILLA_COMPLIANCE } from "@/lib/villaCompliance";
+import { MAX_SITE_GUEST_CAPACITY } from "@/lib/ocean-villas";
 
 type HostawayListing = {
   id: string;
@@ -333,10 +334,27 @@ export default function Home() {
   const [listingsLoading, setListingsLoading] = useState(true);
   const [listingsError, setListingsError] = useState<string>("");
 
+  // Computed from lib/villaCompliance.ts (the licensing-mandated occupancy
+  // source) rather than hardcoded, so this FAQ answer can never drift from
+  // the enforced per-villa figures.
+  const occupancyAnswer =
+    `Guest capacity varies by villa: ${Object.values(VILLA_COMPLIANCE)
+      .map((v) => `${v.unit} is licensed for ${v.licensedMaxOccupancy}`)
+      .join(", ")}. ` +
+    "Each figure is the Hawaii-licensed maximum, not a raw bed count — see each villa's listing page for its full sleeping arrangement.";
+
   const faqJsonLd = {
     "@context": "https://schema.org",
     "@type": "FAQPage",
     mainEntity: [
+      {
+        "@type": "Question",
+        name: "How many guests can each villa sleep?",
+        acceptedAnswer: {
+          "@type": "Answer",
+          text: occupancyAnswer,
+        },
+      },
       {
         "@type": "Question",
         name: "How do I book a villa at Ocean Villas at Turtle Bay?",
@@ -385,16 +403,15 @@ export default function Home() {
           text: "Ocean Villas combines the luxury and convenience of a resort setting with the comfort and privacy of a spacious vacation home. Guests can enjoy multiple bedrooms, full kitchens, expansive living areas, private lanais where applicable, and room for families and groups to relax together—all while staying close to the beaches and experiences that make Turtle Bay and Oahu’s North Shore a sought-after destination.",
         },
       },
+      {
+        "@type": "Question",
+        name: "Is Ocean Villas at Turtle Bay part of Turtle Bay Resort?",
+        acceptedAnswer: {
+          "@type": "Answer",
+          text: "No. Ocean Villas at Turtle Bay is an independently operated collection of private vacation rental villas located near Turtle Bay Resort, not owned or operated by the resort. Some resort dining, golf, spa, and recreational experiences may be available to villa guests separately, but they are not included, complimentary, or guaranteed with a villa stay — see the amenities page for confirmed details.",
+        },
+      },
     ],
-  };
-
-  const organizationJsonLd = {
-    "@context": "https://schema.org",
-    "@type": "Organization",
-    name: BRAND.name,
-    url: SITE_URL,
-    logo: `${SITE_URL}/brand/TTB-Logo.png`,
-    telephone: "+18587272427",
   };
 
   const websiteJsonLd = {
@@ -409,10 +426,18 @@ export default function Home() {
   const lodgingJsonLd = {
     "@context": "https://schema.org",
     "@type": "LodgingBusiness",
+    "@id": `${SITE_URL}/#organization`,
     name: BRAND.name,
     url: SITE_URL,
+    logo: `${SITE_URL}/brand/TTB-Logo.png`,
+    image: `${SITE_URL}/brand/TTB-Logo.png`,
     description:
       "Luxury private villa rentals at Turtle Bay on Oahu’s North Shore. Book direct for live availability and transparent pricing — no platform fees.",
+    // Ocean Villas at Turtle Bay is an independently operated villa rental
+    // collection near Turtle Bay Resort — not a Turtle Bay Resort property,
+    // brand, or operating division. Repeated verbatim in llms.txt.
+    disambiguatingDescription:
+      "Ocean Villas at Turtle Bay is an independently operated collection of private vacation rental villas located near Turtle Bay Resort on Oahu's North Shore. It is not owned or operated by Turtle Bay Resort, and resort amenities are not included with a villa stay unless explicitly confirmed.",
     telephone: "+18587272427",
     address: {
       "@type": "PostalAddress",
@@ -431,10 +456,17 @@ export default function Home() {
       "@type": "Place",
       name: "Turtle Bay, Oahu, Hawaii",
     },
+    // Count of villas in the collection, not "rooms" in the hotel sense —
+    // schema.org LodgingBusiness has no dedicated "number of units" property,
+    // numberOfRooms is the closest fit and is how Google's lodging guidance
+    // treats vacation-rental unit counts.
     numberOfRooms: 7,
+    // Only amenities confirmed universal across every villa in
+    // lib/amenities-data.ts (AMENITIES_RELAX_COMFORT / COOK_GATHER /
+    // BEACH_DAYS / ISLAND_LIVING, excluding the ones flagged as per-villa).
+    // Pool and ocean view were previously listed here as guaranteed, which
+    // contradicted the site's own per-villa disclaimers — removed.
     amenityFeature: [
-      { "@type": "LocationFeatureSpecification", name: "Ocean view", value: true },
-      { "@type": "LocationFeatureSpecification", name: "Pool", value: true },
       { "@type": "LocationFeatureSpecification", name: "Free WiFi", value: true },
       { "@type": "LocationFeatureSpecification", name: "Air conditioning", value: true },
       { "@type": "LocationFeatureSpecification", name: "Full kitchen", value: true },
@@ -510,23 +542,21 @@ export default function Home() {
 
   return (
     <main className="min-h-screen bg-slate-50 text-slate-900 selection:bg-slate-200 pb-24 md:pb-0">
-      <Script
-        id="ov-organization-schema"
-        type="application/ld+json"
-        dangerouslySetInnerHTML={{ __html: JSON.stringify(organizationJsonLd) }}
-      />
-      <Script
-        id="ov-website-schema"
+      {/* Plain <script>, not next/script's <Script> — Script's default
+          "afterInteractive" strategy never reaches the initial
+          server-rendered HTML, so a non-JS crawler would see no structured
+          data at all. This file is a client component, but it is still
+          server-rendered for its initial HTML like any other component; a
+          literal <script> tag with static JSON content renders normally. */}
+      <script
         type="application/ld+json"
         dangerouslySetInnerHTML={{ __html: JSON.stringify(websiteJsonLd) }}
       />
-      <Script
-        id="ov-faq-schema"
+      <script
         type="application/ld+json"
         dangerouslySetInnerHTML={{ __html: JSON.stringify(faqJsonLd) }}
       />
-      <Script
-        id="ov-lodging-schema"
+      <script
         type="application/ld+json"
         dangerouslySetInnerHTML={{ __html: JSON.stringify(lodgingJsonLd) }}
       />
@@ -707,7 +737,9 @@ export default function Home() {
                   onChange={(e) => setGuests(Number(e.target.value))}
                   className="w-full rounded-xl border border-slate-200 bg-slate-50 px-3 py-2.5 text-sm focus:border-slate-900 focus:outline-none focus:ring-1 focus:ring-slate-900 md:px-4 md:py-3"
                 >
-                  {Array.from({ length: 10 }).map((_, i) => (
+                  {/* Not villa-scoped yet at this point in the flow, so bounded
+                      by the largest resolved capacity across all villas. */}
+                  {Array.from({ length: MAX_SITE_GUEST_CAPACITY }).map((_, i) => (
                     <option key={i + 1} value={i + 1}>
                       {i + 1} Guests
                     </option>
@@ -870,6 +902,10 @@ export default function Home() {
 
           <div className="mt-10 space-y-4">
             <FAQItem
+              question="How many guests can each villa sleep?"
+              answer={occupancyAnswer}
+            />
+            <FAQItem
               question="How do I book a villa at Ocean Villas at Turtle Bay?"
               answer="Use the availability search above to select your dates and number of guests, then continue directly into the booking path. No third-party platform required."
             />
@@ -892,6 +928,10 @@ export default function Home() {
             <FAQItem
               question="Why stay at Ocean Villas instead of a hotel at Turtle Bay?"
               answer="Ocean Villas combines the luxury and convenience of a resort setting with the comfort and privacy of a spacious vacation home. Guests can enjoy multiple bedrooms, full kitchens, expansive living areas, private lanais where applicable, and room for families and groups to relax together—all while staying close to the beaches and experiences that make Turtle Bay and Oahu’s North Shore a sought-after destination."
+            />
+            <FAQItem
+              question="Is Ocean Villas at Turtle Bay part of Turtle Bay Resort?"
+              answer="No. Ocean Villas at Turtle Bay is an independently operated collection of private vacation rental villas located near Turtle Bay Resort, not owned or operated by the resort. Some resort dining, golf, spa, and recreational experiences may be available to villa guests separately, but they are not included, complimentary, or guaranteed with a villa stay — see the amenities page for confirmed details."
             />
           </div>
         </div>
