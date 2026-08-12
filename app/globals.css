@@ -9,6 +9,11 @@
   --ov-olive-dark: #334e3c;
   --ov-olive-shadow: rgba(63, 95, 74, 0.22);
   --ov-navy-shadow: rgba(15, 23, 42, 0.22);
+  /* Warm sand — a third section tone alongside white/slate-50, used
+     sparingly to break up cold-gray monotony across long pages without
+     introducing a new color family. */
+  --ov-sand: #f8f4ec;
+  --ov-sand-line: #ece4d4;
 }
 
 body {

@@ -157,24 +157,60 @@ function Stat({ label, value }: { label: string; value: string }) {
 function SectionTitle({ eyebrow, title, desc }: { eyebrow?: string; title: string; desc?: string }) {
   return (
     <div className="max-w-3xl">
-      {eyebrow ? <div className="text-xs font-bold uppercase tracking-widest text-slate-400 mb-2">{eyebrow}</div> : null}
+      {eyebrow ? (
+        <div className="mb-3 flex items-center gap-2.5">
+          <span className="h-px w-8 bg-[#3f5f4a]" aria-hidden="true" />
+          <span className="text-xs font-bold uppercase tracking-widest text-slate-500">{eyebrow}</span>
+        </div>
+      ) : null}
       <h2 className="text-3xl font-serif tracking-tight text-slate-900 md:text-4xl">{title}</h2>
       {desc ? <p className="mt-4 text-base leading-relaxed text-slate-600">{desc}</p> : null}
     </div>
   );
 }
 
-function InfoCard({
-  title,
-  desc,
+// ─── Reveal — subtle on-scroll entrance, reuses the same CSS classes and
+// IntersectionObserver pattern already proven on the listing page. Respects
+// prefers-reduced-motion via the .ov-reveal rule in globals.css. ──────────
+function Reveal({
+  children,
+  delay = 0,
+  className = "",
 }: {
-  title: string;
-  desc: string;
+  children: React.ReactNode;
+  delay?: number;
+  className?: string;
 }) {
+  const ref = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    const el = ref.current;
+    if (!el) return;
+
+    el.classList.add("ov-reveal");
+
+    if (typeof IntersectionObserver === "undefined") {
+      el.classList.add("ov-visible");
+      return;
+    }
+
+    const obs = new IntersectionObserver(
+      ([entry]) => {
+        if (entry.isIntersecting) {
+          el.classList.add("ov-visible");
+          obs.disconnect();
+        }
+      },
+      { threshold: 0.1, rootMargin: "0px 0px -40px 0px" }
+    );
+
+    obs.observe(el);
+    return () => obs.disconnect();
+  }, []);
+
   return (
-    <div className="rounded-2xl border border-slate-200 bg-white p-6 shadow-[0_8px_30px_rgba(15,23,42,0.05)]">
-      <h3 className="text-lg font-semibold text-slate-900">{title}</h3>
-      <p className="mt-3 text-sm leading-7 text-slate-600">{desc}</p>
+    <div ref={ref} className={className} style={delay ? { transitionDelay: `${delay}ms` } : undefined}>
+      {children}
     </div>
   );
 }
@@ -228,9 +264,17 @@ function FAQItem({
   answer: string;
 }) {
   return (
-    <details className="group rounded-2xl border border-slate-200 bg-white p-5">
-      <summary className="cursor-pointer list-none text-base font-semibold text-slate-900">
+    <details className="group rounded-2xl border border-slate-200 bg-white p-5 transition-colors open:border-[#3f5f4a]/30">
+      <summary className="flex cursor-pointer list-none items-center justify-between gap-4 text-base font-semibold text-slate-900">
         {question}
+        <span
+          className="flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-slate-100 text-slate-500 transition-transform duration-200 group-open:rotate-45 group-open:bg-[#3f5f4a]/10 group-open:text-[#3f5f4a]"
+          aria-hidden="true"
+        >
+          <svg className="h-3.5 w-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+            <path strokeLinecap="round" d="M12 5v14M5 12h14" />
+          </svg>
+        </span>
       </summary>
       <p className="mt-3 text-sm leading-7 text-slate-600">{answer}</p>
     </details>
@@ -770,47 +814,96 @@ export default function Home() {
         </div>
       </section>
 
-      {/* OPENING NARRATIVE */}
-      <section className="py-16 md:py-20 bg-white">
+      {/* OPENING NARRATIVE — editorial split: intro copy paired with a
+          time-of-day rhythm panel, rather than a single centered paragraph.
+          Same facts as before, restructured for visual composition. */}
+      <section className="py-16 md:py-24 bg-white">
         <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
-          <SectionTitle
-            eyebrow="The Experience"
-            title="Experience the North Shore Like Never Before"
-            desc="Wake up to breathtaking ocean views, spend your days exploring pristine beaches and world-famous surf breaks, and unwind each evening with spectacular Hawaiian sunsets. Whether you’re planning a family getaway, celebrating a special occasion, or simply escaping to paradise, Ocean Villas at Turtle Bay offers the perfect setting to create unforgettable memories on Oahu’s iconic North Shore."
-          />
+          <div className="grid gap-10 lg:grid-cols-12 lg:gap-16 lg:items-start">
+            <Reveal className="lg:col-span-7">
+              <SectionTitle eyebrow="The Experience" title="Experience the North Shore Like Never Before" />
+              <p className="mt-6 text-base leading-relaxed text-slate-600 max-w-xl">
+                Whether you&apos;re planning a family getaway, celebrating a special occasion, or simply escaping to
+                paradise, Ocean Villas at Turtle Bay offers the perfect setting to create unforgettable memories on
+                Oahu&apos;s iconic North Shore.
+              </p>
+            </Reveal>
+
+            <Reveal delay={120} className="lg:col-span-5">
+              <div className="space-y-6 border-l-2 border-[#3f5f4a]/25 pl-6">
+                <div>
+                  <div className="text-xs font-bold uppercase tracking-widest text-[#3f5f4a]">Morning</div>
+                  <p className="mt-1.5 text-sm leading-relaxed text-slate-600">
+                    Wake up to breathtaking ocean views from your private villa.
+                  </p>
+                </div>
+                <div>
+                  <div className="text-xs font-bold uppercase tracking-widest text-[#3f5f4a]">Day</div>
+                  <p className="mt-1.5 text-sm leading-relaxed text-slate-600">
+                    Explore pristine beaches and world-famous surf breaks nearby.
+                  </p>
+                </div>
+                <div>
+                  <div className="text-xs font-bold uppercase tracking-widest text-[#3f5f4a]">Evening</div>
+                  <p className="mt-1.5 text-sm leading-relaxed text-slate-600">
+                    Unwind each night with spectacular Hawaiian sunsets.
+                  </p>
+                </div>
+              </div>
+            </Reveal>
+          </div>
         </div>
       </section>
 
       {/* TRUST SIGNALS */}
       <TrustSignals />
 
-      {/* TRUST / POSITIONING */}
+      {/* TRUST / POSITIONING — one editorial intro paired with three
+          numbered benefit items (restrained index marks, not another
+          identical bordered-card grid) inside a soft sand-toned panel. */}
       <section className="py-16 md:py-20 bg-white">
         <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
-          <SectionTitle
-            eyebrow="Book With Us"
-            title="Why Book Direct?"
-            desc="Booking directly with Ocean Villas means more than securing a competitive rate. It gives guests direct access to the local team, personalized recommendations, exclusive offers when available, and dedicated support before and throughout their stay—helping create a seamless Hawaiian vacation from the moment planning begins."
-          />
+          <Reveal>
+            <div className="rounded-3xl bg-[#f8f4ec] border border-[#ece4d4] px-6 py-12 sm:px-10 md:px-14 md:py-16">
+              <SectionTitle
+                eyebrow="Book With Us"
+                title="Why Book Direct?"
+                desc="Booking directly with Ocean Villas means more than securing a competitive rate. It gives guests direct access to the local team, personalized recommendations, exclusive offers when available, and dedicated support before and throughout their stay—helping create a seamless Hawaiian vacation from the moment planning begins."
+              />
 
-          <div className="mt-10 grid gap-6 md:grid-cols-3">
-            <InfoCard
-              title="Direct access to our team"
-              desc="Skip the third-party platform and connect straight with our local team for questions, recommendations, and support, before you even book."
-            />
-            <InfoCard
-              title="Personalized planning"
-              desc="Get tailored villa recommendations and North Shore guidance suited to your trip, from a team that knows every villa firsthand."
-            />
-            <InfoCard
-              title="Savings, without the markup"
-              desc="Rates are sourced directly from Hostaway with no added platform fees, a welcome benefit on top of the direct support you get along the way."
-            />
-          </div>
+              <div className="mt-12 grid gap-10 md:grid-cols-3 md:gap-8">
+                {[
+                  {
+                    n: "01",
+                    title: "Direct access to our team",
+                    desc: "Skip the third-party platform and connect straight with our local team for questions, recommendations, and support, before you even book.",
+                  },
+                  {
+                    n: "02",
+                    title: "Personalized planning",
+                    desc: "Get tailored villa recommendations and North Shore guidance suited to your trip, from a team that knows every villa firsthand.",
+                  },
+                  {
+                    n: "03",
+                    title: "Savings, without the markup",
+                    desc: "Rates are sourced directly from Hostaway with no added platform fees, a welcome benefit on top of the direct support you get along the way.",
+                  },
+                ].map((item) => (
+                  <div key={item.n} className="relative pl-0 md:border-l md:border-[#3f5f4a]/20 md:pl-8 md:first:pl-0 md:first:border-l-0">
+                    <div className="font-serif text-3xl text-[#3f5f4a]/35">{item.n}</div>
+                    <h3 className="mt-2 text-base font-semibold text-slate-900">{item.title}</h3>
+                    <p className="mt-2.5 text-sm leading-6 text-slate-600">{item.desc}</p>
+                  </div>
+                ))}
+              </div>
+            </div>
+          </Reveal>
         </div>
       </section>
 
-      {/* BEACHES */}
+      {/* BEACHES — asymmetric feature/support pair instead of two matching
+          cards; no new imagery, so hierarchy comes from scale, an accent
+          rule, and a tinted supporting panel rather than a photo. */}
       <section className="py-16 md:py-20 bg-slate-50">
         <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
           <SectionTitle
@@ -819,15 +912,31 @@ export default function Home() {
             desc="Spend your mornings strolling along quiet beaches, your afternoons snorkeling in clear waters or exploring scenic coastal trails, and your evenings enjoying unforgettable sunsets just steps from your villa. From iconic surf beaches to local eateries, every day on the North Shore offers a new experience waiting to be discovered."
           />
 
-          <div className="mt-10 grid gap-6 md:grid-cols-2">
-            <InfoCard
-              title="Kokololio Beach Park, Hauula"
-              desc="A quieter stretch of North Shore coastline with soft sand, shaded grassy areas, and picnic tables. It draws a local crowd and has an easy, family-friendly feel that's hard to find in busier parts of Oahu. The kind of place you stay all day without the rush."
-            />
-            <InfoCard
-              title="The North Shore beach experience"
-              desc="Fewer crowds, more space, scenic shorelines, and that genuinely relaxed local rhythm. Whether you're watching a winter swell roll in or just setting up for a quiet afternoon, this coastline offers something more authentic than most visitors to Oahu ever find."
-            />
+          <div className="mt-10 grid gap-6 lg:grid-cols-5 lg:gap-8">
+            <Reveal className="lg:col-span-3">
+              <div className="h-full rounded-3xl bg-white border border-slate-200 p-8 md:p-10 shadow-[0_8px_30px_rgba(15,23,42,0.05)]">
+                <span className="text-xs font-bold uppercase tracking-widest text-[#3f5f4a]">Featured Beach</span>
+                <h3 className="mt-3 font-serif text-2xl text-slate-900 md:text-3xl">Kokololio Beach Park, Hauula</h3>
+                <div className="mt-4 h-px w-12 bg-[#3f5f4a]/30" aria-hidden="true" />
+                <p className="mt-5 max-w-xl text-base leading-relaxed text-slate-600">
+                  A quieter stretch of North Shore coastline with soft sand, shaded grassy areas, and picnic tables. It
+                  draws a local crowd and has an easy, family-friendly feel that&apos;s hard to find in busier parts of
+                  Oahu. The kind of place you stay all day without the rush.
+                </p>
+              </div>
+            </Reveal>
+            <Reveal delay={120} className="lg:col-span-2">
+              <div className="h-full rounded-3xl bg-[#3f5f4a] p-8 md:p-10 text-white flex flex-col justify-center">
+                <span className="text-xs font-bold uppercase tracking-widest text-white/60">The Local Rhythm</span>
+                <p className="mt-4 font-serif text-xl leading-snug md:text-2xl">
+                  Fewer crowds, more space, and that genuinely relaxed local rhythm.
+                </p>
+                <p className="mt-4 text-sm leading-relaxed text-white/75">
+                  Whether you&apos;re watching a winter swell roll in or just setting up for a quiet afternoon, this
+                  coastline offers something more authentic than most visitors to Oahu ever find.
+                </p>
+              </div>
+            </Reveal>
           </div>
         </div>
       </section>
@@ -835,11 +944,20 @@ export default function Home() {
       {/* FEATURED LISTINGS */}
       <section id="featured" className="py-16 md:py-20 bg-white">
         <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
-          <SectionTitle
-            eyebrow="The Collection"
-            title="Find the Villa That Fits Your Perfect Vacation"
-            desc="Whether guests are gathering the entire family, celebrating a milestone, planning a couples’ retreat, or simply looking for a relaxing escape, each Ocean Villa offers thoughtfully designed spaces, luxury amenities, and the comfort of feeling at home in paradise."
-          />
+          <div className="flex flex-col gap-6 md:flex-row md:items-end md:justify-between">
+            <SectionTitle
+              eyebrow="The Collection"
+              title="Find the Villa That Fits Your Perfect Vacation"
+              desc="Whether guests are gathering the entire family, celebrating a milestone, planning a couples’ retreat, or simply looking for a relaxing escape, each Ocean Villa offers thoughtfully designed spaces, luxury amenities, and the comfort of feeling at home in paradise."
+            />
+            <Link
+              href="/rentals"
+              className="inline-flex shrink-0 items-center gap-1.5 text-sm font-semibold text-[#3f5f4a] hover:text-[#334e3c] md:mb-1"
+            >
+              Browse the full collection
+              <span aria-hidden="true">→</span>
+            </Link>
+          </div>
 
           <div className="mt-10 md:mt-12">
             {listingsLoading ? (
@@ -866,7 +984,7 @@ export default function Home() {
             desc="Everything you need to plan your North Shore stay, from villa details and local beaches to live availability and direct booking."
           />
 
-          <div className="mt-10 grid gap-6 md:grid-cols-2 xl:grid-cols-4">
+          <Reveal className="mt-10 grid gap-6 md:grid-cols-2 xl:grid-cols-4">
             <GuideCard
               href="/rentals"
               title="Browse Rentals"
@@ -887,7 +1005,7 @@ export default function Home() {
               title="Check Availability"
               desc="Search live dates, see which villas are open, and continue straight into booking."
             />
-          </div>
+          </Reveal>
         </div>
       </section>
 

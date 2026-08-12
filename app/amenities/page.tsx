@@ -45,6 +45,25 @@ export const metadata: Metadata = {
   },
 };
 
+function AmenityFAQItem({ question, children }: { question: string; children: React.ReactNode }) {
+  return (
+    <details className="group rounded-2xl border border-slate-200 bg-slate-50 p-5 transition-colors open:border-[#3f5f4a]/30 open:bg-white">
+      <summary className="flex cursor-pointer list-none items-center justify-between gap-4 text-base font-semibold text-slate-900">
+        {question}
+        <span
+          className="flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-white text-slate-500 transition-transform duration-200 group-open:rotate-45 group-open:bg-[#3f5f4a]/10 group-open:text-[#3f5f4a]"
+          aria-hidden="true"
+        >
+          <svg className="h-3.5 w-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+            <path strokeLinecap="round" d="M12 5v14M5 12h14" />
+          </svg>
+        </span>
+      </summary>
+      <p className="mt-3 text-sm leading-7 text-slate-600">{children}</p>
+    </details>
+  );
+}
+
 const AMENITY_EXPERIENCE_GROUPS = [
   {
     group: "Relax in Luxury",
@@ -162,8 +181,9 @@ export default function AmenitiesPage() {
       {/* HERO */}
       <section className="bg-white border-b border-slate-100 py-16 md:py-20">
         <div className="mx-auto max-w-7xl px-6 lg:px-8">
-          <div className="inline-flex items-center rounded-full bg-slate-100 px-4 py-1.5 text-xs font-semibold uppercase tracking-widest text-slate-500 mb-5">
-            What&apos;s Included
+          <div className="mb-5 flex items-center gap-2.5">
+            <span className="h-px w-8 bg-[#3f5f4a]" aria-hidden="true" />
+            <span className="text-xs font-bold uppercase tracking-widest text-slate-500">What&apos;s Included</span>
           </div>
           <h1 className="text-4xl md:text-5xl font-serif font-medium tracking-tight text-slate-900 max-w-3xl leading-tight">
             Luxury Villa Amenities at Turtle Bay, North Shore Oahu
@@ -194,47 +214,59 @@ export default function AmenitiesPage() {
         </div>
       </section>
 
-      {/* AMENITY EXPERIENCE GROUPS */}
-      <section className="py-16 md:py-20">
-        <div className="mx-auto max-w-7xl px-6 lg:px-8">
-          <div className="grid gap-8 md:grid-cols-2">
-            {AMENITY_EXPERIENCE_GROUPS.map((group) => (
-              <div
-                key={group.group}
-                className="rounded-2xl border border-slate-200 bg-white p-8 shadow-[0_4px_20px_rgba(15,23,42,0.05)]"
-              >
-                {group.eyebrow && (
-                  <div className="text-xs font-bold uppercase tracking-widest text-slate-400 mb-2">
-                    {group.eyebrow}
+      {/* AMENITY EXPERIENCE GROUPS — alternating full-width editorial bands
+          (numbered, narrative left / checklist right, tinted background on
+          every other row) instead of five identical bordered cards. */}
+      <div>
+        {AMENITY_EXPERIENCE_GROUPS.map((group, idx) => (
+          <section
+            key={group.group}
+            className={`border-b border-slate-100 py-12 md:py-16 ${idx % 2 === 1 ? "bg-[#f8f4ec]" : "bg-white"}`}
+          >
+            <div className="mx-auto max-w-7xl px-6 lg:px-8">
+              <div className="grid gap-8 md:grid-cols-12 md:gap-12">
+                <div className="md:col-span-4">
+                  <div className="flex items-center gap-3">
+                    <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-[#3f5f4a]/10 font-serif text-sm text-[#3f5f4a]">
+                      {String(idx + 1).padStart(2, "0")}
+                    </span>
+                    {group.eyebrow && (
+                      <span className="text-xs font-bold uppercase tracking-widest text-slate-400">{group.eyebrow}</span>
+                    )}
                   </div>
-                )}
-                <h3 className="text-xl font-semibold text-slate-900">{group.group}</h3>
-                <p className="mt-2 mb-5 text-sm leading-6 text-slate-600">{group.narrative}</p>
-                <ul className="space-y-3">
-                  {group.items.map((item) => (
-                    <li key={item.name} className="flex items-start gap-3 text-sm text-slate-600">
-                      <span className="mt-0.5 h-4 w-4 shrink-0 rounded-full bg-slate-900 flex items-center justify-center">
-                        <svg className="h-2 w-2 text-white" fill="currentColor" viewBox="0 0 8 8">
-                          <path d="M6.5 1.5L3 5 1.5 3.5l-1 1L3 7l4.5-4.5z" />
-                        </svg>
-                      </span>
-                      <span>
-                        {item.name}
-                        {item.note && <span className="block text-xs text-slate-400 mt-0.5">{item.note}</span>}
-                      </span>
-                    </li>
-                  ))}
-                </ul>
+                  <h3 className="mt-4 font-serif text-2xl text-slate-900">{group.group}</h3>
+                  <p className="mt-3 max-w-sm text-sm leading-6 text-slate-600">{group.narrative}</p>
+                </div>
+                <div className="md:col-span-8">
+                  <ul className="grid gap-x-8 gap-y-3 sm:grid-cols-2">
+                    {group.items.map((item) => (
+                      <li key={item.name} className="flex items-start gap-3 text-sm text-slate-600">
+                        <span className="mt-0.5 flex h-4 w-4 shrink-0 items-center justify-center rounded-full bg-[#3f5f4a]">
+                          <svg className="h-2 w-2 text-white" fill="currentColor" viewBox="0 0 8 8">
+                            <path d="M6.5 1.5L3 5 1.5 3.5l-1 1L3 7l4.5-4.5z" />
+                          </svg>
+                        </span>
+                        <span>
+                          {item.name}
+                          {item.note && <span className="block text-xs text-slate-400 mt-0.5">{item.note}</span>}
+                        </span>
+                      </li>
+                    ))}
+                  </ul>
+                </div>
               </div>
-            ))}
-          </div>
-        </div>
-      </section>
+            </div>
+          </section>
+        ))}
+      </div>
 
       {/* FAMILIES & GROUPS */}
       <section className="bg-white border-t border-slate-100 py-16 md:py-20">
         <div className="mx-auto max-w-3xl px-6 lg:px-8">
-          <div className="text-xs font-bold uppercase tracking-widest text-slate-400 mb-2">For Every Group</div>
+          <div className="mb-3 flex items-center gap-2.5">
+            <span className="h-px w-8 bg-[#3f5f4a]" aria-hidden="true" />
+            <span className="text-xs font-bold uppercase tracking-widest text-slate-500">For Every Group</span>
+          </div>
           <h2 className="text-3xl font-serif tracking-tight text-slate-900 mb-4">
             Designed for Families & Groups
           </h2>
@@ -251,17 +283,19 @@ export default function AmenitiesPage() {
         </div>
       </section>
 
-      {/* TURTLE BAY RESORT EXPERIENCES */}
+      {/* TURTLE BAY RESORT EXPERIENCES — distinguished from villa-provided
+          amenities with an amber accent border, since this content comes
+          from a different source of truth (the resort, not Ocean Villas). */}
       <section className="py-16 md:py-20">
         <div className="mx-auto max-w-7xl px-6 lg:px-8">
-          <div className="rounded-2xl border border-slate-200 bg-white p-8 shadow-[0_4px_20px_rgba(15,23,42,0.05)]">
+          <div className="rounded-2xl border border-slate-200 border-l-4 border-l-amber-300 bg-white p-8 shadow-[0_4px_20px_rgba(15,23,42,0.05)]">
             <h2 className="text-2xl font-serif tracking-tight text-slate-900 mb-3">
               Enhance Your Stay with Nearby Resort Experiences
             </h2>
             <p className="text-sm leading-relaxed text-slate-600 mb-2 max-w-2xl">
               As an Ocean Villas guest, you&apos;re located near many of Turtle Bay Resort&apos;s dining, golf, spa, and recreational experiences.
             </p>
-            <p className="text-sm text-slate-500 mb-5">
+            <p className="text-sm font-medium text-slate-600 mb-5">
               Provided by Turtle Bay Resort, not Ocean Villas at Turtle Bay directly.
             </p>
             <ul className="space-y-4 mb-6">
@@ -287,7 +321,10 @@ export default function AmenitiesPage() {
       {/* FAQ */}
       <section className="py-16 md:py-20 bg-white border-t border-slate-100">
         <div className="mx-auto max-w-3xl px-6 lg:px-8">
-          <div className="text-xs font-bold uppercase tracking-widest text-slate-400 mb-2">FAQ</div>
+          <div className="mb-3 flex items-center gap-2.5">
+            <span className="h-px w-8 bg-[#3f5f4a]" aria-hidden="true" />
+            <span className="text-xs font-bold uppercase tracking-widest text-slate-500">FAQ</span>
+          </div>
           <h2 className="text-3xl font-serif tracking-tight text-slate-900 mb-3">
             Common questions about villa amenities
           </h2>
@@ -296,50 +333,25 @@ export default function AmenitiesPage() {
           </p>
 
           <div className="space-y-4">
-            <details className="group rounded-2xl border border-slate-200 bg-slate-50 p-5">
-              <summary className="cursor-pointer list-none text-base font-semibold text-slate-900">
-                Do Ocean Villas at Turtle Bay have pool access?
-              </summary>
-              <p className="mt-3 text-sm leading-7 text-slate-600">
-                Turtle Bay Resort has a pool, but it is managed by the resort, not Ocean Villas, and current access terms for villa guests have not yet been confirmed. Contact our local team before your stay to confirm the latest policy.
-              </p>
-            </details>
+            <AmenityFAQItem question="Do Ocean Villas at Turtle Bay have pool access?">
+              Turtle Bay Resort has a pool, but it is managed by the resort, not Ocean Villas, and current access terms for villa guests have not yet been confirmed. Contact our local team before your stay to confirm the latest policy.
+            </AmenityFAQItem>
 
-            <details className="group rounded-2xl border border-slate-200 bg-slate-50 p-5">
-              <summary className="cursor-pointer list-none text-base font-semibold text-slate-900">
-                What kitchen amenities are included?
-              </summary>
-              <p className="mt-3 text-sm leading-7 text-slate-600">
-                Every villa comes with a fully equipped gourmet kitchen: cookware, appliances, and everything your group needs to cook meals during your stay.
-              </p>
-            </details>
+            <AmenityFAQItem question="What kitchen amenities are included?">
+              Every villa comes with a fully equipped gourmet kitchen: cookware, appliances, and everything your group needs to cook meals during your stay.
+            </AmenityFAQItem>
 
-            <details className="group rounded-2xl border border-slate-200 bg-slate-50 p-5">
-              <summary className="cursor-pointer list-none text-base font-semibold text-slate-900">
-                Is beach gear included with the rental?
-              </summary>
-              <p className="mt-3 text-sm leading-7 text-slate-600">
-                Yes. Beach chairs, umbrellas, and snorkel sets are provided with every villa so you can head straight to the beach without extra equipment rentals.
-              </p>
-            </details>
+            <AmenityFAQItem question="Is beach gear included with the rental?">
+              Yes. Beach chairs, umbrellas, and snorkel sets are provided with every villa so you can head straight to the beach without extra equipment rentals.
+            </AmenityFAQItem>
 
-            <details className="group rounded-2xl border border-slate-200 bg-slate-50 p-5">
-              <summary className="cursor-pointer list-none text-base font-semibold text-slate-900">
-                Do the villas have ocean views?
-              </summary>
-              <p className="mt-3 text-sm leading-7 text-slate-600">
-                View varies by villa. Check the individual villa page for its specific, confirmed view and layout.
-              </p>
-            </details>
+            <AmenityFAQItem question="Do the villas have ocean views?">
+              View varies by villa. Check the individual villa page for its specific, confirmed view and layout.
+            </AmenityFAQItem>
 
-            <details className="group rounded-2xl border border-slate-200 bg-slate-50 p-5">
-              <summary className="cursor-pointer list-none text-base font-semibold text-slate-900">
-                Are there extra fees for villa amenities?
-              </summary>
-              <p className="mt-3 text-sm leading-7 text-slate-600">
-                Amenities provided by the villa itself are included in the nightly rate, sourced live from Hostaway, with no third-party platform markups added. Amenities provided separately by Turtle Bay Resort may involve a reservation, day pass, or fee — confirm current terms with our local team.
-              </p>
-            </details>
+            <AmenityFAQItem question="Are there extra fees for villa amenities?">
+              Amenities provided by the villa itself are included in the nightly rate, sourced live from Hostaway, with no third-party platform markups added. Amenities provided separately by Turtle Bay Resort may involve a reservation, day pass, or fee — confirm current terms with our local team.
+            </AmenityFAQItem>
           </div>
         </div>
       </section>
@@ -347,6 +359,10 @@ export default function AmenitiesPage() {
       {/* WHY GUESTS LOVE OUR AMENITIES */}
       <section className="py-16 md:py-20">
         <div className="mx-auto max-w-3xl px-6 lg:px-8">
+          <div className="mb-3 flex items-center gap-2.5">
+            <span className="h-px w-8 bg-[#3f5f4a]" aria-hidden="true" />
+            <span className="text-xs font-bold uppercase tracking-widest text-slate-500">Guest Experience</span>
+          </div>
           <h2 className="text-3xl font-serif tracking-tight text-slate-900 mb-4">
             Why Guests Love Staying at Ocean Villas
           </h2>
@@ -356,8 +372,9 @@ export default function AmenitiesPage() {
         </div>
       </section>
 
-      {/* LIFESTYLE CLOSING */}
-      <section className="py-12 md:py-16 bg-white border-t border-slate-100">
+      {/* LIFESTYLE CLOSING — sand-toned closing beat to separate it from the
+          flat white sections above, rather than another identical band. */}
+      <section className="py-14 md:py-20 bg-[#f8f4ec] border-y border-[#ece4d4]">
         <div className="mx-auto max-w-2xl px-6 lg:px-8 text-center">
           <h2 className="text-2xl md:text-3xl font-serif tracking-tight text-slate-900 mb-3">
             More Than Just a Place to Stay

@@ -360,58 +360,75 @@ function parseDescription(raw: string): ParsedDescription {
 
 // ─── Compliance details (TMK, TA registration, occupancy) ─────
 
+function UsersIcon() {
+  return (
+    <svg className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.8}>
+      <path strokeLinecap="round" strokeLinejoin="round" d="M17 20v-1.5a3.5 3.5 0 00-3.5-3.5h-3A3.5 3.5 0 007 18.5V20M9 8.5a2.5 2.5 0 105 0 2.5 2.5 0 00-5 0zM19 20v-1.2a3 3 0 00-2.2-2.9M15 4.6a2.5 2.5 0 010 4.8" />
+    </svg>
+  );
+}
+
+function BedIcon() {
+  return (
+    <svg className="h-3.5 w-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.8}>
+      <path strokeLinecap="round" strokeLinejoin="round" d="M3 18v-6a2 2 0 012-2h14a2 2 0 012 2v6M3 18v2M3 18h18M21 18v2M6 10V7a1 1 0 011-1h4a1 1 0 011 1v3" />
+    </svg>
+  );
+}
+
+function SofaIcon() {
+  return (
+    <svg className="h-3.5 w-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.8}>
+      <path strokeLinecap="round" strokeLinejoin="round" d="M5 12V9a2 2 0 012-2h10a2 2 0 012 2v3M4 12h16a1 1 0 011 1v3a1 1 0 01-1 1H4a1 1 0 01-1-1v-3a1 1 0 011-1zM5 17v2M19 17v2" />
+    </svg>
+  );
+}
+
+// ─── Compliance / Stay Details ─────────────────────────────────
+// Deliberately structured as: (A) occupancy highlight, (B) plain-language
+// sleeping-arrangement explanation, (C) polished room-by-room breakdown,
+// (D) compact secondary registration info. TMK/TA stay small and muted —
+// factual disclosure, not something to visually promote.
+
 function ComplianceDetails({ compliance }: { compliance: VillaComplianceDetails }) {
   return (
-    <div className="mt-6 pt-5 border-t border-slate-100">
-      <div className="text-[10px] font-bold uppercase tracking-widest text-slate-400 mb-3">
-        Property Registration &amp; Occupancy
-      </div>
-      <dl className="grid grid-cols-1 sm:grid-cols-2 gap-x-8 gap-y-3 text-sm">
-        <div className="flex items-baseline justify-between gap-3 sm:block">
-          <dt className="text-slate-400">Licensed Maximum Occupancy</dt>
-          <dd className="font-semibold text-slate-800 sm:mt-0.5">
-            {compliance.licensedMaxOccupancy} guests
-          </dd>
-        </div>
-        <div className="flex items-baseline justify-between gap-3 sm:block sm:col-span-2">
-          <dt className="text-slate-400">Sleeping Arrangement</dt>
-          <dd className="font-semibold text-slate-800 sm:mt-0.5">
-            {compliance.occupancySummary}
-          </dd>
-        </div>
-        {compliance.licenses.map((license) => (
-          <div key={`${license.unit}-${license.taxMapKey}`} className="contents">
-            <div className="flex items-baseline justify-between gap-3 sm:block">
-              <dt className="text-slate-400">
-                Tax Map Key (TMK){compliance.licenses.length > 1 ? ` — ${license.unit}` : ""}
-              </dt>
-              <dd className="font-semibold text-slate-800 sm:mt-0.5">{license.taxMapKey}</dd>
-            </div>
-            <div className="flex items-baseline justify-between gap-3 sm:block">
-              <dt className="text-slate-400">
-                TA Registration{compliance.licenses.length > 1 ? ` — ${license.unit}` : ""}
-              </dt>
-              <dd className="font-semibold text-slate-800 sm:mt-0.5">{license.tat}</dd>
-            </div>
-          </div>
-        ))}
-      </dl>
+    <div className="mt-8 pt-8 border-t border-slate-100">
+      <div className="text-[10px] font-bold uppercase tracking-widest text-slate-400 mb-4">Stay Details</div>
 
+      {/* A + B — occupancy highlight paired with the plain-language explanation */}
+      <div className="flex items-center gap-4 rounded-2xl border border-[#ece4d4] bg-[#f8f4ec] px-5 py-5 sm:px-6">
+        <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-full bg-[#3f5f4a]/10 text-[#3f5f4a]">
+          <UsersIcon />
+        </div>
+        <div className="min-w-0">
+          <div className="font-serif text-2xl leading-none text-slate-900">
+            {compliance.licensedMaxOccupancy} <span className="text-base font-sans font-normal text-slate-500">guests, licensed maximum</span>
+          </div>
+          <p className="mt-1.5 text-sm leading-relaxed text-slate-600">{compliance.occupancySummary}</p>
+        </div>
+      </div>
+
+      {/* C — room-by-room breakdown */}
       {compliance.sleepingSpaces && (
-        <div className="mt-4">
-          <div className="text-[10px] font-bold uppercase tracking-widest text-slate-400 mb-2">
+        <div className="mt-6">
+          <div className="text-[10px] font-bold uppercase tracking-widest text-slate-400 mb-2.5">
             Room-by-Room Breakdown
           </div>
-          <ul className="space-y-1.5 text-sm text-slate-700">
+          <ul className="divide-y divide-slate-100 rounded-xl border border-slate-100 overflow-hidden">
             {compliance.sleepingSpaces.map((space, i) => (
-              <li key={i} className="flex items-baseline justify-between gap-3">
-                <span>
-                  {space.label}
-                  {space.type === "living_area" && (
-                    <span className="ml-1.5 text-xs text-slate-400">(not a bedroom)</span>
-                  )}
+              <li key={i} className="flex items-center justify-between gap-3 bg-white px-4 py-3">
+                <span className="flex min-w-0 items-center gap-2.5">
+                  <span className="flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-slate-50 text-slate-400">
+                    {space.type === "living_area" ? <SofaIcon /> : <BedIcon />}
+                  </span>
+                  <span className="truncate text-sm text-slate-700">
+                    {space.label}
+                    {space.type === "living_area" && (
+                      <span className="ml-1.5 text-xs text-slate-400">(not a bedroom)</span>
+                    )}
+                  </span>
                 </span>
-                <span className="font-semibold text-slate-800 whitespace-nowrap">
+                <span className="whitespace-nowrap text-sm font-semibold text-slate-800">
                   {space.guests} guests
                   {space.adults != null && space.children != null && (
                     <span className="ml-1 font-normal text-slate-400">
@@ -424,6 +441,20 @@ function ComplianceDetails({ compliance }: { compliance: VillaComplianceDetails 
           </ul>
         </div>
       )}
+
+      {/* D — compact, visually secondary registration info (never hidden — a
+          regulatory disclosure — just de-emphasized relative to the above) */}
+      <div className="mt-5 flex flex-wrap gap-x-6 gap-y-1 text-xs text-slate-500">
+        {compliance.licenses.map((license) => (
+          <span key={`${license.unit}-${license.taxMapKey}`}>
+            TMK{compliance.licenses.length > 1 ? ` (${license.unit})` : ""}:{" "}
+            <span className="font-medium text-slate-500">{license.taxMapKey}</span>
+            <span className="mx-2 text-slate-300">·</span>
+            TA{compliance.licenses.length > 1 ? ` (${license.unit})` : ""}:{" "}
+            <span className="font-medium text-slate-500">{license.tat}</span>
+          </span>
+        ))}
+      </div>
     </div>
   );
 }
@@ -586,22 +617,18 @@ function AmenitiesSection({ amenities }: { amenities: string[] }) {
   return (
     <RevealSection className="mt-10" delay={80}>
       <h2 className="text-xl font-semibold text-slate-900 mb-4">Amenities</h2>
-      <div className="grid grid-cols-2 sm:grid-cols-3 gap-2">
+      <div className="flex flex-wrap gap-2">
         {shown.map((a, i) => (
           <div
             key={i}
-            className="flex items-center gap-2 rounded-xl bg-white border border-slate-100 px-3 py-2.5 text-sm text-slate-700 shadow-[0_1px_4px_rgba(15,23,42,0.04)]"
+            className="group flex items-center gap-2 rounded-full border border-slate-200 bg-white py-2 pl-2 pr-3.5 text-sm text-slate-700 transition-colors duration-200 hover:border-[#3f5f4a]/30"
           >
-            <svg
-              className="h-3.5 w-3.5 shrink-0 text-[#3f5f4a]"
-              fill="none"
-              viewBox="0 0 24 24"
-              stroke="currentColor"
-              strokeWidth={2.5}
-            >
-              <path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" />
-            </svg>
-            <span className="truncate">{a}</span>
+            <span className="flex h-5 w-5 shrink-0 items-center justify-center rounded-full bg-[#3f5f4a]/8 text-[#3f5f4a] transition-colors duration-200 group-hover:bg-[#3f5f4a]/14">
+              <svg className="h-3 w-3" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={3}>
+                <path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" />
+              </svg>
+            </span>
+            {a}
           </div>
         ))}
       </div>
@@ -1138,6 +1165,7 @@ function ListingClientContent({
               <AmenitiesSection amenities={amenities} />
 
               <RevealSection className="mt-10" delay={100}>
+                <h2 className="text-xl font-semibold text-slate-900 mb-4">Why Book This Villa With Us</h2>
                 <TrustSignals variant="compact" />
               </RevealSection>
 
