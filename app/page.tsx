@@ -335,12 +335,14 @@ function ListingCard({ l }: { l: HostawayListing }) {
         <div className="mt-4 grid grid-cols-2 gap-3">
           <Link
             href={detailUrl}
+            onClick={() => trackEvent("villa_card_click", { listing_id: l.id, cta: "view_villa", source_page: "homepage_featured" })}
             className="inline-flex items-center justify-center rounded-xl bg-[#0f172a] px-4 py-3 text-sm font-semibold text-white shadow-[0_3px_12px_rgba(15,23,42,0.18)] hover:-translate-y-px hover:bg-[#1e293b] hover:shadow-[0_6px_20px_rgba(15,23,42,0.24)] active:translate-y-0 active:scale-[0.97] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-slate-700 focus-visible:ring-offset-2 transition-all duration-[220ms] ease-[cubic-bezier(0.16,1,0.3,1)]"
           >
             View Villa
           </Link>
           <Link
             href={detailUrl}
+            onClick={() => trackEvent("villa_card_click", { listing_id: l.id, cta: "request_villa", source_page: "homepage_featured" })}
             className="inline-flex items-center justify-center rounded-xl border border-slate-200 bg-white px-4 py-3 text-sm font-semibold text-slate-700 hover:bg-slate-50 hover:border-slate-300 hover:-translate-y-px active:translate-y-0 active:scale-[0.97] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-slate-300 focus-visible:ring-offset-2 transition-all duration-[220ms] ease-[cubic-bezier(0.16,1,0.3,1)]"
           >
             Request This Villa
@@ -574,6 +576,17 @@ export default function Home() {
 
     setLoading(true);
     try {
+      // Fires on validated submit, not on eventual results — this measures
+      // search *intent* (did a guest try to search these dates). Whether
+      // that search actually returned villas is a separate, distinct signal
+      // (no_availability_result / availability_search_failed), tracked once
+      // in AvailabilitySearch.tsx where the fetch itself happens.
+      trackEvent("availability_search", {
+        check_in: checkIn,
+        check_out: checkOut,
+        guest_count: guests,
+        source: "homepage_hero",
+      });
       router.push(
         `/availability?startDate=${encodeURIComponent(checkIn)}&endDate=${encodeURIComponent(checkOut)}&guests=${encodeURIComponent(
           String(guests)
@@ -952,6 +965,7 @@ export default function Home() {
             />
             <Link
               href="/rentals"
+              onClick={() => trackEvent("browse_villas_click", { source_page: "homepage_featured" })}
               className="inline-flex shrink-0 items-center gap-1.5 text-sm font-semibold text-[#3f5f4a] hover:text-[#334e3c] md:mb-1"
             >
               Browse the full collection

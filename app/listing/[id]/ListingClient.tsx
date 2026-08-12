@@ -606,7 +606,7 @@ function OverrideDescriptionSection({
 
 // ─── Amenities ────────────────────────────────────────────────
 
-function AmenitiesSection({ amenities }: { amenities: string[] }) {
+function AmenitiesSection({ amenities, listingId }: { amenities: string[]; listingId: string }) {
   const [expanded, setExpanded] = useState(false);
   const LIMIT = 12;
   const shown = expanded ? amenities : amenities.slice(0, LIMIT);
@@ -635,7 +635,11 @@ function AmenitiesSection({ amenities }: { amenities: string[] }) {
       {hasMore && (
         <button
           type="button"
-          onClick={() => setExpanded(!expanded)}
+          onClick={() => {
+            const next = !expanded;
+            setExpanded(next);
+            if (next) trackEvent("amenities_expand", { listing_id: listingId, amenity_count: amenities.length });
+          }}
           className="mt-4 text-sm font-semibold text-slate-900 underline underline-offset-4 hover:text-slate-600 transition-colors duration-200"
         >
           {expanded ? "Show fewer amenities" : `Show all ${amenities.length} amenities`}
@@ -644,7 +648,11 @@ function AmenitiesSection({ amenities }: { amenities: string[] }) {
       <p className="mt-4 text-sm text-slate-500">
         See what&apos;s included across every villa, and what&apos;s available separately through Turtle Bay Resort,
         on the{" "}
-        <Link href="/amenities" className="font-semibold text-slate-900 hover:underline underline-offset-2">
+        <Link
+          href="/amenities"
+          onClick={() => trackEvent("listing_amenities_click", { listing_id: listingId })}
+          className="font-semibold text-slate-900 hover:underline underline-offset-2"
+        >
           full amenities page
         </Link>
         .
@@ -669,8 +677,10 @@ function BookingCard({
   startDate,
   endDate,
   guests,
+  villaName,
   listingId,
   maxGuests,
+  source,
 }: {
   onInquire: () => void;
   startDate: string;
@@ -678,6 +688,10 @@ function BookingCard({
   guests: string;
   villaName: string;
   listingId: string;
+  /** Distinguishes which on-page instance of this card was used — the same
+   * card renders once inline on mobile and once in the sticky desktop
+   * sidebar, both wired to the same onInquire modal. */
+  source: "listing_mobile_inline" | "listing_sidebar";
   /** This villa's resolved capacity (Tier 2 compliance value where one exists,
    * else Hostaway's own figure) — the guest picker must never offer more
    * than this, per Section 3.7: every render surface reads from the same
@@ -865,7 +879,10 @@ function BookingCard({
 
       <button
         type="button"
-        onClick={onInquire}
+        onClick={() => {
+          trackEvent("inquiry_open", { villa: villaName, listing_id: listingId, source, cta: "check_availability" });
+          onInquire();
+        }}
         className={[
           "flex items-center justify-center w-full rounded-2xl px-6 py-4",
           "bg-[#0A6B8A] text-white text-sm font-semibold",
@@ -881,7 +898,10 @@ function BookingCard({
 
       <button
         type="button"
-        onClick={onInquire}
+        onClick={() => {
+          trackEvent("inquiry_open", { villa: villaName, listing_id: listingId, source, cta: "ask_about_villa" });
+          onInquire();
+        }}
         className={[
           "mt-3 flex items-center justify-center w-full rounded-2xl px-6 py-4",
           "bg-[#3f5f4a] text-white text-sm font-semibold",
@@ -1008,6 +1028,7 @@ function InquiryModal({
             title="Villa Inquiry Form"
             style={{ width: "100%", height: "100%", border: "none", display: "block" }}
             loading="lazy"
+            onError={() => trackEvent("inquiry_form_error", { reason: "iframe_load_failed", source: "listing_modal" })}
           />
         </div>
       </div>
@@ -1162,7 +1183,7 @@ function ListingClientContent({
                 : <DescriptionSection description={description} compliance={compliance} />
               }
 
-              <AmenitiesSection amenities={amenities} />
+              <AmenitiesSection amenities={amenities} listingId={listing.id} />
 
               <RevealSection className="mt-10" delay={100}>
                 <h2 className="text-xl font-semibold text-slate-900 mb-4">Why Book This Villa With Us</h2>
@@ -1179,6 +1200,7 @@ function ListingClientContent({
                   villaName={title}
                   listingId={listing.id}
                   maxGuests={resolvedMaxGuests}
+                  source="listing_mobile_inline"
                 />
               </RevealSection>
             </div>
@@ -1192,6 +1214,7 @@ function ListingClientContent({
                 villaName={title}
                 listingId={listing.id}
                 maxGuests={resolvedMaxGuests}
+                source="listing_sidebar"
               />
 
               <div className="mt-4 rounded-2xl border border-slate-200 bg-slate-50 p-5">

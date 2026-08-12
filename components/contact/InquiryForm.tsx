@@ -131,7 +131,9 @@ export default function InquiryForm() {
 
     if (status === "submitting" || status === "ready") return; // duplicate-submit guard
 
-    trackEvent("inquiry_form_submit", { inquiry_type: form.inquiryType });
+    // Local form validated and handed off to the GHL iframe — not yet a
+    // confirmed lead. See the AnalyticsEvent doc comment in lib/analytics.ts.
+    trackEvent("inquiry_form_handoff", { inquiry_type: form.inquiryType });
     setStatus("submitting");
   }
 
@@ -173,7 +175,10 @@ export default function InquiryForm() {
             style={{ width: "100%", height: "640px", border: "none", display: "block" }}
             loading="lazy"
             onLoad={() => setStatus("ready")}
-            onError={() => setStatus("error")}
+            onError={() => {
+              trackEvent("inquiry_form_error", { reason: "iframe_load_failed" });
+              setStatus("error");
+            }}
           />
         </div>
       </div>

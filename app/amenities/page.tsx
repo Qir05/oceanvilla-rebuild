@@ -3,6 +3,7 @@ import Link from "next/link";
 import type { Metadata } from "next";
 import MobileStickyBookingBar from "@/components/MobileStickyBookingBar";
 import AmenityDisclaimer from "@/components/AmenityDisclaimer";
+import TrackedLink from "@/components/TrackedLink";
 import {
   AMENITIES_RELAX_COMFORT,
   AMENITIES_COOK_GATHER,
@@ -198,18 +199,22 @@ export default function AmenitiesPage() {
             Exact features and layouts vary by villa — see each villa&apos;s listing page for confirmed details.
           </p>
           <div className="mt-8 flex flex-wrap gap-4">
-            <Link
+            <TrackedLink
               href="/rentals"
+              event="amenities_cta_click"
+              eventParams={{ cta: "explore_villas", location: "hero" }}
               className="inline-flex items-center justify-center rounded-xl bg-slate-900 px-6 py-3 text-sm font-semibold text-white hover:bg-slate-800 transition"
             >
               Explore Our Luxury Villas
-            </Link>
-            <Link
+            </TrackedLink>
+            <TrackedLink
               href="/availability"
+              event="amenities_cta_click"
+              eventParams={{ cta: "check_availability", location: "hero" }}
               className="inline-flex items-center justify-center rounded-xl border border-slate-200 bg-white px-6 py-3 text-sm font-semibold text-slate-700 hover:bg-slate-50 transition"
             >
               Check Availability
-            </Link>
+            </TrackedLink>
           </div>
         </div>
       </section>
@@ -275,9 +280,14 @@ export default function AmenitiesPage() {
           </p>
           <p className="mt-3 text-base leading-relaxed text-slate-600">
             Bedroom counts and layouts vary by villa — browse the{" "}
-            <Link href="/rentals" className="font-semibold text-slate-900 hover:underline">
+            <TrackedLink
+              href="/rentals"
+              event="amenities_cta_click"
+              eventParams={{ cta: "full_villa_collection", location: "families_section" }}
+              className="font-semibold text-slate-900 hover:underline"
+            >
               full villa collection
-            </Link>{" "}
+            </TrackedLink>{" "}
             to find the space that fits your group.
           </p>
         </div>
@@ -395,18 +405,22 @@ export default function AmenitiesPage() {
             Browse available villas and check live dates. All bookings are handled directly through Hostaway for secure, transparent pricing, with no platform fees.
           </p>
           <div className="mt-8 flex flex-wrap justify-center gap-4">
-            <Link
+            <TrackedLink
               href="/rentals"
+              event="amenities_cta_click"
+              eventParams={{ cta: "explore_villas", location: "final_cta" }}
               className="inline-flex items-center justify-center rounded-xl bg-white px-8 py-3 text-sm font-semibold text-slate-900 hover:bg-slate-100 transition"
             >
               Explore Our Luxury Villas
-            </Link>
-            <Link
+            </TrackedLink>
+            <TrackedLink
               href="/availability"
+              event="amenities_cta_click"
+              eventParams={{ cta: "check_availability", location: "final_cta" }}
               className="inline-flex items-center justify-center rounded-xl border border-white/30 px-8 py-3 text-sm font-semibold text-white hover:bg-white/10 transition"
             >
               Check Availability
-            </Link>
+            </TrackedLink>
           </div>
         </div>
       </section>

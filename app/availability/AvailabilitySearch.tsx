@@ -5,6 +5,7 @@ import Link from "next/link";
 import { Suspense, useEffect, useMemo, useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { OCEAN_VILLA_LISTING_IDS, MAX_SITE_GUEST_CAPACITY } from "@/lib/ocean-villas";
+import { trackEvent } from "@/lib/analytics";
 
 type HostawayListing = {
   id: string;
@@ -230,6 +231,9 @@ function AvailabilitySearchForm() {
 
           if (!alive) return;
           setListings(normalized);
+          if (normalized.length === 0) {
+            trackEvent("no_availability_result", { check_in: startDate, check_out: endDate, guest_count: guestsNum });
+          }
         } else {
           const fallback = await loadFallback();
           if (!alive) return;
@@ -237,6 +241,7 @@ function AvailabilitySearchForm() {
           setFallbackNotice(
             "We couldn’t confirm live availability right now, but you can still browse the villas below and continue to direct booking."
           );
+          trackEvent("availability_search_failed", { reason: "api_error", check_in: startDate, check_out: endDate });
         }
       } catch {
         const fallback = await loadFallback();
@@ -245,6 +250,7 @@ function AvailabilitySearchForm() {
         setFallbackNotice(
           "We couldn’t confirm live availability right now, but you can still browse the villas below and continue to direct booking."
         );
+        trackEvent("availability_search_failed", { reason: "exception", check_in: startDate, check_out: endDate });
       } finally {
         if (!alive) return;
         setLoading(false);
@@ -268,6 +274,12 @@ function AvailabilitySearchForm() {
     if (isAfter(today, checkIn)) return setError("Check-in date must be today or later.");
     if (guests < 1) return setError("Guests must be at least 1.");
 
+    trackEvent("availability_search", {
+      check_in: checkIn,
+      check_out: checkOut,
+      guest_count: guests,
+      source: "availability_page",
+    });
     router.push(
       `/availability?startDate=${encodeURIComponent(checkIn)}&endDate=${encodeURIComponent(
         checkOut
