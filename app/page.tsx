@@ -9,6 +9,7 @@ import TrustSignals from "@/components/TrustSignals";
 import { trackEvent } from "@/lib/analytics";
 import { VILLA_COMPLIANCE } from "@/lib/villaCompliance";
 import { MAX_SITE_GUEST_CAPACITY } from "@/lib/ocean-villas";
+import { getDisplayName, HERO_IMAGE_OVERRIDES } from "@/lib/villa-display";
 
 type HostawayListing = {
   id: string;
@@ -34,22 +35,6 @@ const BRAND = {
 };
 
 const LISTING_IDS = ["489089", "489092", "489093", "489094", "489095", "489097", "505671"] as const;
-
-const LISTING_DISPLAY_NAMES: Record<string, string> = {
-  "489095": "The Penthouse Villa", // Villa 318
-  "505671": "The View Villa",      // Villa 304
-};
-
-const HERO_IMAGE_OVERRIDES: Record<string, number> = {
-  "505671": 1,
-};
-
-function getDisplayName(id: string, rawName: string): string {
-  if (LISTING_DISPLAY_NAMES[id]) return LISTING_DISPLAY_NAMES[id];
-  if (/\b(?:ov|villa|unit)?\s*318\b/i.test(rawName)) return "The Penthouse Villa";
-  if (/\b(?:ov|villa|unit)?\s*304\b/i.test(rawName)) return "The View Villa";
-  return rawName || `Villa ${id}`;
-}
 
 function getPreferredHero(id: string, heroUrl: string | undefined, images?: string[]): string {
   const overrideIdx = HERO_IMAGE_OVERRIDES[id];
@@ -304,7 +289,7 @@ function ListingCard({ l }: { l: HostawayListing }) {
         />
         <div className="absolute top-4 right-4 z-10">
           <Pill tone="default" darkText>
-            Villa #{l.id}
+            Ocean Villas at Turtle Bay
           </Pill>
         </div>
       </div>
@@ -463,10 +448,17 @@ export default function Home() {
   const websiteJsonLd = {
     "@context": "https://schema.org",
     "@type": "WebSite",
+    "@id": `${SITE_URL}/#website`,
     name: BRAND.name,
     url: SITE_URL,
     description:
       "Luxury private villa rentals at Turtle Bay on Oahu’s North Shore with direct booking and live availability.",
+    // Links the site (WebSite) to the business it publishes (LodgingBusiness,
+    // declared below with @id `#organization`) — a real, valid Schema.org
+    // relationship (WebSite.publisher, range Organization; LodgingBusiness
+    // qualifies via LocalBusiness's dual Organization+Place typing), not
+    // schema added for its own sake.
+    publisher: { "@id": `${SITE_URL}/#organization` },
   };
 
   const lodgingJsonLd = {

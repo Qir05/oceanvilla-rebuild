@@ -83,12 +83,26 @@ export default async function RentalsPage() {
       "7 luxury private villa rentals at Turtle Bay on Oahu's North Shore. Book direct with live availability and no platform markups.",
     url: `${SITE_URL}/rentals`,
     numberOfItems: OCEAN_VILLA_LISTING_IDS.length,
+    // Curated via getDisplayName() — the same resolver every other
+    // customer-facing surface (listing page title/H1, this page's own
+    // comparison table below) already uses, so this list can never show a
+    // different name for a villa than the rest of the site. Falls through to
+    // the raw Hostaway name only for listings with no curated override yet.
     itemListElement: initialListings.map((l, i) => ({
       "@type": "ListItem",
       position: i + 1,
       url: `${SITE_URL}/listing/${l.id}`,
-      name: l.name,
+      name: getDisplayName(l.id, l.name || ""),
     })),
+  };
+
+  const breadcrumbJsonLd = {
+    "@context": "https://schema.org",
+    "@type": "BreadcrumbList",
+    itemListElement: [
+      { "@type": "ListItem", position: 1, name: "Home", item: `${SITE_URL}/` },
+      { "@type": "ListItem", position: 2, name: "Villas", item: `${SITE_URL}/rentals` },
+    ],
   };
 
   return (
@@ -96,6 +110,10 @@ export default async function RentalsPage() {
       {/* Plain <script>, not next/script's <Script> — see app/listing/[id]/page.tsx
           for why: Script's default strategy never reaches the initial
           server-rendered HTML. */}
+      <script
+        type="application/ld+json"
+        dangerouslySetInnerHTML={{ __html: JSON.stringify(breadcrumbJsonLd) }}
+      />
       <script
         type="application/ld+json"
         dangerouslySetInnerHTML={{ __html: JSON.stringify(rentalsJsonLd) }}

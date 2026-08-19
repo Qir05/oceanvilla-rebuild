@@ -1133,7 +1133,7 @@ function ListingClientContent({
 
               <div className="mt-8 ov-fade-up">
                 <div className="inline-flex items-center rounded-full bg-slate-100 px-4 py-1.5 text-[11px] font-bold uppercase tracking-widest text-slate-500 mb-4">
-                  Villa #{listing.id} · Ocean Villas at Turtle Bay
+                  Ocean Villas at Turtle Bay
                 </div>
 
                 <h1 className="text-3xl sm:text-4xl lg:text-5xl font-serif font-medium tracking-tight text-slate-900 leading-tight">

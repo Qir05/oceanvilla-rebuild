@@ -6,6 +6,7 @@ import { Suspense, useEffect, useMemo, useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { OCEAN_VILLA_LISTING_IDS, MAX_SITE_GUEST_CAPACITY } from "@/lib/ocean-villas";
 import { trackEvent } from "@/lib/analytics";
+import { getDisplayName } from "@/lib/villa-display";
 
 type HostawayListing = {
   id: string;
@@ -29,18 +30,6 @@ type HostawaySearchResult = Omit<HostawayListing, "heroUrl" | "thumbnailUrl"> & 
 };
 
 const LISTING_IDS = OCEAN_VILLA_LISTING_IDS;
-
-const LISTING_DISPLAY_NAMES: Record<string, string> = {
-  "489095": "The Penthouse Villa", // Villa 318
-  "505671": "The View Villa",      // Villa 304
-};
-
-function getDisplayName(id: string, rawName: string): string {
-  if (LISTING_DISPLAY_NAMES[id]) return LISTING_DISPLAY_NAMES[id];
-  if (/\b(?:ov|villa|unit)?\s*318\b/i.test(rawName)) return "The Penthouse Villa";
-  if (/\b(?:ov|villa|unit)?\s*304\b/i.test(rawName)) return "The View Villa";
-  return rawName || `Villa ${id}`;
-}
 
 function formatISO(d: Date) {
   const y = d.getFullYear();
@@ -107,7 +96,7 @@ function AvailabilityCard({
         />
         <div className="absolute top-4 right-4 z-10">
           <span className="inline-flex items-center rounded-full bg-white/90 backdrop-blur-sm px-3 py-1 text-xs font-semibold tracking-wide text-slate-800 shadow-sm">
-            Villa #{listing.id}
+            Ocean Villas at Turtle Bay
           </span>
         </div>
       </div>

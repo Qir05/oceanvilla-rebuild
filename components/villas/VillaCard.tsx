@@ -71,7 +71,7 @@ export default function VillaCard({
         )}
         <div className="absolute top-4 right-4 z-10">
           <span className="inline-flex items-center rounded-full bg-white/90 backdrop-blur-sm px-3 py-1 text-xs font-semibold tracking-wide text-slate-800 shadow-sm">
-            Villa #{listing.id}
+            Ocean Villas at Turtle Bay
           </span>
         </div>
 

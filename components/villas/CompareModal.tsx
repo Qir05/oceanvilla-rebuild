@@ -70,7 +70,6 @@ export default function CompareModal({
                 {listings.map((l) => (
                   <th key={l.id} className="py-2 px-4 text-center min-w-[160px]">
                     <div className="text-sm font-semibold text-slate-900">{getTitle(l)}</div>
-                    <div className="text-[11px] text-slate-400">Villa #{l.id}</div>
                   </th>
                 ))}
               </tr>

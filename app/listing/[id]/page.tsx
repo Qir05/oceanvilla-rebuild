@@ -117,6 +117,19 @@ export default async function ListingDetailsPage({ params }: PageProps) {
     "@type": "Accommodation",
     name: title,
     url: `${SITE_URL}/listing/${listing.id}`,
+    // Links this villa into the Ocean Villas collection entity defined on
+    // the homepage. `containedInPlace` (not `brand`, which Accommodation/
+    // Place does not define) is valid here because LodgingBusiness extends
+    // both Organization AND Place in schema.org's type hierarchy (via
+    // LocalBusiness) — so a Place-typed entity (this Accommodation) can
+    // validly declare itself containedInPlace another Place-typed entity
+    // (the LodgingBusiness). This is the inverse of the LodgingBusiness's
+    // own `containsPlace` relationship used below for room-level detail.
+    containedInPlace: {
+      "@id": `${SITE_URL}/#organization`,
+      "@type": "LodgingBusiness",
+      name: "Ocean Villas at Turtle Bay",
+    },
     ...(listing.images.length ? { image: listing.images } : {}),
     ...(listing.bedrooms ? { numberOfBedrooms: listing.bedrooms } : {}),
     ...(listing.bathrooms ? { numberOfBathroomsTotal: listing.bathrooms } : {}),
